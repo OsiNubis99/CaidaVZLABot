@@ -1,3 +1,0 @@
-class gameManager {
-	static 
-}
