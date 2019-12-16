@@ -5,6 +5,7 @@ class Player {
 		this.last_name = telegramUser.last_name;
 		this.username = telegramUser.username;
 		this.games = [];
+		this.game = null;
 	}
 }
 module.exports = Player;

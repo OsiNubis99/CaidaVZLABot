@@ -6,7 +6,7 @@ class Game {
 		this.sings = [];
 		this.points = [0,0,0,0];
 		this.cards = [[],[],[],[]];
-		this.table = [];
+		this.table = [null,null,null,null,null,null,null,null,null,null];
 		this.taked = [0,0,0,0];
 		this.configs = configs;
 		this.card = null;
@@ -31,16 +31,16 @@ class Game {
 		return array;
 	}
 
-	static status(chatGame,players){
+	static status(data,chatId){
 		let msg
-		if(chatGame.player != null){
-			msg = "Jugador actual "+players["p"+Game.getPlayer(chatGame)].first_name+"(@"+players["p"+Game.getPlayer(chatGame)].username+")";
+		if(data.games["g"+chatId].player != null){
+			msg = "Jugador actual "+data.players["p"+Game.getPlayer(data.games["g"+chatId])].first_name+"(@"+data.players["p"+Game.getPlayer(data.games["g"+chatId])].username+")";
 			let i = 0;
-			while( i < chatGame.players.length){
-				msg += "\n--"+(chatGame.player==i?"> ":"  ")+players["p"+chatGame.players[i]].first_name+"(@"+players["p"+chatGame.players[i]].username+" ["+chatGame.cards[i].length+"]";
+			while( i < data.games["g"+chatId].players.length){
+				msg += "\n--"+(data.games["g"+chatId].player==i?"> ":"  ")+data.players["p"+data.games["g"+chatId].players[i]].first_name+"(@"+data.players["p"+data.games["g"+chatId].players[i]].username+" ["+data.games["g"+chatId].cards[i].length+"]";
 				i++;
 			}
-			msg += "\nLa ultima carta jugada fue: " + chatGame.card;
+			msg += "\nLa ultima carta jugada fue: " + data.games["g"+chatId].card.value+" "+data.games["g"+chatId].card.type;
 		}
 		else
 			msg = "El juego aun no empieza, usa /iniciar";
@@ -57,49 +57,6 @@ class Game {
 			}
 		};
 	}
-
-	static start(chatGame){
-		if(chatGame.players.length != 1){
-			chatGame.started = true
-			let i = 0,temp;
-			while(chatGame.cards[0].length<3){
-				temp = chatGame.deck.pop();
-				while(chatGame.table[temp%4+1]){
-					chatGame.deck.unshift(temp);
-					temp = chatGame.deck.pop();
-				}
-				chatGame.table[temp%4+1] = new card(temp);
-				while(i<chatGame.players.length){
-					temp = chatGame.deck.pop();
-					chatGame.cards[i].push(temp)
-					i++;
-				}
-				i = 0;
-			}
-			temp = chatGame.deck.pop();
-			while(chatGame.table[temp%4+1]){
-				chatGame.deck.unshift(temp);
-				temp = chatGame.deck.pop();
-			}
-			chatGame.table[temp%4+1] = 1;
-			let msg = "Jugador actual "+Game.getPlayer(chatGame).first_name+"(@"+Game.getPlayer(chatGame).username;
-			msg += "\nMesa:";
-			i = 1;
-			for(c of chatGame.table){
-				if(c==1){
-					if(i==8||i==9||i==10)
-						msg += " " + (i + 2);
-					else
-						msg += " " + i; 
-				}else
-					msg += " ";
-				i++;
-			}
-			bot.sendMessage(chatGame.chatId, msg);
-		}else
-			bot.sendMessage(chatGame.chatId, "Es necesario un minimo de 2 jugadores.");
-	}
-
 
 }
 module.exports = Game;
