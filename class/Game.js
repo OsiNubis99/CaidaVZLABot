@@ -43,7 +43,7 @@ class Game {
 				if(c!=null)
 					msg+=" "+c.value;
 				else
-					msg+=" #";
+					msg+="  ";
 			}
 			msg += "\nJugador actual: "+data.players["p"+Game.getPlayer(data.games["g"+chatId])].first_name+" (@"+data.players["p"+Game.getPlayer(data.games["g"+chatId])].username+")";
 			msg += "\nLa ultima carta jugada fue: " + data.games["g"+chatId].card.value+" de "+data.games["g"+chatId].card.type+"\nJugadores:";

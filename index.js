@@ -84,6 +84,7 @@ function iniciar(msg){
 			data.games["g"+chatId].player = 0;
 			let card,order="";
 			while(data.games["g"+chatId].cards[0].length<3){
+				data.games["g"+chatId].deck = Game.barajar()
 				card = new Card(data.games["g"+chatId].deck.pop());
 				while(data.games["g"+chatId].table[card.position]!=null){
 					data.games["g"+chatId].deck.unshift(card.number);
@@ -197,8 +198,8 @@ function jugarCarta(msg,match){
 					bot.sendMessage(chatId, "Partida finalizada!\nCrea una nueva con /crear");
 				}else{
 					data.games["g"+chatId].player =  (data.games["g"+chatId].player+1)%data.games["g"+chatId].players.length;
-					verCartas({from:{id:data.games["g"+chatId].players[data.games["g"+chatId].player]}})
-					// estado({chat:{id:chatId}});
+					estado({chat:{id:chatId}});
+					verCartas({from:{id:data.games["g"+chatId].players[data.games["g"+chatId].player]}});
 				}
 			} 
 			else{// no es el turno
