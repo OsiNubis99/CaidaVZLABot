@@ -1,8 +1,10 @@
 let configs = require('../configs/gameDefaults')
+var Card = require('./Card');
+
 class Game {
 	constructor(jugador){
 		this.owner = jugador;
-		this.deck = Game.barajar();
+		this.deck = [];
 		this.sings = [];
 		this.points = [0,0,0,0];
 		this.cards = [[],[],[],[]];
@@ -10,6 +12,7 @@ class Game {
 		this.taked = [0,0,0,0];
 		this.configs = configs;
 		this.card = null;
+		this.lastTaked = null;
 		this.player = null;
 		this.players = [];
 	}
@@ -34,17 +37,37 @@ class Game {
 	static status(data,chatId){
 		let msg
 		if(data.games["g"+chatId].player != null){
-			msg = "Jugador actual "+data.players["p"+Game.getPlayer(data.games["g"+chatId])].first_name+"(@"+data.players["p"+Game.getPlayer(data.games["g"+chatId])].username+")";
+			msg = "Mesa:"
+			let c;
+			for(c of data.games["g"+chatId].table){
+				if(c!=null)
+					msg+=" "+c.value;
+				else
+					msg+=" #";
+			}
+			msg += "\nJugador actual: "+data.players["p"+Game.getPlayer(data.games["g"+chatId])].first_name+" (@"+data.players["p"+Game.getPlayer(data.games["g"+chatId])].username+")";
+			msg += "\nLa ultima carta jugada fue: " + data.games["g"+chatId].card.value+" de "+data.games["g"+chatId].card.type+"\nJugadores:";
 			let i = 0;
 			while( i < data.games["g"+chatId].players.length){
-				msg += "\n--"+(data.games["g"+chatId].player==i?"> ":"  ")+data.players["p"+data.games["g"+chatId].players[i]].first_name+"(@"+data.players["p"+data.games["g"+chatId].players[i]].username+" ["+data.games["g"+chatId].cards[i].length+"]";
+				msg += "\n--"+(data.games["g"+chatId].player==i?"> ":"  ")+data.players["p"+data.games["g"+chatId].players[i]].first_name+"(@"+data.players["p"+data.games["g"+chatId].players[i]].username+" ["+data.games["g"+chatId].cards[i].length+"] <"+data.games["g"+chatId].points[i]+">";
 				i++;
 			}
-			msg += "\nLa ultima carta jugada fue: " + data.games["g"+chatId].card.value+" "+data.games["g"+chatId].card.type;
 		}
 		else
 			msg = "El juego aun no empieza, usa /iniciar";
 		return msg;
+	}
+
+	static repartir(chatGame){
+		if(!chatGame.deck.length)
+			chatGame.deck = Game.barajar()
+		let i = 0,card;
+		while(i<chatGame.players.length){
+			card = new Card(chatGame.deck.pop());
+			chatGame.cards[i].push(card)
+			i++;
+		}
+		return chatGame
 	}
 
 	static getKeyboard(array){

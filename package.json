@@ -5,7 +5,8 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "node --ignore 'data.json' index.js",
-		"dev": "nodemon --ignore 'data.json' index.js"
+		"dev": "nodemon --ignore 'data.json' index.js",
+		"test": "nodemon --ignore 'data.json' test.js"
 	},
 	"repository": {
 		"type": "git",

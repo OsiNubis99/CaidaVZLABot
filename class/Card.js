@@ -4,8 +4,8 @@ class Card {
 		this.position = Math.floor(number/4);
 		this.value = Math.floor(number/4) + 1;
 		this.value = this.value==8?10:this.value==9?11:this.value==10?12:this.value;
-		this.type = number%4;
-		this.type = this.type==0?"A":this.type==1?"B":this.type==2?"C":"D";
+		this.type = number%4;   
+		this.type = this.type==0?"Oro":this.type==1?"Espada":this.type==2?"Copa":"Basto";
 	}
 
 	static getType(number){

@@ -50,7 +50,7 @@ function eliminar(msg){
 	if(data.games["g"+chatId]!=null){
 		data.games["g"+chatId].players.forEach(id => {
 			data.players["p"+id].games.splice(data.players["p"+id].games.indexOf(data.players["p"+id].games.find(value=>{return value.id == chatId})),1)
-			if(data.players["p"+id].game == id)
+			if(data.players["p"+id].game == chatId)
 				data.players["p"+id].game = null
 		});
 		data.games["g"+chatId]= undefined;
@@ -80,7 +80,7 @@ function iniciar(msg){
 		if(data.games["g"+chatId].players.length > 1){
 			console.log( "Repartiendo...")
 			data.games["g"+chatId].player = 0;
-			let i,card,order="";
+			let card,order="";
 			while(data.games["g"+chatId].cards[0].length<3){
 				card = new Card(data.games["g"+chatId].deck.pop());
 				while(data.games["g"+chatId].table[card.position]!=null){
@@ -89,12 +89,7 @@ function iniciar(msg){
 				}
 				data.games["g"+chatId].table[card.position] = card;
 				order+=card.value+" ";
-				i = 0;
-				while(i<data.games["g"+chatId].players.length){
-					card = new Card(data.games["g"+chatId].deck.pop());
-					data.games["g"+chatId].cards[i].push(card)
-					i++;
-				}
+				Game.repartir(data.games["g"+chatId])
 			}
 			card = new Card(data.games["g"+chatId].deck.pop());
 			while(data.games["g"+chatId].table[card.position]!=null){
@@ -113,17 +108,147 @@ function iniciar(msg){
 	bd.write(data);
 }
 
+function JugarCarta(msg){
+	playerId = msg.from.id;
+	if(data.players["p"+playerId].game){
+		chatId = data.players["p"+playerId].game;
+		if(data.games["g"+chatId].player != null){
+			if(Game.getPlayer(data.games["g"+chatId])==playerId){// si es el turno
+				card = data.games["g"+chatId].cards[data.games["g"+chatId].player].splice(msg.id,1)[0]
+				if(data.games["g"+chatId].table[card.position]==null){
+					data.games["g"+chatId].table[card.position] = card;
+				}else{
+					data.games["g"+chatId].lastTaked = data.games["g"+chatId].player;
+					if(data.games["g"+chatId].card.value==card.value&&data.games["g"+chatId].table[card.position]!=null){
+						data.games["g"+chatId].points[data.games["g"+chatId].player]+=card.value==10?2:card.value==11?3:card.value==12?4:1;
+						console.log( "Caidoooo")
+					}
+					let i = card.position;
+					while(i<10 && data.games["g"+chatId].table[i]!=null){
+						data.games["g"+chatId].taked[data.games["g"+chatId].player]++;
+						data.games["g"+chatId].table[i] = null;
+						i++;
+					}
+					i=0;
+					while(i<10 && data.games["g"+chatId].table[i]==null){
+						i++;
+					}
+					if(i==10){
+						console.log( "mesa limpia")
+						data.games["g"+chatId].points[data.games["g"+chatId].player]+=4;
+					}
+				}
+				data.games["g"+chatId].card = card;
+				if(!((data.games["g"+chatId].player+1)%data.games["g"+chatId].players.length) && !data.games["g"+chatId].cards[0].length){
+					if(!data.games["g"+chatId].deck.length){
+						let j=0,i=0;
+						while(i<10){
+							if(data.games["g"+chatId].table[i]!=null){
+								data.games["g"+chatId].table[i] = null;
+								j++;
+							}
+							i++;
+						}
+						if(data.games["g"+chatId].lastTaked != null){
+							data.games["g"+chatId].taked[data.games["g"+chatId].lastTaked] += j;
+						}else{
+							data.games["g"+chatId].taked[data.games["g"+chatId].players.length-1] += j;
+						}
+						console.log( "Repartiendo...")
+						let card,order="";
+						data.games["g"+chatId].card = null;
+						while(data.games["g"+chatId].cards[0].length<3){
+							card = new Card(data.games["g"+chatId].deck.pop());
+							while(data.games["g"+chatId].table[card.position]!=null){
+								data.games["g"+chatId].deck.unshift(card.number);
+								card = new Card(data.games["g"+chatId].deck.pop());
+							}
+							data.games["g"+chatId].table[card.position] = card;
+							order+=card.value+" ";
+							Game.repartir(data.games["g"+chatId],true)
+						}
+						card = new Card(data.games["g"+chatId].deck.pop());
+						while(data.games["g"+chatId].table[card.position]!=null){
+							data.games["g"+chatId].deck.unshift(card);
+							card = new Card(data.games["g"+chatId].deck.pop());
+						}
+						data.games["g"+chatId].table[card.position] = card;
+						data.games["g"+chatId].card = card;
+						order+=card.value+" ";
+						console.log( "Jugador actual "+data.players["p"+Game.getPlayer(data.games["g"+chatId])].first_name+"(@"+data.players["p"+Game.getPlayer(data.games["g"+chatId])].username+")\nMesa: "+order);
+					}else{
+						let i = 0
+						while(i < 3){
+							Game.repartir(data.games["g"+chatId]);
+							i++;
+						}
+					}
+				}
+				if(data.games["g"+chatId].points[data.games["g"+chatId].player]>23){
+					console.log( "Gano: "+data.players["p"+playerId].first_name+" (@"+data.players["p"+playerId].username+")")
+					data.games["g"+chatId].players.forEach(id => {
+						data.players["p"+id].games.splice(data.players["p"+id].games.indexOf(data.players["p"+id].games.find(value=>{return value.id == chatId})),1)
+						if(data.players["p"+id].game == chatId)
+							data.players["p"+id].game = null
+					});
+					data.games["g"+chatId]= undefined;
+					console.log( "Partida finalizada!\nCrea una nueva con /crear");
+				}else{
+					data.games["g"+chatId].player =  (data.games["g"+chatId].player+1)%data.games["g"+chatId].players.length;
+					VerCartas({from:{id:data.games["g"+chatId].players[data.games["g"+chatId].player]}})
+					// estado({chat:{id:chatId}});
+				}
+			} 
+			else{// no es el turno
+				estado({chat:{id:chatId}});
+			}
+		}else{// aun no empieza la partida
+		}
+	}else{// no se ha unido a algun juego
+	}
+	bd.write(data);
+}
+
+function VerCartas(msg){
+	playerId = msg.from.id;
+	chatId = playerId;
+	if(data.players["p"+playerId].game!=null){
+		if(data.games["g"+data.players["p"+playerId].game].player!=null){
+			let resp = "Tus cartas son:",i=0;
+			for(c of data.games["g"+data.players["p"+playerId].game].cards[data.games["g"+data.players["p"+playerId].game].players.indexOf(playerId)]){
+				resp+="\n"+i+": "+c.value;
+				i++;
+			}
+			console.log( resp)
+		}else{
+			console,log( "El juego aun no empieza")
+		}
+	}else{
+		console.log( "No se ha unido a algun juego")
+	}
+}
+
 // eliminar({chat:{id:12532561}})
 // eliminar({chat:{id:12532562}})
-eliminar({chat:{id:12532563}})
-crear({chat:{id:12532563},from:{id:1528475655}})
+// eliminar({chat:{id:12532563}})
+// JugarCarta({id:0,from:{id:1528475655}})
+// crear({chat:{id:12532563},from:{id:1528475655}})
+// JugarCarta({id:0,from:{id:1528475655}})
 // crear({chat:{id:12532562},from:{id:1528475655}})
 // eliminar({chat:{id:12532562}})
 // crear({chat:{id:12532561},from:{id:1528475655}})
-unirse({chat:{id:12532563},from:{id:1528475655,first_name:"Andresito",username:"OsiNubis99"}})
+// unirse({chat:{id:12532563},from:{id:1528475655,first_name:"Andresito",username:"OsiNubis99"}})
+// JugarCarta({id:0,from:{id:1528475655}})
 // unirse({chat:{id:12532561},from:{id:1528475655,first_name:"Andresito",username:"OsiNubis99"}})
-unirse({chat:{id:12532563},from:{id:2865565235,first_name:"Mafercita",username:"MafeerLourenco"}})
+// unirse({chat:{id:12532563},from:{id:2865565235,first_name:"Mafercita",username:"MafeerLourenco"}})
 // unirse({chat:{id:12532561},from:{id:2865565235,first_name:"Mafercita",username:"MafeerLourenco"}})
 // reiniciar({chat:{id:12532561},from:{id:1528475655}})
-iniciar({chat:{id:12532563}})
+// iniciar({chat:{id:12532563}})
+JugarCarta({id:0,from:{id:1528475655}})
+JugarCarta({id:0,from:{id:2865565235}})
+// JugarCarta({id:0,from:{id:1528475655}})
+// JugarCarta({id:0,from:{id:2865565235}})
+// JugarCarta({id:0,from:{id:1528475655}})
+// JugarCarta({id:0,from:{id:2865565235}})
 estado({chat:{id:12532563}})
+// VerCartas({from:{id:1528475655}})
