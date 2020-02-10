@@ -1,0 +1,27 @@
+{
+	"name": "caidavzlabot",
+	"version": "1.0.0",
+	"description": "Juego Ronda o Caida venezolana para Telegram",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js",
+		"test": "nodemon --ignore 'data.json' test.js",
+		"dev": "nodemon --ignore 'data.json' index.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/OsiNubis99/CaidaVZLABot.git"
+	},
+	"author": "OsiNubis99",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/OsiNubis99/CaidaVZLABot/issues"
+	},
+	"homepage": "https://github.com/OsiNubis99/CaidaVZLABot#readme",
+	"dependencies": {
+		"node-telegram-bot-api": "^0.40.0"
+	},
+	"devDependencies": {
+		"nodemon": "^2.0.1"
+	}
+}
