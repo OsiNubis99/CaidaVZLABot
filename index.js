@@ -9,6 +9,8 @@ var groups = ['-1001432406771', '-358611014']
 
 let data = bd.read();
 
+
+
 bot.on("inline_query", query => {
 	let playerId = query.from.id;
 	if (data.players["p" + playerId].game != null) {
