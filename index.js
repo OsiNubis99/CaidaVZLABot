@@ -258,6 +258,7 @@ function crear(msg) {
 	if (fake) {
 		if (data.games["g" + chatId] == null) {
 			data.games["g" + chatId] = new Game(msg.from.id);
+			console.log("Juego creado en: " + chatId)
 			bot.sendMessage(chatId, "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar");
 		} else
 			bot.sendMessage(chatId, "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar");
@@ -285,6 +286,7 @@ function eliminar(msg) {
 			}
 		});
 		data.games["g" + chatId] = undefined;
+		console.log("Juego eliminado en: " + chatId)
 		bot.sendMessage(chatId, "Partida eliminada!\nCrea una nueva con /crear");
 	} else {
 		bot.sendMessage(chatId, "La partida no esta creada!\nCrea una con /crear");
@@ -305,6 +307,7 @@ function reiniciar(msg) {
 		});
 	}
 	data.games["g" + chatId] = new Game(msg.from.id);
+	console.log("Juego reiniciado en: " + chatId)
 	bot.sendMessage(chatId, "La partida ha sido reiniciada!\nPueden unirse con /unirse");
 	bd.write(data);
 }
@@ -646,6 +649,7 @@ function puedeSeguir(chatId) {
 			bot.sendMessage(chatId, "Partida finalizada!\nGano: " + data.players["p" + data.games["g" + chatId].players[1]].first_name + " (@" + data.players["p" + data.games["g" + chatId].players[1]].username + ")" +
 				(data.games["g" + chatId].head == 3 ? "\n y " + data.players["p" + data.games["g" + chatId].players[3]].first_name + " (@" + data.players["p" + data.games["g" + chatId].players[3]].username + ")" : ""))
 		}
+		console.log("Juego finalizado en: " + chatId)
 		bot.sendMessage(chatId, Game.status(data, chatId, false))
 		data.games["g" + chatId].players.forEach(id => {
 			data.players["p" + id].games.splice(data.players["p" + id].games.indexOf(data.players["p" + id].games.find(value => {
