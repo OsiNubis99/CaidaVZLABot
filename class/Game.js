@@ -83,6 +83,9 @@ class Game {
 		while (i < chatGame.players.length) {
 			card = new Card(chatGame.deck.pop());
 			chatGame.cards[i].push(card)
+			chatGame.cards[i].sort((a, b) => {
+				return a.position <= b.position ? 1 : -1
+			});
 			i++;
 		}
 	}

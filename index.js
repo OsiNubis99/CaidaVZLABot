@@ -118,7 +118,6 @@ bot.on("inline_query", query => {
 				];
 			}
 			let i = 0;
-			chatId
 			for (c of data.games["g" + chatId].cards[data.games["g" + chatId].players.indexOf(playerId)]) {
 				base.unshift({
 					id: i,
