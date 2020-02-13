@@ -499,7 +499,7 @@ function BarajarYRepartir(chatId) {
     resp += "Pegaron " + points + " en mesa\n";
   } else {
     data.games["g" + chatId].points[0] += 1;
-    resp += "+1 por Mal Echada\n";
+    resp += "Mal Echada\n";
   }
   resp +=
     order[0] + " -> " + order[1] + " -> " + order[2] + " -> " + order[3] + "\n";
@@ -731,7 +731,7 @@ function jugarCarta(msg, match) {
               i++;
             }
             if (!data.games["g" + chatId].deck.length) {
-              respuesta += "Ultimas!!!\n";
+              respuesta += "#ULTIMAS!!!\n";
               data.games["g" + chatId].lastOne = true;
             }
           } else {
@@ -895,7 +895,6 @@ function pasar(msg) {
     if (data.games["g" + chatId].owner == msg.from.id) {
       let player = data.games["g" + chatId].player
       let number = Math.round(Math.random() * 1000) % data.games["g" + chatId].cards[player].length;
-      bot.sendMessage(chatId, "Jugare la carta " + (number + 1) + ".");
       jugarCarta({
           from: {
             id: data.games["g" + chatId].players[player]
