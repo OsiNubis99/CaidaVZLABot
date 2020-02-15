@@ -20,6 +20,7 @@
 </p>
 
 <!-- TABLE OF CONTENTS -->
+<<<<<<< HEAD
 
 ## Table of Contents
 
@@ -37,6 +38,22 @@
 
 <!-- CONTRIBUTING -->
 
+=======
+## Table of Contents
+
+* [Built With](#built-with)
+* [Roadmap](#roadmap)
+* [Contributing](#contributing)
+* [License](#license)
+* [Contact](#contact)
+
+## Built With
+* [Dart](https://dart.dev/)
+* [Telegram Bot Api](https://core.telegram.org/bots/api)
+* [TeleDart](https://github.com/DinoLeung/TeleDart)
+
+<!-- CONTRIBUTING -->
+>>>>>>> 00939f72c5bbaaf62344526911c6a19dbbe52ce0
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -47,21 +64,32 @@ Contributions are what make the open source community such an amazing place to b
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+<<<<<<< HEAD
 <!-- LICENSE -->
 
+=======
+
+<!-- LICENSE -->
+>>>>>>> 00939f72c5bbaaf62344526911c6a19dbbe52ce0
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 <!-- CONTACT -->
+<<<<<<< HEAD
 
+=======
+>>>>>>> 00939f72c5bbaaf62344526911c6a19dbbe52ce0
 ## Contact
 
 Andres Hurtado - [@OsiNubis99](https://twitter.com/OsiNubis99) - OsiNubis99@gmail.com.com
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+<<<<<<< HEAD
 
+=======
+>>>>>>> 00939f72c5bbaaf62344526911c6a19dbbe52ce0
 [contributors-shield]: https://img.shields.io/github/contributors/OsiNubis99/CaidaVZLABot.svg?style=flat-square
 [contributors-url]: https://github.com/OsiNubis99/CaidaVZLABot/graphs/contributors
 [issues-shield]: https://img.shields.io/github/issues/OsiNubis99/CaidaVZLABot.svg?style=flat-square
