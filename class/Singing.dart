@@ -1,7 +1,7 @@
 /// Functional imports
+import 'package:teledart/model.dart' as telegram;
 import 'Card.dart';
 import 'Chants.dart';
-import 'package:teledart/model.dart';
 
 /// Singing Object and validations methods
 class Singing {
@@ -121,89 +121,89 @@ class Singing {
   }
 
   ///  Returns all InlineQueryResultArticle objects
-  List<InlineQueryResultArticle> allChants(Chants configs) {
+  List<telegram.InlineQueryResultArticle> allChants(Chants configs) {
     var response = [];
     if (configs.ronda > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Ronda',
           title: 'Ronda',
           type: 'article',
           description: 'Dos cartas iguales \nValor:${configs.ronda}',
           input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Ronda')));
+              telegram.InputTextMessageContent(message_text: 'Tengo Ronda')));
     } else if (configs.chiguire > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Chiguire',
           type: 'article',
           title: 'Chiguire',
           description: 'Escalera Par o no par \nValor:${configs.chiguire}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Chiguire')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Chiguire')));
     } else if (configs.patrulla > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Patrulla',
           type: 'article',
           title: 'Patrulla',
           description: 'Escalera \nValor:${configs.patrulla}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Patrulla')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Patrulla')));
     } else if (configs.vigia > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Vigía',
           title: 'Vigía',
           type: 'article',
           input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Vigía'),
+              telegram.InputTextMessageContent(message_text: 'Tengo Vigía'),
           description:
               'Dos cartas iguales y una mayor o menor en una unidad \nValor:${configs.vigia}'));
     } else if (configs.registro > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Registro',
           type: 'article',
           title: 'Registro',
           description: '1 11 12 \nValor:${configs.registro}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Registro')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Registro')));
     } else if (configs.maguaro > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Maguaro',
           type: 'article',
           title: 'Maguaro',
           description: '1 10 12 \nValor:${configs.maguaro}',
           input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Maguaro')));
+              telegram.InputTextMessageContent(message_text: 'Tengo Maguaro')));
     } else if (configs.registrico > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Registrico',
           type: 'article',
           title: 'Registrico',
           description: '1 10 11 \nValor:${configs.registrico}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Registrico')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Registrico')));
     } else if (configs.chica > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Casa Chica',
           type: 'article',
           title: 'Casa Chica',
           description: '1 1 12 \nValor:${configs.chica}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Casa Chica')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Casa Chica')));
     } else if (configs.grande > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Casa Grande',
           type: 'article',
           title: 'Casa Grande',
           description: '1 12 12 \nValor:${configs.grande}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Casa Grande')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Casa Grande')));
     } else if (configs.trivilin > 0) {
-      response.add(InlineQueryResultArticle(
+      response.add(telegram.InlineQueryResultArticle(
           id: 'Trivilin',
           type: 'article',
           title: 'Trivilin',
           description: 'Tres cartas iguales \nValor:${configs.trivilin}',
-          input_message_content:
-              InputTextMessageContent(message_text: 'Tengo Trivilin')));
+          input_message_content: telegram.InputTextMessageContent(
+              message_text: 'Tengo Trivilin')));
     }
     return response;
   }
