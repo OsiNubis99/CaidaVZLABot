@@ -1,166 +1,150 @@
-/**
- * MIT License
- * 
- * Copyright (c) 2019 Andres David Hurtado Fernandez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 // Functional imports
 import 'Chants.dart';
 
-/** Game configs object */
+// Game configs object
 class Config {
-  Chants chants;
-  int start;
   int end;
+  int start;
+  bool show;
   bool killTable;
 
-  /** Create a Default Config object */
+  Chants chants;
+
+  // Create a Default Config object
   Config() {
-    this.resetChants();
-    this.start = 4;
-    this.end = 24;
-    this.killTable = true;
+    end = 24;
+    start = 4;
+    show = true;
+    killTable = true;
+    resetChants();
   }
 
-  /** returns the modification value */
+  // returns the modification value
   int increaseValue(int value, bool fast, int limit) {
     value += (fast ? 10 : 1);
     if (value > limit) {
-      this.end = limit;
+      end = limit;
     }
     return value;
   }
 
-  /** returns the modification value */
+  // returns the modification value
   int decreaseValue(int value, bool fast, int limit) {
     value -= (fast ? 10 : 1);
     if (value < limit) {
-      this.end = limit;
+      end = limit;
     }
     return value;
   }
 
-  /** Increase to Singing value */
+  // Increase to Singing value
   void increaseSinging(String singing, bool fast) {
     switch (singing) {
-      case "Ronda":
-        this.chants.ronda = increaseValue(this.chants.ronda, fast, 100);
+      case 'Ronda':
+        chants.ronda = increaseValue(chants.ronda, fast, 100);
         break;
-      case "Chiguire":
-        this.chants.chiguire = increaseValue(this.chants.chiguire, fast, 100);
+      case 'Chiguire':
+        chants.chiguire = increaseValue(chants.chiguire, fast, 100);
         break;
-      case "Patrulla":
-        this.chants.patrulla = increaseValue(this.chants.patrulla, fast, 100);
+      case 'Patrulla':
+        chants.patrulla = increaseValue(chants.patrulla, fast, 100);
         break;
-      case "Vigía":
-        this.chants.vigia = increaseValue(this.chants.vigia, fast, 100);
+      case 'Vigía':
+        chants.vigia = increaseValue(chants.vigia, fast, 100);
         break;
-      case "Registro":
-        this.chants.registro = increaseValue(this.chants.registro, fast, 100);
+      case 'Registro':
+        chants.registro = increaseValue(chants.registro, fast, 100);
         break;
-      case "Maguaro":
-        this.chants.maguaro = increaseValue(this.chants.maguaro, fast, 100);
+      case 'Maguaro':
+        chants.maguaro = increaseValue(chants.maguaro, fast, 100);
         break;
-      case "Registrico":
-        this.chants.registrico =
-            increaseValue(this.chants.registrico, fast, 100);
+      case 'Registrico':
+        chants.registrico = increaseValue(chants.registrico, fast, 100);
         break;
-      case "Casa Chica":
-        this.chants.chica = increaseValue(this.chants.chica, fast, 100);
+      case 'Casa Chica':
+        chants.chica = increaseValue(chants.chica, fast, 100);
         break;
-      case "Casa Grande":
-        this.chants.grande = increaseValue(this.chants.grande, fast, 100);
+      case 'Casa Grande':
+        chants.grande = increaseValue(chants.grande, fast, 100);
         break;
-      case "Trivilin":
-        this.chants.trivilin = increaseValue(this.chants.trivilin, fast, 100);
+      case 'Trivilin':
+        chants.trivilin = increaseValue(chants.trivilin, fast, 100);
         break;
     }
   }
 
-  /** Decrease to Singing value */
+  // Decrease to Singing value
   void decreaseSinging(String singing, bool fast) {
     switch (singing) {
-      case "Ronda":
-        this.chants.ronda = decreaseValue(this.chants.ronda, fast, 0);
+      case 'Ronda':
+        chants.ronda = decreaseValue(chants.ronda, fast, 0);
         break;
-      case "Chiguire":
-        this.chants.chiguire = decreaseValue(this.chants.chiguire, fast, 0);
+      case 'Chiguire':
+        chants.chiguire = decreaseValue(chants.chiguire, fast, 0);
         break;
-      case "Patrulla":
-        this.chants.patrulla = decreaseValue(this.chants.patrulla, fast, 0);
+      case 'Patrulla':
+        chants.patrulla = decreaseValue(chants.patrulla, fast, 0);
         break;
-      case "Vigía":
-        this.chants.vigia = decreaseValue(this.chants.vigia, fast, 0);
+      case 'Vigía':
+        chants.vigia = decreaseValue(chants.vigia, fast, 0);
         break;
-      case "Registro":
-        this.chants.registro = decreaseValue(this.chants.registro, fast, 0);
+      case 'Registro':
+        chants.registro = decreaseValue(chants.registro, fast, 0);
         break;
-      case "Maguaro":
-        this.chants.maguaro = decreaseValue(this.chants.maguaro, fast, 0);
+      case 'Maguaro':
+        chants.maguaro = decreaseValue(chants.maguaro, fast, 0);
         break;
-      case "Registrico":
-        this.chants.registrico = decreaseValue(this.chants.registrico, fast, 0);
+      case 'Registrico':
+        chants.registrico = decreaseValue(chants.registrico, fast, 0);
         break;
-      case "Casa Chica":
-        this.chants.chica = decreaseValue(this.chants.chica, fast, 0);
+      case 'Casa Chica':
+        chants.chica = decreaseValue(chants.chica, fast, 0);
         break;
-      case "Casa Grande":
-        this.chants.grande = decreaseValue(this.chants.grande, fast, 0);
+      case 'Casa Grande':
+        chants.grande = decreaseValue(chants.grande, fast, 0);
         break;
-      case "Trivilin":
-        this.chants.trivilin = decreaseValue(this.chants.trivilin, fast, 0);
+      case 'Trivilin':
+        chants.trivilin = decreaseValue(chants.trivilin, fast, 0);
         break;
     }
   }
 
-  /** Increase and return the End value */
+  // Increase and return the End value
   int increaseEnd(bool fast) {
-    this.end = increaseValue(this.end, fast, 100);
-    return this.end;
+    end = increaseValue(end, fast, 100);
+    return end;
   }
 
-  /** Decrease and return the End value */
+  // Decrease and return the End value
   int decreaseEnd(bool fast) {
-    this.end = decreaseValue(this.end, fast, 24);
-    return this.end;
+    end = decreaseValue(end, fast, 24);
+    return end;
   }
 
-  /** Exchange the available values to Start and return the new one */
+  // Exchange the available values to Start and return the new one
   int changeStart() {
-    if (this.start == 4) {
-      this.start = 1;
+    if (start == 4) {
+      start = 1;
     } else {
-      this.start = 4;
+      start = 4;
     }
-    return this.start;
+    return start;
   }
 
-  /** Exchange the available values to KilTable and return the new one */
+  // Exchange the available values to Show and return the new one
+  bool changeShow() {
+    show = !show;
+    return show;
+  }
+
+  // Exchange the available values to KilTable and return the new one
   bool changeKillTable() {
-    this.killTable = !this.killTable;
-    return this.killTable;
+    killTable = !killTable;
+    return killTable;
   }
 
-  /** Set the Chants Default value */
+  // Set the Chants Default value
   void resetChants() {
-    this.chants = new Chants(1, 5, 6, 7, 8, 9, 10, 11, 12, 24);
+    chants = Chants(1, 5, 6, 7, 8, 9, 10, 11, 12, 24);
   }
 }

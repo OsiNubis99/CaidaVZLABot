@@ -1,52 +1,84 @@
-/**
- * MIT License
- * 
- * Copyright (c) 2019 Andres David Hurtado Fernandez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// This Class have all cards methods
+import 'dart:math';
 
-/** This Class have all cards methods */
 class Card {
-  /** Return the card Value */
-  int cardValue(int card) {
+  static List<int> barajar() {
+    var array = [
+      11,
+      10,
+      38,
+      19,
+      25,
+      18,
+      14,
+      2,
+      5,
+      39,
+      8,
+      15,
+      29,
+      24,
+      30,
+      1,
+      12,
+      16,
+      9,
+      35,
+      22,
+      32,
+      6,
+      4,
+      0,
+      27,
+      37,
+      17,
+      28,
+      33,
+      21,
+      3,
+      23,
+      34,
+      20,
+      7,
+      31,
+      36,
+      26,
+      13
+    ];
+    var currentIndex = 39, temporaryValue, randomIndex;
+    while (currentIndex >= 0) {
+      randomIndex = Random(currentIndex).nextInt(39);
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+      currentIndex -= 1;
+    }
+    return array;
+  }
+
+  // Return the card Value
+  static int value(int card) {
     var number = card ~/ 4;
     number = number == 9 ? 4 : number == 8 ? 3 : number == 7 ? 2 : 1;
     return number;
   }
 
-  /** Return the card Position in the table */
-  int cardPosition(int card) {
+  // Return the card Position in the table
+  static int position(int card) {
     return (card ~/ 4) + 1;
   }
 
-  /** Return the card Number */
-  int cardNumber(int card) {
+  // Return the card Number
+  static int number(int card) {
     var number = (card ~/ 4) + 1;
     return number == 8 ? 10 : number == 9 ? 11 : number == 10 ? 12 : number;
   }
 
-  /** Return the card Type */
-  String cardType(int card) {
+  // Return the card Type
+  static String type(int card) {
     var type = card % 4;
     return type == 0
-        ? "Oro"
-        : type == 1 ? "Copa" : type == 2 ? "Espada" : "Basto";
+        ? 'Oro'
+        : type == 1 ? 'Copa' : type == 2 ? 'Espada' : 'Basto';
   }
 }

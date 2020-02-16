@@ -1,17 +1,17 @@
-/** Dart imports */
+// Dart imports
 import 'dart:io' as io;
 
-/** Bot imports */
+//  Bot imports
 import 'package:teledart/teledart.dart';
 import 'package:teledart/telegram.dart';
 import 'package:teledart/model.dart';
 
-/** Bot Api Example */
+// Bot Api Example
 void main(List<String> args) {
   // final envVars = io.Platform.environment;
   if (args.isEmpty) {
-    print("Es Ncesario El Bot Token!\n" +
-        "You can create a runBot.sh file whit your token.");
+    print('Es Ncesario El Bot Token!\n'
+        'You can create a runBot.sh file whit your token.');
     io.exit(0);
   }
   final token = args[0];
