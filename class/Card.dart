@@ -2,7 +2,7 @@
 import 'dart:math';
 
 class Card {
-  static List<int> barajar() {
+  static List<int> shuffling() {
     var array = [
       11,
       10,
