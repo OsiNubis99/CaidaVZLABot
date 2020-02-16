@@ -1,9 +1,9 @@
-// Functional imports
+/// Functional imports
 import 'Card.dart';
 import 'Chants.dart';
 import 'package:teledart/model.dart';
 
-// Singing Object and validations methods
+/// Singing Object and validations methods
 class Singing {
   int value;
   bool alive;
@@ -15,7 +15,7 @@ class Singing {
     alive = true;
   }
 
-  //  Returns the name and value of the Chant
+  ///  Returns the name and value of the Chant
   void getChant(List<int> cards, Chants configs) {
     if (configs.trivilin > 0 && isTrivilin(cards)) {
       value = configs.trivilin;
@@ -53,25 +53,25 @@ class Singing {
     }
   }
 
-  //  Validations for the Ronda Chant
+  ///  Validations for the Ronda Chant
   bool isRonda(List<int> cards) {
     return (Card.number(cards[0]) == Card.number(cards[1]) ||
         Card.number(cards[1]) == Card.number(cards[2]));
   }
 
-  //  Validations for the Chiguire Chant
+  ///  Validations for the Chiguire Chant
   bool isChiguire(List<int> cards) {
     return (Card.position(cards[2]) == (Card.position(cards[1]) + 2) &&
         Card.position(cards[1]) == (Card.position(cards[0]) + 2));
   }
 
-  //  Validations for the Patrulla Chant
+  ///  Validations for the Patrulla Chant
   bool isPatrulla(List<int> cards) {
     return (Card.position(cards[2]) == (Card.position(cards[1]) + 1) &&
         Card.position(cards[1]) == (Card.position(cards[0]) + 1));
   }
 
-  //  Validations for the Vigia Chant
+  ///  Validations for the Vigia Chant
   bool isVigia(List<int> cards) {
     return ((Card.position(cards[2]) == (Card.position(cards[1]) + 1) &&
             Card.position(cards[1]) == Card.position(cards[0])) ||
@@ -79,48 +79,48 @@ class Singing {
             Card.position(cards[1]) == Card.position(cards[2])));
   }
 
-  //  Validations for the Registro Chant
+  ///  Validations for the Registro Chant
   bool isRegistro(List<int> cards) {
     return (Card.number(cards[0]) == 1 &&
         Card.number(cards[1]) == 11 &&
         Card.number(cards[2]) == 12);
   }
 
-  //  Validations for the Maguaro Chant
+  ///  Validations for the Maguaro Chant
   bool isMaguaro(List<int> cards) {
     return (Card.number(cards[0]) == 1 &&
         Card.number(cards[1]) == 10 &&
         Card.number(cards[2]) == 12);
   }
 
-  //  Validations for the Registrico Chant
+  ///  Validations for the Registrico Chant
   bool isRegistrico(List<int> cards) {
     return (Card.number(cards[0]) == 1 &&
         Card.number(cards[1]) == 10 &&
         Card.number(cards[2]) == 11);
   }
 
-  //  Validations for the Casa Chica Chant
+  ///  Validations for the Casa Chica Chant
   bool isChica(List<int> cards) {
     return (Card.number(cards[0]) == 1 &&
         Card.number(cards[1]) == 1 &&
         Card.number(cards[2]) == 12);
   }
 
-  //  Validations for the Casa Grande Chant
+  ///  Validations for the Casa Grande Chant
   bool isGrande(List<int> cards) {
     return (Card.number(cards[0]) == 1 &&
         Card.number(cards[1]) == 12 &&
         Card.number(cards[2]) == 12);
   }
 
-  //  Validations for the Trivilin Chant
+  ///  Validations for the Trivilin Chant
   bool isTrivilin(List<int> cards) {
     return (Card.number(cards[0]) == Card.number(cards[1]) &&
         Card.number(cards[1]) == Card.number(cards[2]));
   }
 
-  //  Returns all InlineQueryResultArticle objects
+  ///  Returns all InlineQueryResultArticle objects
   List<InlineQueryResultArticle> allChants(Chants configs) {
     var response = [];
     if (configs.ronda > 0) {

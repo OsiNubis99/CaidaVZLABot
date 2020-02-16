@@ -1,4 +1,4 @@
-// This Class have all cards methods
+/// This Class have all cards methods
 import 'dart:math';
 
 class Card {
@@ -56,25 +56,25 @@ class Card {
     return array;
   }
 
-  // Return the card Value
+  /// Return the card Value
   static int value(int card) {
     var number = card ~/ 4;
     number = number == 9 ? 4 : number == 8 ? 3 : number == 7 ? 2 : 1;
     return number;
   }
 
-  // Return the card Position in the table
+  /// Return the card Position in the table
   static int position(int card) {
     return (card ~/ 4) + 1;
   }
 
-  // Return the card Number
+  /// Return the card Number
   static int number(int card) {
     var number = (card ~/ 4) + 1;
     return number == 8 ? 10 : number == 9 ? 11 : number == 10 ? 12 : number;
   }
 
-  // Return the card Type
+  /// Return the card Type
   static String type(int card) {
     var type = card % 4;
     return type == 0

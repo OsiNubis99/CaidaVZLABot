@@ -1,4 +1,4 @@
-// This object has all Chants available in the game
+/// This object has all Chants available in the game
 class Chants {
   int ronda;
   int chiguire;
@@ -11,7 +11,7 @@ class Chants {
   int grande;
   int trivilin;
 
-  // Set a value to all Chants
+  /// Set a value to all Chants
   Chants(int ronda, int chiguire, int patrulla, int vigia, int registro,
       int maguaro, int registrico, int chica, int grande, int trivilin) {
     this.ronda = ronda;

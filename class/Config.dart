@@ -1,7 +1,7 @@
-// Functional imports
+/// Functional imports
 import 'Chants.dart';
 
-// Game configs object
+/// Game configs object
 class Config {
   int end;
   int start;
@@ -10,7 +10,7 @@ class Config {
 
   Chants chants;
 
-  // Create a Default Config object
+  /// Create a Default Config object
   Config() {
     end = 24;
     start = 4;
@@ -19,7 +19,7 @@ class Config {
     resetChants();
   }
 
-  // returns the modification value
+  /// returns the modification value
   int increaseValue(int value, bool fast, int limit) {
     value += (fast ? 10 : 1);
     if (value > limit) {
@@ -28,7 +28,7 @@ class Config {
     return value;
   }
 
-  // returns the modification value
+  /// returns the modification value
   int decreaseValue(int value, bool fast, int limit) {
     value -= (fast ? 10 : 1);
     if (value < limit) {
@@ -37,7 +37,7 @@ class Config {
     return value;
   }
 
-  // Increase to Singing value
+  /// Increase to Singing value
   void increaseSinging(String singing, bool fast) {
     switch (singing) {
       case 'Ronda':
@@ -73,7 +73,7 @@ class Config {
     }
   }
 
-  // Decrease to Singing value
+  /// Decrease to Singing value
   void decreaseSinging(String singing, bool fast) {
     switch (singing) {
       case 'Ronda':
@@ -109,19 +109,19 @@ class Config {
     }
   }
 
-  // Increase and return the End value
+  /// Increase and return the End value
   int increaseEnd(bool fast) {
     end = increaseValue(end, fast, 100);
     return end;
   }
 
-  // Decrease and return the End value
+  /// Decrease and return the End value
   int decreaseEnd(bool fast) {
     end = decreaseValue(end, fast, 24);
     return end;
   }
 
-  // Exchange the available values to Start and return the new one
+  /// Exchange the available values to Start and return the new one
   int changeStart() {
     if (start == 4) {
       start = 1;
@@ -131,19 +131,19 @@ class Config {
     return start;
   }
 
-  // Exchange the available values to Show and return the new one
+  /// Exchange the available values to Show and return the new one
   bool changeShow() {
     show = !show;
     return show;
   }
 
-  // Exchange the available values to KilTable and return the new one
+  /// Exchange the available values to KilTable and return the new one
   bool changeKillTable() {
     killTable = !killTable;
     return killTable;
   }
 
-  // Set the Chants Default value
+  /// Set the Chants Default value
   void resetChants() {
     chants = Chants(1, 5, 6, 7, 8, 9, 10, 11, 12, 24);
   }
