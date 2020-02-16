@@ -4,7 +4,10 @@
 build/
 pubspec.lock
 
-#Console Run 
+# Editor
+.vscode
+
+# Console Run 
 runBot.sh
 
 # Directory created by dartdoc
