@@ -11,7 +11,7 @@
   <p align="center">
     Telegram bot from the game 'Caida Venezolana'
     <br />
-    <a href="https:/">View Demo</a>
+    <a href="https://t.me/JuegaCaidaVZLA">View Demo</a>
   ~
     <a href="https://github.com/OsiNubis99/CaidaVZLABot/issues">Report Bug</a>
   ~
