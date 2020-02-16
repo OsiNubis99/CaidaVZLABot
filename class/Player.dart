@@ -12,7 +12,6 @@ class Player {
   String name;
   String username;
   List<int> cards;
-
   Game game;
   Singing singing;
 
@@ -39,6 +38,9 @@ class Player {
     response += '\n';
     return response;
   }
+
+// TODO playCard method
+// TODO singing method
 
   /// Search and set the Singing
   void autoSinging(Chants config) {
