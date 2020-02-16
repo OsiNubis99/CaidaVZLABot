@@ -1,7 +1,6 @@
 /// Functional imports
 import 'package:teledart/model.dart' as telegram;
 import 'Card.dart';
-import 'Game.dart';
 import 'Chants.dart';
 import 'Singing.dart';
 
@@ -10,15 +9,15 @@ class Player {
   int taken;
   String id;
   String name;
+  String game_id;
   String username;
   List<int> cards;
-  Game game;
   Singing singing;
 
   /// Set player personal data and initialize player game data
-  Player(telegram.User user, Game game) {
+  Player(telegram.User user, telegram.Chat game) {
     id = user.id.toString();
-    this.game = game;
+    game_id = game.id.toString();
     updateData(user);
     deleteGame();
   }
@@ -39,7 +38,6 @@ class Player {
     return response;
   }
 
-// TODO playCard method
 // TODO singing method
 
   /// Search and set the Singing
