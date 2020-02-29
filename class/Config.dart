@@ -7,7 +7,7 @@ class Config {
   int start;
   bool show;
   bool killTable;
-
+  String dealMode;
   Chants chants;
 
   /// Create a Default Config object
@@ -15,6 +15,7 @@ class Config {
     end = 24;
     start = 4;
     show = true;
+    dealMode = 'Basic';
     killTable = true;
     resetChants();
   }
@@ -119,6 +120,21 @@ class Config {
   int decreaseEnd(bool fast) {
     end = decreaseValue(end, fast, 24);
     return end;
+  }
+
+  // Set this dealMode to allFirst, allEnd or Basic
+  String setDealMode(String mode) {
+    switch (mode) {
+      case 'allFirst':
+        dealMode = 'allFirst';
+        break;
+      case 'allEnd':
+        dealMode = 'allEnd';
+        break;
+      default:
+        dealMode = 'Basic';
+    }
+    return dealMode;
   }
 
   /// Exchange the available values to Start and return the new one
