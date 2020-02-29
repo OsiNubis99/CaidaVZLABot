@@ -3,6 +3,7 @@ include: package:pedantic/analysis_options.yaml
 analyzer:
   exclude:
     - lib/**/*.g.dart
+    - .dart_tool/*
 
 # Lint rules and documentation, see http://dart-lang.github.io/linter/lints
 linter:
