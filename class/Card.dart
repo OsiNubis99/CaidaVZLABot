@@ -1,5 +1,4 @@
 /// This Class have all cards methods
-import 'dart:math';
 
 class Card {
   static List<int> shuffling() {
@@ -45,14 +44,15 @@ class Card {
       26,
       13
     ];
-    var currentIndex = 39, temporaryValue, randomIndex;
-    while (currentIndex >= 0) {
-      randomIndex = Random(currentIndex).nextInt(39);
-      temporaryValue = array[currentIndex];
-      array[currentIndex] = array[randomIndex];
-      array[randomIndex] = temporaryValue;
-      currentIndex -= 1;
-    }
+    // var currentIndex = 39, temporaryValue, randomIndex;
+    // while (currentIndex >= 0) {
+    //   randomIndex = Random(currentIndex).nextInt(39);
+    //   temporaryValue = array[currentIndex];
+    //   array[currentIndex] = array[randomIndex];
+    //   array[randomIndex] = temporaryValue;
+    //   currentIndex -= 1;
+    // }
+    array.shuffle();
     return array;
   }
 
@@ -66,6 +66,14 @@ class Card {
   /// Return the card Position in the table
   static int position(int card) {
     return (card ~/ 4) + 1;
+  }
+
+  /// Return the card Number
+  static String positionToNumber(int position) {
+    position++;
+    return (position == 8
+        ? '10'
+        : position == 9 ? '11' : position == 10 ? '12' : '$position');
   }
 
   /// Return the card Number
