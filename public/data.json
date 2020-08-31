@@ -1,4 +1,84 @@
 {
   "games": {},
-  "players": {}
+  "players": {
+    "p114083702": {
+      "id": 114083702,
+      "username": "OsiNubis99",
+      "first_name": "Andrés",
+      "games": [],
+      "game": null
+    },
+    "p1173617052": {
+      "id": 1173617052,
+      "first_name": "Diego",
+      "games": [],
+      "game": null
+    },
+    "p984689029": {
+      "id": 984689029,
+      "first_name": "Luisa",
+      "games": [],
+      "game": null
+    },
+    "p941697838": {
+      "id": 941697838,
+      "username": "Ksalazarnk",
+      "first_name": "Kevin",
+      "games": [],
+      "game": null
+    },
+    "p1068742207": {
+      "id": 1068742207,
+      "first_name": "Carlos Emilio",
+      "games": [],
+      "game": null
+    },
+    "p973849204": {
+      "id": 973849204,
+      "username": "MiguelVz2",
+      "first_name": "Miguel Sufia",
+      "games": [],
+      "game": null
+    },
+    "p1058789004": {
+      "id": 1058789004,
+      "username": "Jacknielcastillo",
+      "first_name": "Jackniel",
+      "games": [],
+      "game": null
+    },
+    "p1174087924": {
+      "id": 1174087924,
+      "first_name": "Mauricio",
+      "games": [],
+      "game": null
+    },
+    "p1040239267": {
+      "id": 1040239267,
+      "first_name": "Lulu",
+      "games": [],
+      "game": null
+    },
+    "p355968156": {
+      "id": 355968156,
+      "username": "Mafeerlourenco",
+      "first_name": "Mᴀғᴇʀ Lᴏᴜʀᴇɴᴄ̧ᴏ",
+      "games": [],
+      "game": null
+    },
+    "p854224796": {
+      "id": 854224796,
+      "username": "danielibarra",
+      "first_name": "Daniel",
+      "games": [],
+      "game": null
+    },
+    "p1088289802": {
+      "id": 1088289802,
+      "username": "Aaron13506",
+      "first_name": "Aaron Q.",
+      "games": [],
+      "game": null
+    }
+  }
 }
