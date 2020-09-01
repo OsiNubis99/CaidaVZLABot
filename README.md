@@ -1,2 +1,3 @@
 # CaidaVZLABot
-Juego de Ronda o Caida Venezolana en Telegram
+
+Caida-Game Telegram Bot built in JavaScript"

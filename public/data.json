@@ -3,36 +3,36 @@
     "g-358611014": {
       "owner": 114083702,
       "deck": [
-        18,
-        2,
-        32,
-        1,
-        12,
-        16,
-        27,
-        20,
-        3,
-        23,
-        36,
-        5,
-        15,
-        26,
-        24,
-        21,
-        33,
-        28,
-        39,
-        31,
-        34,
-        17,
-        22,
-        29,
-        37,
-        6,
-        9,
+        38,
+        14,
+        11,
         0,
+        37,
+        19,
+        13,
+        20,
+        10,
+        27,
+        9,
+        4,
+        5,
+        30,
+        29,
+        6,
+        34,
+        21,
         35,
-        8
+        7,
+        26,
+        25,
+        1,
+        3,
+        33,
+        24,
+        16,
+        17,
+        28,
+        2
       ],
       "sings": [
         {
@@ -53,48 +53,17 @@
         }
       ],
       "points": [
-        0,
-        3
+        1,
+        0
       ],
       "cards": [
+        [],
         [
           {
-            "number": 38,
-            "position": 9,
-            "value": 12,
-            "type": "Copa"
-          },
-          {
-            "number": 25,
-            "position": 6,
-            "value": 7,
-            "type": "Espada"
-          },
-          {
-            "number": 7,
-            "position": 1,
-            "value": 2,
-            "type": "Basto"
-          }
-        ],
-        [
-          {
-            "number": 14,
-            "position": 3,
-            "value": 4,
-            "type": "Copa"
-          },
-          {
-            "number": 13,
-            "position": 3,
-            "value": 4,
-            "type": "Espada"
-          },
-          {
-            "number": 11,
+            "number": 8,
             "position": 2,
             "value": 3,
-            "type": "Basto"
+            "type": "Oro"
           }
         ],
         [],
@@ -102,38 +71,33 @@
       ],
       "table": [
         null,
+        null,
+        null,
+        null,
+        null,
         {
-          "number": 4,
-          "position": 1,
-          "value": 2,
-          "type": "Oro"
-        },
-        {
-          "number": 10,
-          "position": 2,
-          "value": 3,
+          "number": 22,
+          "position": 5,
+          "value": 6,
           "type": "Copa"
         },
         null,
         {
-          "number": 19,
-          "position": 4,
-          "value": 5,
-          "type": "Basto"
-        },
-        null,
-        null,
-        {
-          "number": 30,
+          "number": 31,
           "position": 7,
           "value": 10,
-          "type": "Copa"
+          "type": "Basto"
         },
-        null,
+        {
+          "number": 32,
+          "position": 8,
+          "value": 11,
+          "type": "Oro"
+        },
         null
       ],
       "taked": [
-        0,
+        6,
         0
       ],
       "configs": {
@@ -142,18 +106,18 @@
         "sings": "Full"
       },
       "card": {
-        "number": 4,
-        "position": 1,
-        "value": 2,
+        "number": 32,
+        "position": 8,
+        "value": 11,
         "type": "Oro"
       },
-      "lastTaked": null,
+      "lastTaked": 0,
       "head": 1,
       "lastOne": false,
-      "player": 0,
+      "player": 1,
       "players": [
-        114083702,
-        854224796
+        854224796,
+        114083702
       ]
     }
   },

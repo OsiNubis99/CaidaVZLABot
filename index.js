@@ -1,26 +1,58 @@
+const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
-
-var bot = require("./configs/bot");
-var app = express();
-
 var Game = require("./class/Game");
 var Card = require("./class/Card");
 var Sing = require("./class/Sing");
 var Player = require("./class/Player");
 var bd = require("./configs/bd");
-const { response } = require("express");
-var groups = ["-1001432406771", "-358611014"];
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
-let data = bd.read();
+const TOKEN = process.env.TELEGRAM_TOKEN;
+const url = process.env.APP_URL || "https://caidavzlabot.herokuapp.com:443";
+const port = process.env.PORT;
+const is_dev = process.env.IS_DEV;
+
+let options = {};
+if (is_dev == "true") {
+  options = {
+    polling: true,
+  };
+}
+
+const bot = new TelegramBot(TOKEN, options);
+
+if (process.env.IS_DEV != "true") bot.setWebHook(`${url}/bot${TOKEN}`);
+
+const app = express();
+
+app.use(express.json());
 
 app.use(express.static("./public"));
+
+app.get("/", function (req, res) {
+  res.send("Hello World");
+});
+
 app.get("/Saludar", (req, res) => {
   res.send("CaidaBot!");
 });
-let port = process.env.PORT || 3000;
-app.listen(port, () =>
-  console.log("Gator app listening on port " + port + "!")
-);
+
+app.post(`/bot${TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+var server = app.listen(port, function () {
+  console.log(
+    `Express server is listening on ${server.address().address}:${port}`
+  );
+});
+
+var groups = ["-1001432406771", "-358611014"];
+
+let data = bd.read();
 
 bot.on("inline_query", (query) => {
   let playerId = query.from.id;

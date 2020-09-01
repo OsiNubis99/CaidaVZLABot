@@ -1,7 +1,7 @@
 {
   "name": "caidavzlabot",
   "version": "1.0.0",
-  "description": "Juego Ronda o Caida venezolana para Telegram",
+  "description": "Caida-Game Telegram Bot built in JavaScript",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -23,6 +23,7 @@
     "node-telegram-bot-api": "^0.40.0"
   },
   "devDependencies": {
+    "dotenv": "^8.2.0",
     "nodemon": "^2.0.1"
   }
 }
