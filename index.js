@@ -11,7 +11,7 @@ if (process.env.NODE_ENV !== "production") {
 
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const url = process.env.APP_URL || "https://caidavzlabot.herokuapp.com:443";
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 const is_dev = process.env.IS_DEV;
 
 let options = {};
@@ -631,7 +631,10 @@ function estado(msg) {
 function verCartas(msg) {
   playerId = msg.from.id;
   chatId = playerId;
-  if (data.players["p" + playerId].game != null) {
+  if (
+    data.players["p" + playerId] &&
+    data.players["p" + playerId].game != null
+  ) {
     if (data.games["g" + data.players["p" + playerId].game].player != null) {
       let resp = "Tus cartas son:",
         i = 0;
