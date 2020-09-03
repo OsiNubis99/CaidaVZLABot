@@ -1,138 +1,12 @@
 {
-  "games": {
-    "g-358611014": {
-      "owner": 114083702,
-      "deck": [
-        38,
-        14,
-        11,
-        0,
-        37,
-        19,
-        13,
-        20,
-        10,
-        27,
-        9,
-        4,
-        5,
-        30,
-        29,
-        6,
-        34,
-        21,
-        35,
-        7,
-        26,
-        25,
-        1,
-        3,
-        33,
-        24,
-        16,
-        17,
-        28,
-        2
-      ],
-      "sings": [
-        {
-          "value": 0,
-          "name": "Tres Cartas"
-        },
-        {
-          "value": 0,
-          "name": "Tres Cartas"
-        },
-        {
-          "value": 0,
-          "name": "Tres Cartas"
-        },
-        {
-          "value": 0,
-          "name": "Tres Cartas"
-        }
-      ],
-      "points": [
-        1,
-        0
-      ],
-      "cards": [
-        [],
-        [
-          {
-            "number": 8,
-            "position": 2,
-            "value": 3,
-            "type": "Oro"
-          }
-        ],
-        [],
-        []
-      ],
-      "table": [
-        null,
-        null,
-        null,
-        null,
-        null,
-        {
-          "number": 22,
-          "position": 5,
-          "value": 6,
-          "type": "Copa"
-        },
-        null,
-        {
-          "number": 31,
-          "position": 7,
-          "value": 10,
-          "type": "Basto"
-        },
-        {
-          "number": 32,
-          "position": 8,
-          "value": 11,
-          "type": "Oro"
-        },
-        null
-      ],
-      "taked": [
-        6,
-        0
-      ],
-      "configs": {
-        "mode": "2v2",
-        "start": 4,
-        "sings": "Full"
-      },
-      "card": {
-        "number": 32,
-        "position": 8,
-        "value": 11,
-        "type": "Oro"
-      },
-      "lastTaked": 0,
-      "head": 1,
-      "lastOne": false,
-      "player": 1,
-      "players": [
-        854224796,
-        114083702
-      ]
-    }
-  },
+  "games": {},
   "players": {
     "p114083702": {
       "id": 114083702,
       "username": "OsiNubis99",
       "first_name": "Andrés",
-      "games": [
-        {
-          "title": "El amor está en el aire",
-          "id": -358611014
-        }
-      ],
-      "game": -358611014
+      "games": [],
+      "game": null
     },
     "p1173617052": {
       "id": 1173617052,
@@ -196,13 +70,8 @@
       "id": 854224796,
       "username": "danielibarra",
       "first_name": "Daniel",
-      "games": [
-        {
-          "title": "El amor está en el aire",
-          "id": -358611014
-        }
-      ],
-      "game": -358611014
+      "games": [],
+      "game": null
     },
     "p1088289802": {
       "id": 1088289802,
