@@ -72,7 +72,7 @@ class Sing {
         }
       } else if (this.word == 11 || this.word == "registrico") {
         if (
-          cards[0].value == 12 &&
+          cards[0].value == 11 &&
           cards[1].value == 10 &&
           cards[2].value == 1
         ) {
