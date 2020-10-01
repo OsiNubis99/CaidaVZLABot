@@ -345,33 +345,18 @@ function crear(msg) {
   groups.forEach((value) => {
     if (value == chatId) fake = true;
   });
-  if (fake) {
-    if (data.games["g" + chatId] == null) {
-      data.games["g" + chatId] = new Game(msg.from.id);
-      console.log("Juego creado en: " + chatId);
-      bot.sendMessage(
-        chatId,
-        "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
-      );
-    } else
-      bot.sendMessage(
-        chatId,
-        "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
-      );
-  } else {
+  if (data.games["g" + chatId] == null) {
+    data.games["g" + chatId] = new Game(msg.from.id);
+    console.log("Juego creado en: " + chatId);
     bot.sendMessage(
       chatId,
-      "Este bot esta en desarrollo, por favor juega en @JuegaVZLA\nO solicita a @OsiNubis99 que permita este grupo."
+      "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
     );
-    bot.getChat(msg.chat.id).then((chat) => {
-      let add = "";
-      if (chat.invite_link) add = chat.invite_link;
-      bot.sendMessage(
-        groups[0],
-        "Intento de juego en " + msg.chat.title + " " + msg.chat.id + " " + add
-      );
-    });
-  }
+  } else
+    bot.sendMessage(
+      chatId,
+      "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
+    );
   bd.write(data);
 }
 
