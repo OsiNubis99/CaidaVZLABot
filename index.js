@@ -35,10 +35,6 @@ app.get("/", function (req, res) {
   res.send("Hello World");
 });
 
-app.get("/Saludar", (req, res) => {
-  res.send("CaidaBot!");
-});
-
 app.post(`/bot${TOKEN}`, (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
@@ -47,6 +43,10 @@ app.post(`/bot${TOKEN}`, (req, res) => {
 var server = app.listen(port, function () {
   console.log(
     `Express server is listening on ${server.address().address}:${port}`
+  );
+  bot.sendMessage(
+    114083702,
+    `I'm alive on ${server.address().address}:${port}`
   );
 });
 
@@ -347,7 +347,7 @@ function crear(msg) {
   });
   if (data.games["g" + chatId] == null) {
     data.games["g" + chatId] = new Game(msg.from.id);
-    console.log("Juego creado en: " + chatId);
+    bot.sendMessage(114083702, "Juego creado en: \n" + JSON.stringify(msg));
     bot.sendMessage(
       chatId,
       "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
@@ -380,7 +380,7 @@ function eliminar(msg) {
       }
     });
     data.games["g" + chatId] = undefined;
-    console.log("Juego eliminado en: " + chatId);
+    bot.sendMessage(114083702, "Juego eliminado en: \n" + JSON.stringify(msg));
     bot.sendMessage(chatId, "Partida eliminada!\nCrea una nueva con /crear");
   } else {
     bot.sendMessage(chatId, "La partida no esta creada!\nCrea una con /crear");
@@ -409,7 +409,7 @@ function reiniciar(msg) {
     });
   }
   data.games["g" + chatId] = new Game(msg.from.id);
-  console.log("Juego reiniciado en: " + chatId);
+  bot.sendMessage(114083702, "Juego creiniciado en: \n" + JSON.stringify(msg));
   bot.sendMessage(
     chatId,
     "La partida ha sido reiniciada!\nPueden unirse con /unirse"
@@ -936,7 +936,7 @@ function puedeSeguir(chatId) {
             : "")
       );
     }
-    console.log("Juego finalizado en: " + chatId);
+    bot.sendMessage(114083702, "Juego finalizado en: \n" + JSON.stringify(msg));
     bot.sendMessage(chatId, Game.status(data, chatId, false));
     data.games["g" + chatId].players.forEach((id) => {
       data.players["p" + id].games.splice(
@@ -1047,10 +1047,12 @@ bot.onText(/\/juego/, juego);
 
 bot.on("error", (err) => {
   console.log(err);
+  bot.sendMessage(114083702, "Error: \n" + JSON.stringify(err));
 });
 
 bot.on("polling_error", (err) => {
   console.log(err);
+  bot.sendMessage(114083702, "Error: \n" + JSON.stringify(err));
 });
 
 // crear - Crea una nueva partida
