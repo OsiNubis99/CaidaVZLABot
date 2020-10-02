@@ -51,7 +51,7 @@ var server = app.listen(port, function () {
 });
 
 var groups = [-1001432406771, -358611014];
-var bans = [745521586, 114083702];
+var bans = [745521586];
 
 let data = bd.read();
 
@@ -291,7 +291,7 @@ bot.on("chosen_inline_result", (query) => {
 
 bot.onText(/\/saluda(.*)/, (msg, match) => {
   let chatId = msg.chat.id;
-  let resp = "Hola @" + msg.from.username + "\nTu mensaje fue: " + match[1];
+  let resp = "Hola " + msg.from.first_name + "\nTu mensaje fue: " + match[1];
   bot.sendMessage(chatId, resp);
   bd.write(data);
 });
@@ -657,6 +657,10 @@ function verCartas(msg) {
   }
 }
 
+/**
+ * Mostrar basado en las configuraciones
+ * Require DataBase
+ */
 function cantos(msg) {
   let chatId = msg.chat.id;
   let response =
