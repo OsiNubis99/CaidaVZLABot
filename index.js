@@ -51,6 +51,7 @@ var server = app.listen(port, function () {
 });
 
 var groups = ["-1001432406771", "-358611014"];
+var bans = ["745521586", "1088289802"];
 
 let data = bd.read();
 
@@ -341,22 +342,26 @@ bot.onText(/\/help/, (msg) => {
 
 function crear(msg) {
   let chatId = msg.chat.id;
-  let fake = false;
-  groups.forEach((value) => {
-    if (value == chatId) fake = true;
-  });
-  if (data.games["g" + chatId] == null) {
-    data.games["g" + chatId] = new Game(msg.from.id);
-    bot.sendMessage(114083702, "Juego creado en: \n" + JSON.stringify(msg));
+  if (!groups.includes(chatId)) {
+    if (data.games["g" + chatId] == null) {
+      data.games["g" + chatId] = new Game(msg.from.id);
+      bot.sendMessage(114083702, "Juego creado:\n" + JSON.stringify(msg));
+      bot.sendMessage(
+        chatId,
+        "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
+      );
+    } else
+      bot.sendMessage(
+        chatId,
+        "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
+      );
+  } else {
     bot.sendMessage(
       chatId,
-      "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
+      "Este bot esta en desarrollo, por favor juega en @JuegaVZLA\nO solicita a @OsiNubis99 que permita este grupo."
     );
-  } else
-    bot.sendMessage(
-      chatId,
-      "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
-    );
+    bot.sendMessage(114083702, "Intento de juego: \n" + JSON.stringify(msg));
+  }
   bd.write(data);
 }
 
@@ -380,7 +385,7 @@ function eliminar(msg) {
       }
     });
     data.games["g" + chatId] = undefined;
-    bot.sendMessage(114083702, "Juego eliminado en: \n" + JSON.stringify(msg));
+    bot.sendMessage(114083702, "Juego eliminado:\n" + JSON.stringify(msg));
     bot.sendMessage(chatId, "Partida eliminada!\nCrea una nueva con /crear");
   } else {
     bot.sendMessage(chatId, "La partida no esta creada!\nCrea una con /crear");
@@ -409,7 +414,7 @@ function reiniciar(msg) {
     });
   }
   data.games["g" + chatId] = new Game(msg.from.id);
-  bot.sendMessage(114083702, "Juego creiniciado en: \n" + JSON.stringify(msg));
+  bot.sendMessage(114083702, "Juego creiniciado:\n" + JSON.stringify(msg));
   bot.sendMessage(
     chatId,
     "La partida ha sido reiniciada!\nPueden unirse con /unirse"
@@ -425,53 +430,65 @@ function unirse(msg) {
     data.players["p" + msg.from.id].first_name = msg.from.first_name;
     data.players["p" + msg.from.id].username = msg.from.username;
   }
-  if (data.games["g" + chatId] != null) {
-    if (
-      !data.games["g" + chatId].players.find((player) => player == msg.from.id)
-    ) {
-      if (data.games["g" + chatId].player == null) {
-        if (data.games["g" + chatId].players.length < 4) {
-          bot.getChat(chatId).then((chat) => {
-            data.players["p" + msg.from.id].games.unshift({
-              title: chat.title,
-              id: chatId,
+  if (!bans.includes(msg.from.id)) {
+    if (data.games["g" + chatId] != null) {
+      if (
+        !data.games["g" + chatId].players.find(
+          (player) => player == msg.from.id
+        )
+      ) {
+        if (data.games["g" + chatId].player == null) {
+          if (data.games["g" + chatId].players.length < 4) {
+            bot.getChat(chatId).then((chat) => {
+              data.players["p" + msg.from.id].games.unshift({
+                title: chat.title,
+                id: chatId,
+              });
+              bd.write(data);
             });
-            bd.write(data);
-          });
-          data.games["g" + chatId].players.unshift(msg.from.id);
-          data.games["g" + chatId].head =
-            data.games["g" + chatId].players.length - 1;
-          bot.sendMessage(
-            chatId,
-            "Bienvenido " +
-              msg.from.first_name +
-              "(@" +
-              msg.from.username +
-              "). Te has unido a la partida." +
-              "\nJugadores actuales: " +
-              data.games["g" + chatId].players.length,
-            {
-              reply_to_message_id: msg.message_id,
-            }
-          );
+            data.games["g" + chatId].players.unshift(msg.from.id);
+            data.games["g" + chatId].head =
+              data.games["g" + chatId].players.length - 1;
+            bot.sendMessage(
+              chatId,
+              "Bienvenido " +
+                msg.from.first_name +
+                "(@" +
+                msg.from.username +
+                "). Te has unido a la partida." +
+                "\nJugadores actuales: " +
+                data.games["g" + chatId].players.length,
+              {
+                reply_to_message_id: msg.message_id,
+              }
+            );
+          } else {
+            bot.sendMessage(
+              chatId,
+              "Ya la mesa esta llena, espera que la partida actual termine para poder unirte."
+            );
+          }
         } else {
           bot.sendMessage(
             chatId,
-            "Ya la mesa esta llena, espera que la partida actual termine para poder unirte."
+            "Ya la partida inicio, espera que la partida actual termine para poder unirte."
           );
         }
       } else {
-        bot.sendMessage(
-          chatId,
-          "Ya la partida inicio, espera que la partida actual termine para poder unirte."
-        );
+        bot.sendMessage(chatId, "Ya estas en esta partida.");
       }
+      data.players["p" + msg.from.id].game = chatId;
     } else {
-      bot.sendMessage(chatId, "Ya estas en esta partida.");
+      bot.sendMessage(
+        chatId,
+        "La partida no esta creada!\nCrea una con /crear"
+      );
     }
-    data.players["p" + msg.from.id].game = chatId;
   } else {
-    bot.sendMessage(chatId, "La partida no esta creada!\nCrea una con /crear");
+    bot.sendMessage(
+      chatId,
+      "Usted esta baneado del uso de este bot,\n solicita a @OsiNubis99 que permita el uso para esta persona si crees que es un error."
+    );
   }
   bd.write(data);
 }
@@ -936,7 +953,7 @@ function puedeSeguir(chatId) {
             : "")
       );
     }
-    bot.sendMessage(114083702, "Juego finalizado en: \n" + JSON.stringify(msg));
+    // bot.sendMessage(114083702, "Juego finalizado:\n" + JSON.stringify(msg));
     bot.sendMessage(chatId, Game.status(data, chatId, false));
     data.games["g" + chatId].players.forEach((id) => {
       data.players["p" + id].games.splice(
@@ -999,11 +1016,10 @@ function juego(msg) {
         })
       );
       if (position >= 0) {
-        data.players["p" + playerId].games.unshift(
-          data.players["p" + playerId].games.splice(position, 1)
-        );
-        data.players["p" + playerId].game =
-          data.players["p" + playerId].games[0].id;
+        temp = data.players["p" + playerId].games[position];
+        data.players["p" + playerId].games.splice(position, 1);
+        data.players["p" + playerId].games.unshift(temp);
+        data.players["p" + playerId].game = temp.id;
         bot.sendMessage(chatId, "Ahora estas jugando en este chat");
       } else {
         bot.sendMessage(chatId, "No estas jugando en este chat");
