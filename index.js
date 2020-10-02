@@ -50,8 +50,8 @@ var server = app.listen(port, function () {
   );
 });
 
-var groups = ["-1001432406771", "-358611014"];
-var bans = ["745521586", "1088289802"];
+var groups = ["-1001432406771"]; //, "-358611014"];
+var bans = ["745521586", "114083702"];
 
 let data = bd.read();
 
