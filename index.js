@@ -289,7 +289,7 @@ bot.on("chosen_inline_result", (query) => {
   }
 });
 
-bot.onText(/\/saluda (.+)/, (msg, match) => {
+bot.onText(/\/saluda(.*)/, (msg, match) => {
   let chatId = msg.chat.id;
   let resp = "Hola @" + msg.from.username + "\nTu mensaje fue: " + match[1];
   bot.sendMessage(chatId, resp);
@@ -977,10 +977,10 @@ function puedeSeguir(chatId) {
   return true;
 }
 
-function pasar(msg) {
+function pasar(msg, match) {
   let chatId = msg.chat.id;
   if (data.games["g" + chatId] != null) {
-    if (data.games["g" + chatId].owner == msg.from.id) {
+    if (data.games["g" + chatId].owner == msg.from.id || match[1] == "force") {
       let player = data.games["g" + chatId].player;
       let number =
         Math.round(Math.random() * 1000) %
@@ -1041,7 +1041,7 @@ bot.onText(/\/reiniciar/, reiniciar);
 
 bot.onText(/\/unirse/, unirse);
 
-bot.onText(/\/configurar (.+)/, configurar);
+bot.onText(/\/configurar(.*)/, configurar);
 
 bot.onText(/\/configurar/, configurar);
 
@@ -1053,11 +1053,11 @@ bot.onText(/\/cartas/, verCartas);
 
 bot.onText(/\/cantos/, cantos);
 
-bot.onText(/\/cantar (.+)/, cantar);
+bot.onText(/\/cantar(.*)/, cantar);
 
-bot.onText(/\/jugar (.+)/, jugarCarta);
+bot.onText(/\/jugar(.*)/, jugarCarta);
 
-bot.onText(/\/pasar/, pasar);
+bot.onText(/\/pasar(.*)/, pasar);
 
 bot.onText(/\/juego/, juego);
 
