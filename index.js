@@ -50,7 +50,7 @@ var server = app.listen(port, function () {
   );
 });
 
-var groups = [-1001432406771]; //, -358611014];
+var groups = [-1001432406771, -358611014];
 var bans = [745521586, 114083702];
 
 let data = bd.read();
@@ -342,7 +342,7 @@ bot.onText(/\/help/, (msg) => {
 
 function crear(msg) {
   let chatId = msg.chat.id;
-  if (groups.indexOf(chatId) < 0) {
+  if (groups.indexOf(chatId) <= 0) {
     if (data.games["g" + chatId] == null) {
       data.games["g" + chatId] = new Game(msg.from.id);
       bot.sendMessage(114083702, "Juego creado:\n" + JSON.stringify(msg));
@@ -487,7 +487,7 @@ function unirse(msg) {
   } else {
     bot.sendMessage(
       chatId,
-      "Usted esta baneado del uso de este bot,\n solicita a @OsiNubis99 que permita el uso para esta persona si crees que es un error."
+      "Usted esta baneado del uso de este bot,\nSolicita a @OsiNubis99 que permita el uso para esta persona si crees que es un error."
     );
   }
   bd.write(data);
