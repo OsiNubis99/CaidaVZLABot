@@ -342,7 +342,7 @@ bot.onText(/\/help/, (msg) => {
 
 function crear(msg) {
   let chatId = msg.chat.id;
-  if (!groups.includes(chatId)) {
+  if (groups.indexOf(chatId) < 0) {
     if (data.games["g" + chatId] == null) {
       data.games["g" + chatId] = new Game(msg.from.id);
       bot.sendMessage(114083702, "Juego creado:\n" + JSON.stringify(msg));
@@ -430,7 +430,7 @@ function unirse(msg) {
     data.players["p" + msg.from.id].first_name = msg.from.first_name;
     data.players["p" + msg.from.id].username = msg.from.username;
   }
-  if (!bans.includes(msg.from.id)) {
+  if (bans.indexOf(msg.from.id) < 0) {
     if (data.games["g" + chatId] != null) {
       if (
         !data.games["g" + chatId].players.find(
