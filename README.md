@@ -32,7 +32,7 @@
       <a href="#built-with">Built With</a>
       <ul>
         <li><a href="#dependencies">Dependencies</a></li>
-        <li><a href="#dependencies">Dependencies</a></li>
+        <li><a href="#dev-dependencies">Dev Dependencies</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
@@ -47,7 +47,6 @@
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
   </ol>
 </details>
 
