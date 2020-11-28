@@ -1,5 +1,5 @@
-const TelegramBot = require("node-telegram-bot-api");
 const env = require("./env");
+const TelegramBot = require("node-telegram-bot-api");
 
 let options = {};
 if (env.NODE_ENV == "develop") {
@@ -30,4 +30,4 @@ bot.on("polling_error", (error) => {
   console.error(error + "\n Polling Error");
 });
 
-module.exports = { env, bot };
+module.exports = bot;
