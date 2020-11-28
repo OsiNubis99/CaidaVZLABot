@@ -1,5 +1,6 @@
+const bot = require("./bot");
+const env = require("./env");
 const express = require("express");
-const { bot, env } = require("./bot");
 
 const app = express();
 
@@ -18,4 +19,4 @@ app.listen(env.port, function () {
   console.log(`Express server is listening on port ${env.port}`);
 });
 
-module.exports = bot;
+module.exports = app;
