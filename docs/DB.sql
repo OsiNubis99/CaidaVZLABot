@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "user"
  "first_name" varchar(100) NOT NULL,
  "last_name"  varchar(100) NULL,
  "username"   varchar(50) NULL,
- "is_baned"   boolean NULL,
+ "is_banned"   boolean NULL,
  CONSTRAINT "PK_user" PRIMARY KEY ( "id_user" )
 );
 -- ************************************** "group"
