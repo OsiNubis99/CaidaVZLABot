@@ -19,4 +19,4 @@ app.listen(env.port, function () {
   console.log(`Express server is listening on port ${env.port}`);
 });
 
-module.exports = app;
+module.exports = bot;
