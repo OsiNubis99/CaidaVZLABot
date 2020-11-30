@@ -19,8 +19,21 @@ CREATE TABLE IF NOT EXISTS "user"
 -- ************************************** "group"
 CREATE TABLE IF NOT EXISTS "group"
 (
- "id_group" varchar(50) NOT NULL,
- "name"     varchar(100) NOT NULL,
+ "id_group"			varchar(50) NOT NULL,
+ "name"					varchar(100) NOT NULL,
+ "points"   		int DEFAULT 24,
+ "mode"   			varchar DEFAULT 'parejas',
+ "caida"   			int DEFAULT 1,
+ "ronda"   			int DEFAULT 1,
+ "chiguire"			int DEFAULT 5,
+ "patrulla"			int DEFAULT 6,
+ "vigia"   			int DEFAULT 7,
+ "registro"			int DEFAULT 8,
+ "maguaro"   		int DEFAULT 9,
+ "registrico"		int DEFAULT 10,
+ "casa_chica"		int DEFAULT 11,
+ "casa_grande"	int DEFAULT 12,
+ "trivilin"			int DEFAULT 24,
  CONSTRAINT "PK_group" PRIMARY KEY ( "id_group" )
 );
 -- ************************************** "game"
