@@ -1,7 +1,5 @@
-const TelegramBot = require("node-telegram-bot-api");
-
 const resp = require("../lang/es");
-const bot = require("../configs/bot");
+const bot = require("../config/bot");
 const {
   group,
   user,
@@ -9,7 +7,7 @@ const {
   game_user,
   user_sing,
   user_user,
-} = require("../controller/controller");
+} = require("../controller");
 
 var admins = [114083702, 1088289802, 854224796, 355968156];
 
@@ -35,17 +33,17 @@ module.exports = {
       return resp.no_admin_person;
     }
   },
-  create(msg) {
-    if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
-      group.add(msg.chat);
-      return resp.group_added;
+  add_group(msg) {
+    if (is_admin(msg.from.id)) {
+      if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
+        group.add(msg.chat);
+        return resp.group_added;
+      } else {
+        return resp.is_not_a_group;
+      }
     } else {
-      return resp.is_not_a_group;
+      return resp.no_admin_person;
     }
-  },
-  join(msg) {
-    user.add(msg.from);
-    return resp.user_added;
   },
   async list_user(msg) {
     if (is_admin(msg.from.id)) {
@@ -53,7 +51,7 @@ module.exports = {
       var reply = "La lista de usuarios registrados es:";
       list.forEach((user) => {
         reply +=
-          "\n" +
+          "\n\t" +
           user.first_name +
           " " +
           (user.last_name ? user.last_name : "" + ":");
@@ -64,6 +62,32 @@ module.exports = {
         reply += "\n";
       });
       return reply;
+    } else {
+      return resp.no_admin_person;
+    }
+  },
+  async list_group(msg) {
+    if (is_admin(msg.from.id)) {
+      var list = await group.list();
+      var reply = "La lista de grupos registrados es:";
+      list.forEach((group) => {
+        reply += "\n\t" + group.name;
+        reply += "\nid: " + group.id_group;
+        reply += "\n";
+      });
+      return reply;
+    } else {
+      return resp.no_admin_person;
+    }
+  },
+  remove_group(msg, match) {
+    if (is_admin(msg.from.id)) {
+      let groups = match[1].split(" ");
+      groups.shift();
+      groups.forEach((id_group) => {
+        group.remove(id_group);
+      });
+      return resp.group_removed;
     } else {
       return resp.no_admin_person;
     }
