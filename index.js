@@ -353,7 +353,7 @@ function crear(msg) {
         chatId,
         "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
       );
-  if (groups.indexOf(chatId) > 0) {
+  if (groups.indexOf(chatId) < 0) {
     bot.sendMessage(
       chatId,
       "Este bot esta en desarrollo, por favor notifica a @OsiNubis99 de cualquier error.❤️"
@@ -384,7 +384,7 @@ function eliminar(msg) {
     });
     data.games["g" + chatId] = undefined;
     bot.sendMessage(114083702, "Juego eliminado:\n" + JSON.stringify(msg));  
-    if (groups.indexOf(chatId) > 0) {
+    if (groups.indexOf(chatId) < 0) {
       bot.sendMessage(
         chatId,
         "Este bot esta en desarrollo, por favor notifica a @OsiNubis99 de cualquier error.❤️"
@@ -418,7 +418,7 @@ function reiniciar(msg) {
     });
   }
   data.games["g" + chatId] = new Game(msg.from.id);
-  if (groups.indexOf(chatId) > 0) {
+  if (groups.indexOf(chatId) < 0) {
     bot.sendMessage(
       chatId,
       "Este bot esta en desarrollo, por favor notifica a @OsiNubis99 de cualquier error.❤️"
