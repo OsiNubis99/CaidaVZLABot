@@ -342,10 +342,8 @@ bot.onText(/\/help/, (msg) => {
 
 function crear(msg) {
   let chatId = msg.chat.id;
-  if (groups.indexOf(chatId) <= 0) {
     if (data.games["g" + chatId] == null) {
       data.games["g" + chatId] = new Game(msg.from.id);
-      bot.sendMessage(114083702, "Juego creado:\n" + JSON.stringify(msg));
       bot.sendMessage(
         chatId,
         "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
@@ -355,12 +353,12 @@ function crear(msg) {
         chatId,
         "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
       );
-  } else {
+  if (groups.indexOf(chatId) > 0) {
     bot.sendMessage(
       chatId,
-      "Este bot esta en desarrollo, por favor juega en @JuegaVZLA\nO solicita a @OsiNubis99 que permita este grupo."
+      "Este bot esta en desarrollo, por favor notifica a @OsiNubis99 de cualquier error.❤️"
     );
-    bot.sendMessage(114083702, "Intento de juego: \n" + JSON.stringify(msg));
+    bot.sendMessage(114083702, "Juego creado: \n" + JSON.stringify(msg));
   }
   bd.write(data);
 }
@@ -385,8 +383,14 @@ function eliminar(msg) {
       }
     });
     data.games["g" + chatId] = undefined;
-    bot.sendMessage(114083702, "Juego eliminado:\n" + JSON.stringify(msg));
-    bot.sendMessage(chatId, "Partida eliminada!\nCrea una nueva con /crear");
+    bot.sendMessage(114083702, "Juego eliminado:\n" + JSON.stringify(msg));  
+    if (groups.indexOf(chatId) > 0) {
+      bot.sendMessage(
+        chatId,
+        "Este bot esta en desarrollo, por favor notifica a @OsiNubis99 de cualquier error.❤️"
+      );
+      bot.sendMessage(114083702, "Juego eliminado: \n" + JSON.stringify(msg));
+    }
   } else {
     bot.sendMessage(chatId, "La partida no esta creada!\nCrea una con /crear");
   }
@@ -414,7 +418,13 @@ function reiniciar(msg) {
     });
   }
   data.games["g" + chatId] = new Game(msg.from.id);
-  bot.sendMessage(114083702, "Juego creiniciado:\n" + JSON.stringify(msg));
+  if (groups.indexOf(chatId) > 0) {
+    bot.sendMessage(
+      chatId,
+      "Este bot esta en desarrollo, por favor notifica a @OsiNubis99 de cualquier error.❤️"
+    );
+    bot.sendMessage(114083702, "Juego reiniciado: \n" + JSON.stringify(msg));
+  }
   bot.sendMessage(
     chatId,
     "La partida ha sido reiniciada!\nPueden unirse con /unirse"
