@@ -51,7 +51,7 @@ var server = app.listen(port, function () {
 });
 
 var groups = [-1001432406771, -358611014];
-var bans = [745521586];
+var bans = [];
 
 let data = bd.read();
 
