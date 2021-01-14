@@ -1028,7 +1028,7 @@ function pasar(msg, match) {
 function juego(msg) {
   let playerId = msg.from.id,
     chatId = msg.chat.id;
-  if (data.players["p" + playerId].game != null) {
+  if (data.players["p" + playerId] && data.players["p" + playerId].game) {
     if (data.players["p" + playerId].games.length > 1) {
       let position = data.players["p" + playerId].games.indexOf(
         data.players["p" + playerId].games.find((value) => {
