@@ -296,6 +296,12 @@ bot.onText(/\/saluda(.*)/, (msg, match) => {
   bd.write(data);
 });
 
+bot.onText(/\/active/, (msg, match) => {
+  let chatId = msg.chat.id;
+  let resp = "Hay un total de " + data.games.lenght + " juegos activos " + msg.from.first_name;
+  bot.sendMessage(chatId, resp);
+});
+
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
