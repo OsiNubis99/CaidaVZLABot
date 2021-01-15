@@ -686,7 +686,7 @@ function cantos(msg) {
 
 function cantar(msg, match) {
   let playerId = msg.from.id;
-  if (data.players["p" + playerId].game != null) {
+  if (data.players["p" + playerId]&&data.players["p" + playerId].game) {
     let chatId = data.players["p" + playerId].game;
     if (data.games["g" + chatId].player != null) {
       let team = data.games["g" + chatId].players.indexOf(playerId);
