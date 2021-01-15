@@ -715,8 +715,6 @@ function cantar(msg, match) {
     } else {
       bot.sendMessage(chatId, "El juego aun no empieza");
     }
-  } else {
-    bot.sendMessage(chatId, "No se ha unido a ningun juego");
   }
   bd.write(data);
 }
