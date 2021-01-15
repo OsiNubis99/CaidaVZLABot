@@ -813,7 +813,7 @@ function jugarCarta(msg, match) {
             data.games["g" + chatId].points[1] +=
               teamA1 > teamA2 ? teamA1 : teamA2;
           } else {
-            data.games["g" + chatId].points[3] +=
+            data.games["g" + chatId].points[0] +=
               teamB1 > teamB2 ? teamB1 : teamB2;
           }
           data.games["g" + chatId].sings = [
@@ -1081,12 +1081,12 @@ bot.onText(/\/juego/, juego);
 
 bot.on("error", (err) => {
   console.log(err);
-  bot.sendMessage(114083702, "Error: \n" + JSON.stringify(err));
+  bot.sendMessage(114083702, "#Error: \n" + JSON.stringify(err));
 });
 
 bot.on("polling_error", (err) => {
   console.log(err);
-  bot.sendMessage(114083702, "Error: \n" + JSON.stringify(err));
+  bot.sendMessage(114083702, "#Error: \n" + JSON.stringify(err));
 });
 
 // crear - Crea una nueva partida
