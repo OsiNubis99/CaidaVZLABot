@@ -804,18 +804,18 @@ function jugarCarta(msg, match) {
           !data.games["g" + chatId].cards[0].length
         ) {
           barajarRepartir = true;
-          let teamA1 = data.games["g" + chatId].sings[0].value,
-            teamB1 = data.games["g" + chatId].sings[1].value,
-            teamA2 = data.games["g" + chatId].sings[2].value,
-            teamB2 = data.games["g" + chatId].sings[3].value;
+          let teamA1 = data.games["g" + chatId].sings[1].value,
+            teamB1 = data.games["g" + chatId].sings[0].value,
+            teamA2 = data.games["g" + chatId].sings[3].value,
+            teamB2 = data.games["g" + chatId].sings[2].value;
           if (
             (teamA1 > teamB1 && teamA1 > teamB2) ||
             (teamA2 > teamB1 && teamA2 > teamB2)
           ) {
-            data.games["g" + chatId].points[0] +=
+            data.games["g" + chatId].points[1] +=
               teamA1 > teamA2 ? teamA1 : teamA2;
           } else {
-            data.games["g" + chatId].points[1] +=
+            data.games["g" + chatId].points[3] +=
               teamB1 > teamB2 ? teamB1 : teamB2;
           }
           data.games["g" + chatId].sings = [
@@ -999,7 +999,7 @@ function puedeSeguir(chatId) {
 
 function pasar(msg, match) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId] != null) {
+  if (data.games["g" + chatId] && data.games["g" + chatId].player) {
     if (data.games["g" + chatId].owner == msg.from.id || match[1] == "force") {
       let player = data.games["g" + chatId].player;
       let number =
