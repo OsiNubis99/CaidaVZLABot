@@ -1059,21 +1059,21 @@ bot.onText(/\/reiniciar/, reiniciar);
 
 bot.onText(/\/unirse/, unirse);
 
-bot.onText(/\/configurar(.*)/, configurar);
+//bot.onText(/\/configurar(.*)/, configurar);
 
-bot.onText(/\/configurar/, configurar);
+//bot.onText(/\/configurar/, configurar);
 
 bot.onText(/\/iniciar/, iniciar);
 
 bot.onText(/\/estado/, estado);
 
-bot.onText(/\/cartas/, verCartas);
+//bot.onText(/\/cartas/, verCartas);
 
 bot.onText(/\/cantos/, cantos);
 
 bot.onText(/\/cantar(.*)/, cantar);
 
-bot.onText(/\/jugar(.*)/, jugarCarta);
+//bot.onText(/\/jugar(.*)/, jugarCarta);
 
 bot.onText(/\/pasar(.*)/, pasar);
 
