@@ -802,18 +802,18 @@ function jugarCarta(msg, match) {
           !data.games["g" + chatId].cards[0].length
         ) {
           barajarRepartir = true;
-          let teamA1 = data.games["g" + chatId].sings[1].value,
-            teamB1 = data.games["g" + chatId].sings[0].value,
-            teamA2 = data.games["g" + chatId].sings[3].value,
-            teamB2 = data.games["g" + chatId].sings[2].value;
+          let teamA1 = data.games["g" + chatId].sings[0].value,
+            teamB1 = data.games["g" + chatId].sings[1].value,
+            teamA2 = data.games["g" + chatId].sings[2].value,
+            teamB2 = data.games["g" + chatId].sings[3].value;
           if (
-            (teamA1 > teamB1 && teamA1 > teamB2) ||
-            (teamA2 > teamB1 && teamA2 > teamB2)
+            (teamA1 >= teamB1 && teamA1 >= teamB2) ||
+            (teamA2 >= teamB1 && teamA2 >= teamB2)
           ) {
-            data.games["g" + chatId].points[1] +=
+            data.games["g" + chatId].points[0] +=
               teamA1 > teamA2 ? teamA1 : teamA2;
           } else {
-            data.games["g" + chatId].points[0] +=
+            data.games["g" + chatId].points[1] +=
               teamB1 > teamB2 ? teamB1 : teamB2;
           }
           data.games["g" + chatId].sings = [
