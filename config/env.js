@@ -7,7 +7,7 @@ module.exports = {
   bd_url: process.env.HEROKU_POSTGRESQL_URL, //Required DB_uri
   version: process.env.npm_package_version,
   name: process.env.npm_package_name,
-  TOKEN: process.env.TELEGRAM_TOKEN, //Required Token
-  NODE_ENV: process.env.NODE_ENV || "develop", //Required "production"
-  port: process.env.PORT || 3000,
+  token: process.env.TELEGRAM_TOKEN, //Required Token
+  node_env: process.env.NODE_ENV, //Required "production"
+  port: process.env.PORT,
 };
