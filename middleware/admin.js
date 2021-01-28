@@ -12,8 +12,7 @@ const {
 var admins = [114083702, 1088289802, 854224796, 355968156];
 
 function is_admin(id) {
-  if (admins.indexOf(id) >= 0) return true;
-  return false;
+  return admins.indexOf(id) >= 0;
 }
 
 module.exports = {
@@ -51,14 +50,15 @@ module.exports = {
       var reply = "La lista de usuarios registrados es:";
       list.forEach((user) => {
         reply +=
-          "\n\t" +
+          "\n- " +
           user.first_name +
           " " +
           (user.last_name ? user.last_name : "" + ":");
-        reply += "\nid: " + user.id_user;
+        reply += "\n\tid: " + user.id_user;
         reply +=
-          "\nusername: " + (user.username ? "@" + user.username : "Undefined");
-        reply += user.is_banned ? "\nNo Puede Jugar" : "\nPuede Jugar";
+          "\n\tusername: " +
+          (user.username ? "@" + user.username : "Undefined");
+        reply += user.is_banned ? "\n\tNo Puede Jugar" : "\n\tPuede Jugar";
         reply += "\n";
       });
       return reply;
