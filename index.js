@@ -62,12 +62,13 @@ bot.on("inline_query", (query) => {
     data.players["p" + playerId].game != null
   ) {
     let chatId = data.players["p" + playerId].game;
-    if (data.games["g" + chatId].player != null) {
-      let team = data.games["g" + chatId].players.indexOf(playerId),
+    if (data.games[chatId.toString()].player != null) {
+      let team = data.games[chatId.toString()].players.indexOf(playerId),
         base = [];
       if (
-        data.games["g" + chatId].cards[team].length == 3 &&
-        data.games["g" + chatId].sings[team].name == "Tres Cartas"
+        data.games[chatId.toString()].cards[team] &&
+        data.games[chatId.toString()].cards[team].length == 3 &&
+        data.games[chatId.toString()].sings[team].name == "Tres Cartas"
       ) {
         base = [
           {
@@ -172,12 +173,12 @@ bot.on("inline_query", (query) => {
       }
       let i = 0;
       // if (
-      //   data.games["g" + chatId].cards[
-      //     data.games["g" + chatId].players.indexOf(playerId)
+      //   data.games[chatId.toString()].cards[
+      //     data.games[chatId.toString()].players.indexOf(playerId)
       //   ].length > 0
       // ) {
-      for (c of data.games["g" + chatId].cards[
-        data.games["g" + chatId].players.indexOf(playerId)
+      for (c of data.games[chatId.toString()].cards[
+        data.games[chatId.toString()].players.indexOf(playerId)
       ]) {
         base.unshift({
           id: i,
@@ -293,19 +294,37 @@ bot.onText(/\/saluda(.*)/, (msg, match) => {
   let chatId = msg.chat.id;
   let resp = "Hola " + msg.from.first_name + "\nTu mensaje fue: " + match[1];
   bot.sendMessage(chatId, resp);
+  console.log(match);
+});
+
+bot.onText(/\/toAll (.*)/, (msg, match) => {
+  if (msg.from.id == 114083702) {
+    Object.keys(data.games).forEach((chat) => {
+      if (chat[0] == "-") bot.sendMessage(chat, match[1]);
+    });
+  } else {
+    bot.sendMessage(
+      msg.chat.id,
+      "Tu no eres @OsiNubis99... No puedes Hacer esto!"
+    );
+  }
   bd.write(data);
 });
 
 bot.onText(/\/active/, (msg, match) => {
   let chatId = msg.chat.id;
-  let resp = "Hay un total de " + data.games.lenght + " juegos activos " + msg.from.first_name;
+  let resp =
+    "Hay un total de " +
+    Object.keys(data.games).length +
+    " juegos iniciados " +
+    msg.from.first_name;
   bot.sendMessage(chatId, resp);
 });
 
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    `Sigue estos pasos: 
+    `Sigue estos pasos:
 	1. Agrega este bot a un grupo (El bot aun no esta listo, solo se puede probar [aqui](https://t.me/JuegosVZLA))
 	2. En el grupo, iniciar la partida con /crear, el jugador que haya creado la partida ya estará unido al juego y será el dealer de esa partida
 	3. Una vez creado la partida, los jugadores podrán unir usando /unirse, se podrán unir un máximo de tres jugadores
@@ -316,11 +335,8 @@ bot.onText(/\/start/, (msg) => {
 	/eliminar - Eliminar la partida en curso
 	/estado - Resumen del juego (jugadores, turno, puntos) y lo último jugado
 	/saltar - Está acción hará pasar a un jugador y se jugará una carta al azar. Solo la puede ejecutar el creador de la partida
-	/configuracion
-		*Cambiar idioma
-		*Cambiar el modo de juego, si hay 4 jugadores, seleccionar si se juega individual o en parejas.
-		*Configurar los cantos a utilizar en la partida
-		*Definir el límites de puntos en una partida (12 / 24)`
+
+	Logo y gráficos hechos por @Toweraki`
   );
 });
 
@@ -338,27 +354,24 @@ bot.onText(/\/help/, (msg) => {
 	/eliminar - Eliminar la partida en curso
 	/estado - Resumen del juego (jugadores, turno, puntos) y lo último jugado
 	/saltar - Está acción hará pasar a un jugador y se jugará una carta al azar. Solo la puede ejecutar el creador de la partida
-	/configuracion
-		*Cambiar idioma
-		*Cambiar el modo de juego, si hay 4 jugadores, seleccionar si se juega individual o en parejas.
-		*Configurar los cantos a utilizar en la partida
-		*Definir el límites de puntos en una partida (12 / 24)`
+	
+	Logo y gráficos hechos por @Toweraki`
   );
 });
 
 function crear(msg) {
   let chatId = msg.chat.id;
-    if (data.games["g" + chatId] == null) {
-      data.games["g" + chatId] = new Game(msg.from.id);
-      bot.sendMessage(
-        chatId,
-        "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
-      );
-    } else
-      bot.sendMessage(
-        chatId,
-        "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
-      );
+  if (data.games[chatId.toString()] == undefined) {
+    data.games[chatId.toString()] = new Game(msg.from.id);
+    bot.sendMessage(
+      chatId,
+      "Partida creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
+    );
+  } else
+    bot.sendMessage(
+      chatId,
+      "La partida ya esta creada!\nPueden unirse con /unirse y empezar el juego con /iniciar"
+    );
   if (groups.indexOf(chatId) < 0) {
     bot.sendMessage(
       chatId,
@@ -371,8 +384,8 @@ function crear(msg) {
 
 function eliminar(msg) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId] != null) {
-    data.games["g" + chatId].players.forEach((id) => {
+  if (data.games[chatId.toString()] != null) {
+    data.games[chatId.toString()].players.forEach((id) => {
       data.players["p" + id].games.splice(
         data.players["p" + id].games.indexOf(
           data.players["p" + id].games.find((value) => {
@@ -388,8 +401,8 @@ function eliminar(msg) {
             : null;
       }
     });
-    data.games["g" + chatId] = undefined;
-    bot.sendMessage(114083702, "Juego eliminado:\n" + JSON.stringify(msg));  
+    data.games[chatId.toString()] = undefined;
+    bot.sendMessage(114083702, "Juego eliminado:\n" + JSON.stringify(msg));
     if (groups.indexOf(chatId) < 0) {
       bot.sendMessage(
         chatId,
@@ -405,8 +418,8 @@ function eliminar(msg) {
 
 function reiniciar(msg) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId]) {
-    data.games["g" + chatId].players.forEach((id) => {
+  if (data.games[chatId.toString()]) {
+    data.games[chatId.toString()].players.forEach((id) => {
       data.players["p" + id].games.splice(
         data.players["p" + id].games.indexOf(
           data.players["p" + id].games.find((value) => {
@@ -423,7 +436,7 @@ function reiniciar(msg) {
       }
     });
   }
-  data.games["g" + chatId] = new Game(msg.from.id);
+  data.games[chatId.toString()] = new Game(msg.from.id);
   if (groups.indexOf(chatId) < 0) {
     bot.sendMessage(
       chatId,
@@ -447,14 +460,14 @@ function unirse(msg) {
     data.players["p" + msg.from.id].username = msg.from.username;
   }
   if (bans.indexOf(msg.from.id) < 0) {
-    if (data.games["g" + chatId] != null) {
+    if (data.games[chatId.toString()] != null) {
       if (
-        !data.games["g" + chatId].players.find(
+        !data.games[chatId.toString()].players.find(
           (player) => player == msg.from.id
         )
       ) {
-        if (data.games["g" + chatId].player == null) {
-          if (data.games["g" + chatId].players.length < 4) {
+        if (data.games[chatId.toString()].player == null) {
+          if (data.games[chatId.toString()].players.length < 4) {
             bot.getChat(chatId).then((chat) => {
               data.players["p" + msg.from.id].games.unshift({
                 title: chat.title,
@@ -462,9 +475,9 @@ function unirse(msg) {
               });
               bd.write(data);
             });
-            data.games["g" + chatId].players.unshift(msg.from.id);
-            data.games["g" + chatId].head =
-              data.games["g" + chatId].players.length - 1;
+            data.games[chatId.toString()].players.unshift(msg.from.id);
+            data.games[chatId.toString()].head =
+              data.games[chatId.toString()].players.length - 1;
             bot.sendMessage(
               chatId,
               "Bienvenido " +
@@ -473,7 +486,7 @@ function unirse(msg) {
                 msg.from.username +
                 "). Te has unido a la partida." +
                 "\nJugadores actuales: " +
-                data.games["g" + chatId].players.length,
+                data.games[chatId.toString()].players.length,
               {
                 reply_to_message_id: msg.message_id,
               }
@@ -511,7 +524,7 @@ function unirse(msg) {
 
 function configurar(msg, match) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId] != null) {
+  if (data.games[chatId.toString()] != null) {
     if (
       match["input"] == "/configurar" ||
       match["input"] == "/configurar@CaidaVZLABot"
@@ -519,17 +532,17 @@ function configurar(msg, match) {
       bot.sendMessage(
         chatId,
         "Se empieza a repartir por el " +
-          data.games["g" + chatId].configs.start +
+          data.games[chatId.toString()].configs.start +
           "\n Para cambiar este valor envia:\n /configurar iniciar 4 o iniciar 1" +
           "\nPronto agregaremos mas configuraciones"
       );
     } else {
       if (match[1] == "iniciar 1" || match[1] == "iniciar 4") {
-        data.games["g" + chatId].configs.start =
+        data.games[chatId.toString()].configs.start =
           match[1] == "iniciar 1" ? 1 : 4;
         bot.sendMessage(
           chatId,
-          "Iniciare por el " + data.games["g" + chatId].configs.start
+          "Iniciare por el " + data.games[chatId.toString()].configs.start
         );
       } else {
         bot.sendMessage(
@@ -548,31 +561,31 @@ function BarajarYRepartir(chatId) {
   let resp = "Barajando y Repartiendo.\n";
   let card,
     order = [];
-  data.games["g" + chatId].deck = Game.barajar();
-  while (data.games["g" + chatId].cards[0].length < 3) {
-    card = new Card(data.games["g" + chatId].deck.pop());
-    while (data.games["g" + chatId].table[card.position] != null) {
-      data.games["g" + chatId].deck.unshift(card.number);
-      card = new Card(data.games["g" + chatId].deck.pop());
+  data.games[chatId.toString()].deck = Game.barajar();
+  while (data.games[chatId.toString()].cards[0].length < 3) {
+    card = new Card(data.games[chatId.toString()].deck.pop());
+    while (data.games[chatId.toString()].table[card.position] != null) {
+      data.games[chatId.toString()].deck.unshift(card.number);
+      card = new Card(data.games[chatId.toString()].deck.pop());
     }
-    data.games["g" + chatId].table[card.position] = card;
+    data.games[chatId.toString()].table[card.position] = card;
     order.push(card.value);
-    Game.repartir(data.games["g" + chatId]);
+    Game.repartir(data.games[chatId.toString()]);
   }
-  card = new Card(data.games["g" + chatId].deck.pop());
-  while (data.games["g" + chatId].table[card.position] != null) {
-    data.games["g" + chatId].deck.unshift(card.number);
-    card = new Card(data.games["g" + chatId].deck.pop());
+  card = new Card(data.games[chatId.toString()].deck.pop());
+  while (data.games[chatId.toString()].table[card.position] != null) {
+    data.games[chatId.toString()].deck.unshift(card.number);
+    card = new Card(data.games[chatId.toString()].deck.pop());
   }
-  data.games["g" + chatId].table[card.position] = card;
-  data.games["g" + chatId].card = card;
+  data.games[chatId.toString()].table[card.position] = card;
+  data.games[chatId.toString()].card = card;
   order.push(card.value);
   let points = 0,
-    i = data.games["g" + chatId].configs.start == 4 ? 0 : 3,
-    j = data.games["g" + chatId].configs.start == 4 ? 1 : -2;
+    i = data.games[chatId.toString()].configs.start == 4 ? 0 : 3,
+    j = data.games[chatId.toString()].configs.start == 4 ? 1 : -2;
   while (i >= 0 && i <= 3) {
     points += order[i] == i + j ? i + j : 0;
-    if (data.games["g" + chatId].configs.start == 4) {
+    if (data.games[chatId.toString()].configs.start == 4) {
       i++;
     } else {
       i--;
@@ -580,10 +593,10 @@ function BarajarYRepartir(chatId) {
     }
   }
   if (points > 0) {
-    data.games["g" + chatId].points[1] += points;
+    data.games[chatId.toString()].points[1] += points;
     resp += "Pegaron " + points + " en mesa\n";
   } else {
-    data.games["g" + chatId].points[0] += 1;
+    data.games[chatId.toString()].points[0] += 1;
     resp += "Mal Echada\n";
   }
   resp +=
@@ -593,20 +606,22 @@ function BarajarYRepartir(chatId) {
 
 function iniciar(msg) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId] != null) {
-    if (data.games["g" + chatId].player == null) {
+  if (data.games[chatId.toString()] != null) {
+    if (data.games[chatId.toString()].player == null) {
       if (
-        data.games["g" + chatId].head == 1 ||
-        data.games["g" + chatId].head == 3
+        data.games[chatId.toString()].head == 1 ||
+        data.games[chatId.toString()].head == 3
       ) {
-        data.games["g" + chatId].player = 0;
+        data.games[chatId.toString()].player = 0;
         bot.sendMessage(
           chatId,
           BarajarYRepartir(chatId) +
             "Primer jugador: " +
-            data.players["p" + data.games["g" + chatId].players[0]].first_name +
+            data.players["p" + data.games[chatId.toString()].players[0]]
+              .first_name +
             "(@" +
-            data.players["p" + data.games["g" + chatId].players[0]].username +
+            data.players["p" + data.games[chatId.toString()].players[0]]
+              .username +
             ")",
           {
             reply_markup: {
@@ -616,7 +631,7 @@ function iniciar(msg) {
                     text:
                       "Escoge una carta " +
                       data.players[
-                        "p" + Game.getPlayer(data.games["g" + chatId])
+                        "p" + Game.getPlayer(data.games[chatId.toString()])
                       ].first_name,
                     switch_inline_query_current_chat: "",
                   },
@@ -639,7 +654,7 @@ function iniciar(msg) {
 
 function estado(msg) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId] == null) {
+  if (data.games[chatId.toString()] == undefined) {
     bot.sendMessage(chatId, "La partida no esta creada!\nCrea una con /crear");
   } else {
     bot.sendMessage(chatId, Game.status(data, chatId, false));
@@ -653,13 +668,15 @@ function verCartas(msg) {
     data.players["p" + playerId] &&
     data.players["p" + playerId].game != null
   ) {
-    if (data.games["g" + data.players["p" + playerId].game].player != null) {
+    if (
+      data.games[data.players["p" + playerId].game.toString()].player != null
+    ) {
       let resp = "Tus cartas son:",
         i = 0;
-      for (c of data.games["g" + data.players["p" + playerId].game].cards[
-        data.games["g" + data.players["p" + playerId].game].players.indexOf(
-          playerId
-        )
+      for (c of data.games[data.players["p" + playerId].game.toString()].cards[
+        data.games[
+          data.players["p" + playerId].game.toString()
+        ].players.indexOf(playerId)
       ]) {
         resp += "\n" + i + ": " + c.value;
         i++;
@@ -686,27 +703,27 @@ function cantos(msg) {
 
 function cantar(msg, match) {
   let playerId = msg.from.id;
-  if (data.players["p" + playerId]&&data.players["p" + playerId].game) {
+  if (data.players["p" + playerId] && data.players["p" + playerId].game) {
     let chatId = data.players["p" + playerId].game;
-    if (data.games["g" + chatId].player != null) {
-      let team = data.games["g" + chatId].players.indexOf(playerId);
-      if (data.games["g" + chatId].cards[team].length == 3) {
-        if (data.games["g" + chatId].sings[team].name == "Tres Cartas") {
-          data.games["g" + chatId].sings[team] = new Sing(
+    if (data.games[chatId.toString()].player != null) {
+      let team = data.games[chatId.toString()].players.indexOf(playerId);
+      if (data.games[chatId.toString()].cards[team].length == 3) {
+        if (data.games[chatId.toString()].sings[team].name == "Tres Cartas") {
+          data.games[chatId.toString()].sings[team] = new Sing(
             match[1],
-            data.games["g" + chatId].cards[team]
+            data.games[chatId.toString()].cards[team]
           );
           bot.sendMessage(
             chatId,
             "@" +
               data.players["p" + playerId].username +
               " cantó " +
-              data.games["g" + chatId].sings[team].name
+              data.games[chatId.toString()].sings[team].name
           );
         } else {
           bot.sendMessage(
             chatId,
-            "Ya Cantaste " + data.games["g" + chatId].sings[team].name
+            "Ya Cantaste " + data.games[chatId.toString()].sings[team].name
           );
         }
       } else {
@@ -725,38 +742,43 @@ function jugarCarta(msg, match) {
   let barajarRepartir = false;
   if (data.players["p" + playerId] && data.players["p" + playerId].game) {
     let chatId = data.players["p" + playerId].game;
-    if (data.games["g" + chatId].player != null) {
-      if (Game.getPlayer(data.games["g" + chatId]) == playerId) {
-        card = data.games["g" + chatId].cards[
-          data.games["g" + chatId].player
+    if (data.games[chatId.toString()].player != null) {
+      if (Game.getPlayer(data.games[chatId.toString()]) == playerId) {
+        card = data.games[chatId.toString()].cards[
+          data.games[chatId.toString()].player
         ].splice(match[1], 1)[0];
         if (
-          data.games["g" + chatId].cards[data.games["g" + chatId].player]
-            .length == 2 &&
+          data.games[chatId.toString()].cards[
+            data.games[chatId.toString()].player
+          ].length == 2 &&
           !(
-            data.games["g" + chatId].sings[data.games["g" + chatId].player]
-              .name == "Tres Cartas" ||
-            data.games["g" + chatId].sings[data.games["g" + chatId].player]
-              .name == "Un Mal Canto"
+            data.games[chatId.toString()].sings[
+              data.games[chatId.toString()].player
+            ].name == "Tres Cartas" ||
+            data.games[chatId.toString()].sings[
+              data.games[chatId.toString()].player
+            ].name == "Un Mal Canto"
           )
         ) {
-          data.games["g" + chatId].sings[
-            data.games["g" + chatId].player
+          data.games[chatId.toString()].sings[
+            data.games[chatId.toString()].player
           ].name += " al " + card.value;
         }
-        if (data.games["g" + chatId].table[card.position] == null) {
-          data.games["g" + chatId].table[card.position] = card;
+        if (data.games[chatId.toString()].table[card.position] == null) {
+          data.games[chatId.toString()].table[card.position] = card;
         } else {
-          data.games["g" + chatId].lastTaked = data.games["g" + chatId].player;
+          data.games[chatId.toString()].lastTaked =
+            data.games[chatId.toString()].player;
           if (
-            data.games["g" + chatId].card.value == card.value &&
-            data.games["g" + chatId].table[card.position] != null
+            data.games[chatId.toString()].card.value == card.value &&
+            data.games[chatId.toString()].table[card.position] != null
           ) {
-            let anterior = data.games["g" + chatId].player - 1;
-            anterior = anterior < 0 ? data.games["g" + chatId].head : anterior;
-            data.games["g" + chatId].sings[anterior].value = 0;
-            data.games["g" + chatId].points[
-              data.games["g" + chatId].player % 2
+            let anterior = data.games[chatId.toString()].player - 1;
+            anterior =
+              anterior < 0 ? data.games[chatId.toString()].head : anterior;
+            data.games[chatId.toString()].sings[anterior].value = 0;
+            data.games[chatId.toString()].points[
+              data.games[chatId.toString()].player % 2
             ] +=
               card.value == 10
                 ? 2
@@ -777,46 +799,49 @@ function jugarCarta(msg, match) {
               " puntos\n";
           }
           let i = card.position;
-          data.games["g" + chatId].taked[data.games["g" + chatId].player % 2]++;
-          while (i < 10 && data.games["g" + chatId].table[i] != null) {
-            data.games["g" + chatId].taked[
-              data.games["g" + chatId].player % 2
+          data.games[chatId.toString()].taked[
+            data.games[chatId.toString()].player % 2
+          ]++;
+          while (i < 10 && data.games[chatId.toString()].table[i] != null) {
+            data.games[chatId.toString()].taked[
+              data.games[chatId.toString()].player % 2
             ]++;
-            data.games["g" + chatId].table[i] = null;
+            data.games[chatId.toString()].table[i] = null;
             i++;
           }
           i = 0;
-          while (i < 10 && data.games["g" + chatId].table[i] == null) {
+          while (i < 10 && data.games[chatId.toString()].table[i] == null) {
             i++;
           }
-          if (i == 10 && !data.games["g" + chatId].lastOne) {
-            data.games["g" + chatId].points[
-              data.games["g" + chatId].player % 2
+          if (i == 10 && !data.games[chatId.toString()].lastOne) {
+            data.games[chatId.toString()].points[
+              data.games[chatId.toString()].player % 2
             ] += 4;
             respuesta += "Mesa Limpia!! +4 puntos!\n";
           }
         }
-        data.games["g" + chatId].card = card;
+        data.games[chatId.toString()].card = card;
         if (
-          data.games["g" + chatId].player == data.games["g" + chatId].head &&
-          !data.games["g" + chatId].cards[0].length
+          data.games[chatId.toString()].player ==
+            data.games[chatId.toString()].head &&
+          !data.games[chatId.toString()].cards[0].length
         ) {
           barajarRepartir = true;
-          let teamA1 = data.games["g" + chatId].sings[0].value,
-            teamB1 = data.games["g" + chatId].sings[1].value,
-            teamA2 = data.games["g" + chatId].sings[2].value,
-            teamB2 = data.games["g" + chatId].sings[3].value;
+          let teamA1 = data.games[chatId.toString()].sings[0].value,
+            teamB1 = data.games[chatId.toString()].sings[1].value,
+            teamA2 = data.games[chatId.toString()].sings[2].value,
+            teamB2 = data.games[chatId.toString()].sings[3].value;
           if (
             (teamA1 >= teamB1 && teamA1 >= teamB2) ||
             (teamA2 >= teamB1 && teamA2 >= teamB2)
           ) {
-            data.games["g" + chatId].points[0] +=
+            data.games[chatId.toString()].points[0] +=
               teamA1 > teamA2 ? teamA1 : teamA2;
           } else {
-            data.games["g" + chatId].points[1] +=
+            data.games[chatId.toString()].points[1] +=
               teamB1 > teamB2 ? teamB1 : teamB2;
           }
-          data.games["g" + chatId].sings = [
+          data.games[chatId.toString()].sings = [
             new Sing(null),
             new Sing(null),
             new Sing(null),
@@ -827,21 +852,21 @@ function jugarCarta(msg, match) {
             let i = 0;
             respuesta += "Repartiendo...\n";
             while (i < 3) {
-              Game.repartir(data.games["g" + chatId]);
+              Game.repartir(data.games[chatId.toString()]);
               i++;
             }
-            if (!data.games["g" + chatId].deck.length) {
+            if (!data.games[chatId.toString()].deck.length) {
               respuesta += "#ULTIMAS!!!\n";
-              data.games["g" + chatId].lastOne = true;
+              data.games[chatId.toString()].lastOne = true;
             }
           } else {
             respuesta += mazoV;
           }
         }
         if (puedeSeguir(chatId)) {
-          data.games["g" + chatId].player =
-            (data.games["g" + chatId].player + 1) %
-            data.games["g" + chatId].players.length;
+          data.games[chatId.toString()].player =
+            (data.games[chatId.toString()].player + 1) %
+            data.games[chatId.toString()].players.length;
           respuesta += Game.status(data, chatId, !barajarRepartir);
           bot.sendMessage(chatId, respuesta, {
             reply_markup: {
@@ -851,7 +876,7 @@ function jugarCarta(msg, match) {
                     text:
                       "Escoge una carta " +
                       data.players[
-                        "p" + Game.getPlayer(data.games["g" + chatId])
+                        "p" + Game.getPlayer(data.games[chatId.toString()])
                       ].first_name,
                     switch_inline_query_current_chat: "",
                   },
@@ -869,8 +894,9 @@ function jugarCarta(msg, match) {
                 {
                   text:
                     "Escoge una carta " +
-                    data.players["p" + Game.getPlayer(data.games["g" + chatId])]
-                      .first_name,
+                    data.players[
+                      "p" + Game.getPlayer(data.games[chatId.toString()])
+                    ].first_name,
                   switch_inline_query_current_chat: "",
                 },
               ],
@@ -890,40 +916,42 @@ function jugarCarta(msg, match) {
 }
 
 function mazoVacio(chatId) {
-  if (!data.games["g" + chatId].deck.length) {
+  if (!data.games[chatId.toString()].deck.length) {
     let j = 0,
       i = 0;
     while (i < 10) {
-      if (data.games["g" + chatId].table[i] != null) {
-        data.games["g" + chatId].table[i] = null;
+      if (data.games[chatId.toString()].table[i] != null) {
+        data.games[chatId.toString()].table[i] = null;
         j++;
       }
       i++;
     }
-    if (data.games["g" + chatId].lastTaked != null) {
-      data.games["g" + chatId].taked[
-        data.games["g" + chatId].lastTaked % 2
+    if (data.games[chatId.toString()].lastTaked != null) {
+      data.games[chatId.toString()].taked[
+        data.games[chatId.toString()].lastTaked % 2
       ] += j;
     } else {
-      data.games["g" + chatId].taked[data.games["g" + chatId].head] += j;
+      data.games[chatId.toString()].taked[
+        data.games[chatId.toString()].head
+      ] += j;
     }
-    let teamA = data.games["g" + chatId].taked[0],
-      teamB = data.games["g" + chatId].taked[1];
+    let teamA = data.games[chatId.toString()].taked[0],
+      teamB = data.games[chatId.toString()].taked[1];
     if (teamA > teamB) {
-      data.games["g" + chatId].points[0] += teamA - 20;
+      data.games[chatId.toString()].points[0] += teamA - 20;
     } else {
-      data.games["g" + chatId].points[1] += teamB - 20;
+      data.games[chatId.toString()].points[1] += teamB - 20;
     }
-    data.games["g" + chatId].players.push(
-      data.games["g" + chatId].players.shift()
+    data.games[chatId.toString()].players.push(
+      data.games[chatId.toString()].players.shift()
     );
-    data.games["g" + chatId].points.push(
-      data.games["g" + chatId].points.shift()
+    data.games[chatId.toString()].points.push(
+      data.games[chatId.toString()].points.shift()
     );
-    data.games["g" + chatId].taked = [0, 0];
-    data.games["g" + chatId].lastTaked = null;
-    data.games["g" + chatId].lastOne = false;
-    data.games["g" + chatId].card = null;
+    data.games[chatId.toString()].taked = [0, 0];
+    data.games[chatId.toString()].lastTaked = null;
+    data.games[chatId.toString()].lastOne = false;
+    data.games[chatId.toString()].card = null;
     return BarajarYRepartir(chatId);
   }
   return false;
@@ -931,25 +959,29 @@ function mazoVacio(chatId) {
 
 function puedeSeguir(chatId) {
   if (
-    data.games["g" + chatId].points[0] >= 24 ||
-    data.games["g" + chatId].points[1] >= 24
+    data.games[chatId.toString()].points[0] >= 24 ||
+    data.games[chatId.toString()].points[1] >= 24
   ) {
     if (
-      data.games["g" + chatId].points[0] > data.games["g" + chatId].points[1]
+      data.games[chatId.toString()].points[0] >
+      data.games[chatId.toString()].points[1]
     ) {
       bot.sendMessage(
         chatId,
         "Partida finalizada!\nGano: " +
-          data.players["p" + data.games["g" + chatId].players[0]].first_name +
+          data.players["p" + data.games[chatId.toString()].players[0]]
+            .first_name +
           " (@" +
-          data.players["p" + data.games["g" + chatId].players[0]].username +
+          data.players["p" + data.games[chatId.toString()].players[0]]
+            .username +
           ")" +
-          (data.games["g" + chatId].head == 3
+          (data.games[chatId.toString()].head == 3
             ? "\n y " +
-              data.players["p" + data.games["g" + chatId].players[2]]
+              data.players["p" + data.games[chatId.toString()].players[2]]
                 .first_name +
               " (@" +
-              data.players["p" + data.games["g" + chatId].players[2]].username +
+              data.players["p" + data.games[chatId.toString()].players[2]]
+                .username +
               ")"
             : "")
       );
@@ -957,23 +989,26 @@ function puedeSeguir(chatId) {
       bot.sendMessage(
         chatId,
         "Partida finalizada!\nGano: " +
-          data.players["p" + data.games["g" + chatId].players[1]].first_name +
+          data.players["p" + data.games[chatId.toString()].players[1]]
+            .first_name +
           " (@" +
-          data.players["p" + data.games["g" + chatId].players[1]].username +
+          data.players["p" + data.games[chatId.toString()].players[1]]
+            .username +
           ")" +
-          (data.games["g" + chatId].head == 3
+          (data.games[chatId.toString()].head == 3
             ? "\n y " +
-              data.players["p" + data.games["g" + chatId].players[3]]
+              data.players["p" + data.games[chatId.toString()].players[3]]
                 .first_name +
               " (@" +
-              data.players["p" + data.games["g" + chatId].players[3]].username +
+              data.players["p" + data.games[chatId.toString()].players[3]]
+                .username +
               ")"
             : "")
       );
     }
     // bot.sendMessage(114083702, "Juego finalizado:\n" + JSON.stringify(msg));
     bot.sendMessage(chatId, Game.status(data, chatId, false));
-    data.games["g" + chatId].players.forEach((id) => {
+    data.games[chatId.toString()].players.forEach((id) => {
       data.players["p" + id].games.splice(
         data.players["p" + id].games.indexOf(
           data.players["p" + id].games.find((value) => {
@@ -989,7 +1024,7 @@ function puedeSeguir(chatId) {
             : null;
       }
     });
-    data.games["g" + chatId] = undefined;
+    data.games[chatId.toString()] = undefined;
     return false;
   }
   return true;
@@ -997,16 +1032,19 @@ function puedeSeguir(chatId) {
 
 function pasar(msg, match) {
   let chatId = msg.chat.id;
-  if (data.games["g" + chatId] && data.games["g" + chatId].player) {
-    if (data.games["g" + chatId].owner == msg.from.id || match[1] == "force") {
-      let player = data.games["g" + chatId].player;
+  if (data.games[chatId.toString()] && data.games[chatId.toString()].player) {
+    if (
+      data.games[chatId.toString()].owner == msg.from.id ||
+      match[1] == "force"
+    ) {
+      let player = data.games[chatId.toString()].player;
       let number =
         Math.round(Math.random() * 1000) %
-        data.games["g" + chatId].cards[player].length;
+        data.games[chatId.toString()].cards[player].length;
       jugarCarta(
         {
           from: {
-            id: data.games["g" + chatId].players[player],
+            id: data.games[chatId.toString()].players[player],
           },
         },
         [0, number]

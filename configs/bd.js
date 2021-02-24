@@ -1,16 +1,16 @@
-const fs = require('fs');
+const fs = require("fs");
 class database {
-	constructor() {
-		this.path = "./public/data.json";
-	}
+  constructor() {
+    this.path = "./public/data.json";
+  }
 
-	read() {
-		return require("." + this.path);
-	}
+  read() {
+    return require("." + this.path);
+  }
 
-	write(data) {
-		fs.writeFileSync(this.path, JSON.stringify(data, null, 2));
-	}
+  write(data) {
+    fs.writeFileSync(this.path, JSON.stringify(data, null, 2));
+  }
 }
 
 let bd = new database();
