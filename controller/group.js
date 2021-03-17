@@ -5,7 +5,7 @@ module.exports = {
   /**
    * Add a new Group to the database. If it's already then update the group name.
    * @param {*} group - Group element to be pushed.
-   * @returns The complete group from database.
+   * @returns The full group element from database.
    */
   async add(group) {
     result = await database.query(
@@ -19,7 +19,7 @@ module.exports = {
    * Set all configs from new_configs to one group.
    * @param {*} group_id - The Id of the group to be updated.
    * @param {*} new_configs - Game_mode element with all configs.
-   * @returns The complete group from database.
+   * @returns The full group element from database.
    */
   async update(group_id, new_configs) {
     result = await database.query(
@@ -50,7 +50,7 @@ module.exports = {
   },
 
   /**
-   * @returns All Group from the database.
+   * @returns All Groups from the database.
    */
   async list() {
     result = await database.query("SELECT * FROM public.group;");
