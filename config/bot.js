@@ -25,6 +25,29 @@ bot.onText(/\/saluda(.*)/, (msg, match) => {
   bot.sendMessage(chatId, resp);
 });
 
+function sayHi(msg) {
+  bot.sendMessage(
+    msg.chat.id,
+    `Sigue estos pasos:
+	1. Agrega este bot a un grupo.
+	2. En el grupo, iniciar la partida con /crear.
+	3. Una vez creado la partida, los jugadores podrán unir usando /unirse, se podrán unir un máximo de cuatro jugadores.
+	4. Luego de que estén todos los integrantes que jugarán utilizar /iniciar para configurar la partida e iniciar.
+	5. En el cuadro del chat, escribir @CaidaVZLABot y aparecerán sus cartas (serán completamente anónimas) y una carta de cantos.
+
+	/saltar - Está acción hará pasar a un jugador y se jugará una carta al azar. Solo la puede ejecutar un administrador del grupo.
+	/configuracion
+		*Cambiar el idioma (Desarrollo)
+		*Cambiar el modo de juego, si hay 4 jugadores, seleccionar si se juega individual o en parejas.
+		*Configurar los cantos a utilizar en la partida
+		*Definir el límites de puntos en una partida (1 ~ 100)`
+  );
+}
+
+bot.onText(/\/start/, sayHi);
+
+bot.onText(/\/help/, sayHi);
+
 bot.on("error", (error) => {
   console.error(error + "\n Error");
 });
