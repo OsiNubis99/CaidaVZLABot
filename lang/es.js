@@ -1,8 +1,10 @@
 const ERROR =
   "\nSi estas experimentando algún error, por favor dejámelo saber escribiendo a @OsiNubis99.";
+const USE_JOIN = "\nUsa /unirse para unirte a la partida.";
+const USE_START =
+  "\nUsa /iniciar para configurar e iniciar la partida o /inicia_ya para saltarte la configuración";
 module.exports = {
   config_bool_invalid: "Valor invalido, las opciones son: 'on' o 'off'" + ERROR,
-  config_type: "TODO",
   config_type_invalid:
     "Valor invalido, las opciones son: 'individual' o 'parejas'" + ERROR,
   config_number_invalid:
@@ -10,12 +12,17 @@ module.exports = {
     ERROR,
   config_undefined:
     "Configuración invalida, por favor revisa /configurar" + ERROR,
-  game_already_created: "game is already created", // TODO Make a nice Game_already_created Message
-  game_created: "created", // TODO Make a nice Game_created Message
-  game_is_full: "is full", // TODO Make a nice Game_is_full Message
-  game_is_running: "game running", // TODO Make a nice Game_running Message
-  game_no_created: "no created", // TODO Make a nice Game_no_created Message
-  game_no_started: "no started", // TODO Make a nice Game_no_started Message
+  config_is_ok:
+    "Configuración aplicada, usa /configurar para ver los valores actuales.",
+  game_already_created: "El juego ya esta creado." + USE_JOIN,
+  game_created: "Juego creado." + USE_JOIN,
+  game_is_empty:
+    "El mínimo de jugadores es 2. Espera a que más jugadores se unan a la partida!", // TODO Make a nice Game_is_empty Message
+  game_is_full:
+    "El máximo de jugadores es 4. Intenta jugar la siguiente partida!",
+  game_is_running:
+    "El juego ya empezó. Espera a que este termine o un administrador que use /reiniciar", // TODO Make a nice Game_running Message
+  game_no_started: "El juego aun no empieza." + USE_START,
   group_added: "Grupo agregado.",
   group_removed: "Grupo removido de la lista de permitidos",
   how_config: "TODO", // TODO Make a nice How_config Message
@@ -26,12 +33,13 @@ module.exports = {
   no_ban_groups: "No es posible Bloquear un Bot.",
   no_unban_groups: "No es posible Desbloquear un Bot.",
   remember_reply: "Recuerda responder al mensaje del otro jugador.",
+  start_by: "Barajando...\nEscoge si empezar mesa con 1 o 4.",
   set_group_modes: "Escoge el nuevo modo de Juego",
   user_added: "Usuario agregado.",
   user_banned: "Usuario Bloqueado.",
   user_is_banned:
     "Usted fue bloqueado temporal o permanentemente para el uso de este Bot." +
     ERROR,
-  user_joined: "TODO", // TODO Make a nice User_joined Message
+  user_is_already_joined: "Ya estas unido a esta partida",
   user_unbanned: "Usuario Desbloqueado.",
 };
