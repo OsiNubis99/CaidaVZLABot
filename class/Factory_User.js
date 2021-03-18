@@ -1,5 +1,4 @@
 const TelegramBot = require("node-telegram-bot-api");
-const resp = require("../lang/es");
 
 class Factory_User {
   id_user = String.prototype;
