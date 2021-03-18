@@ -1,4 +1,4 @@
 module.exports = {
-  user: require("./user"),
-  group: require("./group"),
+  UserController: require("./user"),
+  GroupController: require("./group"),
 };
