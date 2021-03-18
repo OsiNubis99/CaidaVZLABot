@@ -16,7 +16,7 @@ module.exports = {
   },
 
   /**
-   * @returns All Users from the database.
+   * @returns {Array<Factory_User>} All Users from the database.
    */
   async list() {
     let result = await database.query("SELECT * FROM public.user;");
@@ -42,7 +42,7 @@ module.exports = {
    * @param {Number} sings - Number of sings of the user in the game.
    * @param {Number} caida - Number of times the user gave down another.
    * @param {Number} caido - Number of times the user was fallen by another.
-   * @returns The full User element from database.
+   * @returns {Factory_User} The full User element from database.
    */
   async set_statics(id_user, win, sings, caida, caido) {
     let result = await database.query(
