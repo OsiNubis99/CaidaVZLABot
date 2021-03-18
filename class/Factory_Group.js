@@ -22,15 +22,22 @@ class Factory_Group {
   casa_grande = Number.prototype;
   trivilin = Number.prototype;
 
+  constructor(id_group, name) {
+    this.id_group = id_group;
+    this.name = name;
+  }
+
   /**
    * @param {TelegramBot.Chat} telegramChat
-   * @returns A User element
+   * @returns {Factory_Group|false} A User element
    */
   static fromTelegram(telegramChat) {
-    return {
-      id_user: telegramChat.id.toString(),
-      name: telegramChat.title,
-    };
+    if (telegramChat) {
+      let id_group = telegramChat.id.toString();
+      let name = telegramChat.title || "";
+      return new Factory_Group(id_group, name);
+    }
+    return false;
   }
 }
 module.exports = Factory_Group;
