@@ -1,9 +1,21 @@
+const Card = require("./Card");
+const Config = require("./Config");
+
 class Sings {
-  constructor(cards = false, config) {
-    this.active = 0;
+  active = Boolean.prototype;
+  value = Number.prototype;
+  name = String.prototype;
+
+  /**
+   * Create a Sings Object
+   * @param {Card[]} cards - 3 cards to be tested.
+   * @param {Config} config - Configs of the group.
+   */
+  constructor(cards, config) {
+    this.active = false;
     this.value = 0;
     this.name = "No cantó";
-    if (cards) {
+    if (cards.length == 3) {
       if (
         cards[0].value == cards[1].value &&
         cards[1].value == cards[2].value
@@ -18,8 +30,8 @@ class Sings {
         this.value = config.casa_grande;
         this.name = "Casa Grande";
       } else if (
-        cards[0].value == 12 &&
-        cards[1].value == 1 &&
+        cards[0].value == 11 &&
+        cards[1].value == 11 &&
         cards[2].value == 1
       ) {
         this.value = config.casa_chica;

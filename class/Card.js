@@ -1,4 +1,8 @@
 class Card {
+  /**
+   * Create a Card Object
+   * @param {number} number - The generator number of the card [0,39]
+   */
   constructor(number) {
     this.number = number;
     this.position = Math.floor(number / 4);
@@ -27,22 +31,6 @@ class Card {
       "-" +
       this.type +
       ".png";
-  }
-
-  static getType(number) {
-    this.type = number % 4;
-    return this.type == 0
-      ? "Oro"
-      : this.type == 1
-      ? "Espada"
-      : this.type == 2
-      ? "Copa"
-      : "Basto";
-  }
-
-  static getValue(number) {
-    var value = Math.floor(number / 4) + 1;
-    return value == 8 ? 10 : value == 9 ? 11 : value == 10 ? 12 : value;
   }
 }
 module.exports = Card;

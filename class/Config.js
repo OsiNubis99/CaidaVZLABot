@@ -1,7 +1,31 @@
 const resp = require("../lang/es");
 const game_modes = require("../lang/game_modes_es");
+const Factory_Group = require("./Factory_Group");
 
 class Config {
+  game_mode = Number.prototype;
+  points = Number.prototype;
+  type = String.prototype;
+  caida_continua = String.prototype;
+  mata_canto = String.prototype;
+  mata_mesa = String.prototype;
+  mesa = Number.prototype;
+  caida = Number.prototype;
+  ronda = Number.prototype;
+  chiguire = Number.prototype;
+  patrulla = Number.prototype;
+  vigia = Number.prototype;
+  registro = Number.prototype;
+  maguaro = Number.prototype;
+  registrico = Number.prototype;
+  casa_chica = Number.prototype;
+  casa_grande = Number.prototype;
+  trivilin = Number.prototype;
+
+  /**
+   * Create a Config Object
+   * @param {Factory_Group} new_config - Object with all configs.
+   */
   constructor(new_config) {
     this.set_game_mode(new_config);
   }
@@ -64,6 +88,10 @@ class Config {
   get_trivilin() {
     return "\n\t\tTrivilin: " + this.trivilin;
   }
+
+  /**
+   * @returns Full info about the Game configs
+   */
   print() {
     return (
       "Configuración actual del Chat" +
@@ -88,6 +116,13 @@ class Config {
       this.get_trivilin()
     );
   }
+
+  /**
+   * Validate a value to a specific config and if it's OK then set up it.
+   * @param {String} config - Specific config to be validated and updated.
+   * @param {String|Number} value - Value to tested.
+   * @returns true if the value is ok. Else return the specific error message.
+   */
   is_not_ok(config, value) {
     if (config == "type") {
       if (value == "parejas" || value == "individual") {
@@ -123,36 +158,50 @@ class Config {
     }
     return resp.config_undefined;
   }
+
+  /**
+   * If new_mode is a number then take all configs from store else it's should be a Factory_Group object with all configs to be set.
+   * @param {Factory_Group|Number} new_mode
+   */
   set_game_mode(new_mode) {
     if (typeof new_mode === "number") new_mode = game_modes[new_mode];
     this.game_mode = new_mode.game_mode;
-    this.points = new_config.points;
-    this.type = new_config.type;
-    this.caida_continua = new_config.caida_continua;
-    this.mata_canto = new_config.mata_canto;
-    this.mata_mesa = new_config.mata_mesa;
-    this.mesa = new_config.mesa;
-    this.caida = new_config.caida;
-    this.ronda = new_config.ronda;
-    this.chiguire = new_config.chiguire;
-    this.patrulla = new_config.patrulla;
-    this.vigia = new_config.vigia;
-    this.registro = new_config.registro;
-    this.maguaro = new_config.maguaro;
-    this.registrico = new_config.registrico;
-    this.casa_chica = new_config.casa_chica;
-    this.casa_grande = new_config.casa_grande;
-    this.trivilin = new_config.trivilin;
+    this.points = new_mode.points;
+    this.type = new_mode.type;
+    this.caida_continua = new_mode.caida_continua;
+    this.mata_canto = new_mode.mata_canto;
+    this.mata_mesa = new_mode.mata_mesa;
+    this.mesa = new_mode.mesa;
+    this.caida = new_mode.caida;
+    this.ronda = new_mode.ronda;
+    this.chiguire = new_mode.chiguire;
+    this.patrulla = new_mode.patrulla;
+    this.vigia = new_mode.vigia;
+    this.registro = new_mode.registro;
+    this.maguaro = new_mode.maguaro;
+    this.registrico = new_mode.registrico;
+    this.casa_chica = new_mode.casa_chica;
+    this.casa_grande = new_mode.casa_grande;
+    this.trivilin = new_mode.trivilin;
   }
+
+  /**
+   * @param {Number} players - How many players is playing.
+   * @returns Printable before game message.
+   */
   print_before_game(players) {
     let response = "";
     if (players == 4) {
       response += this.get_type();
-      response == "\n";
+      response += "\n";
     }
     response += this.get_game_mode();
     return response;
   }
+
+  /**
+   * @returns an Array with name and number of all game_mode in the store.
+   */
   get_game_modes() {
     let response = [];
     game_modes.forEach((element) => {
@@ -160,6 +209,7 @@ class Config {
         response.push({ name: element.name, number: element.game_mode });
       }
     });
+    return response;
   }
 }
 module.exports = Config;

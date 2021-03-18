@@ -1,49 +1,50 @@
 const database = require("../config/db");
-var result;
+const Config = require("../class/Config");
+const Factory_Group = require("../class/Factory_Group");
 
 module.exports = {
   /**
    * Add a new Group to the database. If it's already then update the group name.
-   * @param {*} group - Group element to be pushed.
-   * @returns The full group element from database.
+   * @param {Factory_Group} group - Group element to be pushed.
+   * @returns {Factory_Group} The full group element from database.
    */
   async add(group) {
-    result = await database.query(
+    let result = await database.query(
       "INSERT INTO public.group ( id_group, name ) VALUES ($1,$2) ON CONFLICT (id_group) DO UPDATE SET name = $2 RETURNING * ;",
-      [group.id, group.title]
+      [group.id_group, group.name]
     );
     return result.rows[0];
   },
 
   /**
-   * Set all configs from new_configs to one group.
-   * @param {*} group_id - The Id of the group to be updated.
-   * @param {*} new_configs - Game_mode element with all configs.
+   * Set all configs from new_config to one group.
+   * @param {String} group_id - The Id of the group to be updated.
+   * @param {Config} new_config - New config to be saved.
    * @returns The full group element from database.
    */
-  async update(group_id, new_configs) {
-    result = await database.query(
-      "UPDATE public.group SET game_mode = $2, points = $3, type = $4, caida_continua = $5, mata_canto = $6, mata_mesa = $7, mesa = $8, caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13, registro = $14, maguaro = $15, registrico = $16, casa_chica = $17, casa_grande = $18, trivilin = $19 WHERE id_group = $1 RETURNING *;",
+  async update(group_id, new_config) {
+    let result = await database.query(
+      "UPDATE public.group SET config = $2, points = $3, type = $4, caida_continua = $5, mata_canto = $6, mata_mesa = $7, mesa = $8, caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13, registro = $14, maguaro = $15, registrico = $16, casa_chica = $17, casa_grande = $18, trivilin = $19 WHERE id_group = $1 RETURNING *;",
       [
         group_id,
-        new_configs.game_mode,
-        new_configs.points,
-        new_configs.type,
-        new_configs.caida_continua,
-        new_configs.mata_canto,
-        new_configs.mata_mesa,
-        new_configs.mesa,
-        new_configs.caida,
-        new_configs.ronda,
-        new_configs.chiguire,
-        new_configs.patrulla,
-        new_configs.vigia,
-        new_configs.registro,
-        new_configs.maguaro,
-        new_configs.registrico,
-        new_configs.casa_chica,
-        new_configs.casa_grande,
-        new_configs.trivilin,
+        new_config.game_mode,
+        new_config.points,
+        new_config.type,
+        new_config.caida_continua,
+        new_config.mata_canto,
+        new_config.mata_mesa,
+        new_config.mesa,
+        new_config.caida,
+        new_config.ronda,
+        new_config.chiguire,
+        new_config.patrulla,
+        new_config.vigia,
+        new_config.registro,
+        new_config.maguaro,
+        new_config.registrico,
+        new_config.casa_chica,
+        new_config.casa_grande,
+        new_config.trivilin,
       ]
     );
     return result.rows;
@@ -53,16 +54,16 @@ module.exports = {
    * @returns All Groups from the database.
    */
   async list() {
-    result = await database.query("SELECT * FROM public.group;");
+    let result = await database.query("SELECT * FROM public.group;");
     return result.rows;
   },
 
   /**
-   * @param {*} id_group - The Id of the group to be deleted
+   * @param {String} id_group - The Id of the group to be deleted
    * @returns The deleted group.
    */
   async remove(id_group) {
-    result = await database.query(
+    let result = await database.query(
       "DELETE FROM public.group WHERE id_group = $1;",
       [id_group]
     );
