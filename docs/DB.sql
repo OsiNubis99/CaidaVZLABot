@@ -1,9 +1,9 @@
 -- ************************************** "DROPS"
-DROP TABLE IF EXISTS "user";
-DROP TABLE IF EXISTS "group";
+DROP TABLE IF EXISTS public.user;
+DROP TABLE IF EXISTS public.group;
 
 -- ************************************** "user"
-CREATE TABLE IF NOT EXISTS "user"
+CREATE TABLE IF NOT EXISTS public.user
 (
  "id_user"    	varchar(50) NOT NULL,
  "first_name" 	varchar(100) NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS "user"
  CONSTRAINT "PK_user" PRIMARY KEY ( "id_user" )
 );
 -- ************************************** "group"
-CREATE TABLE IF NOT EXISTS "group"
+CREATE TABLE IF NOT EXISTS public.group
 (
  "id_group"				varchar(50) NOT NULL,
  "name"						varchar(100) NOT NULL,
