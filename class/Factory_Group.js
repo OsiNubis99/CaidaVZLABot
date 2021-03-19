@@ -22,9 +22,10 @@ class Factory_Group {
   casa_grande = Number.prototype;
   trivilin = Number.prototype;
 
-  constructor(id_group, name) {
+  constructor(id_group, name, type) {
     this.id_group = id_group;
     this.name = name;
+    this.type = type;
   }
 
   /**
@@ -35,7 +36,8 @@ class Factory_Group {
     if (telegramChat) {
       let id_group = telegramChat.id.toString();
       let name = telegramChat.title || "";
-      return new Factory_Group(id_group, name);
+      let type = telegramChat.type;
+      return new Factory_Group(id_group, name, type);
     }
     return false;
   }
