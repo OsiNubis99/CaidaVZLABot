@@ -1,9 +1,9 @@
 const User = require("./User");
-const resp = require("../lang/es");
 const Card = require("./Card");
+const resp = require("../lang/es");
 const Config = require("./Config");
-const keyboard = require("../templates/keyboard");
 const message = require("../templates/message");
+const keyboard = require("../templates/keyboard");
 
 class Game {
   config = Config.prototype;
@@ -122,6 +122,7 @@ class Game {
       this.deck[currentIndex] = this.deck[randomIndex];
       this.deck[randomIndex] = temporaryValue;
     }
+    this.users[this.player].cards = [1, 4];
   }
 
   /**
