@@ -5,7 +5,7 @@ module.exports = {
   /**
    * Add a new User to the database. If it's already then update the user first_name,last_name and username.
    * @param {Factory_User} user - User element to be pushed.
-   * @returns {Factory_User} The complete user from database.
+   * @returns {Promise<Factory_User>} The complete user from database.
    */
   async add(user) {
     let result = await database.query(
@@ -16,7 +16,7 @@ module.exports = {
   },
 
   /**
-   * @returns {Array<Factory_User>} All Users from the database.
+   * @returns {Promise<Array<Factory_User>>} All Users from the database.
    */
   async list() {
     let result = await database.query("SELECT * FROM public.user;");
@@ -25,7 +25,7 @@ module.exports = {
 
   /**
    * @param {String} id_user - Specific User id to get the statics
-   * @returns {Factory_User} The full User element from database.
+   * @returns {Promise<Factory_User>} The full User element from database.
    */
   async statics(id_user) {
     let result = await database.query(
@@ -42,7 +42,7 @@ module.exports = {
    * @param {Number} sings - Number of sings of the user in the game.
    * @param {Number} caida - Number of times the user gave down another.
    * @param {Number} caido - Number of times the user was fallen by another.
-   * @returns {Factory_User} The full User element from database.
+   * @returns {Promise<Factory_User>} The full User element from database.
    */
   async set_statics(id_user, win, sings, caida, caido) {
     let result = await database.query(
@@ -55,7 +55,7 @@ module.exports = {
   /**
    * Add a new user with is_banned as true. If it's already then set is_baned true.
    * @param {Factory_User} user - User element to be updated or added.
-   * @returns The full User element from database.
+   * @returns {Promise<Factory_User>} The full User element from database.
    */
   async ban(user) {
     let result = await database.query(
@@ -68,7 +68,7 @@ module.exports = {
   /**
    * Add a new user with is_banned as false. If it's already then set is_baned false.
    * @param {Factory_User} user - User element to be updated or added.
-   * @returns The full User element from database.
+   * @returns {Promise<Factory_User>} The full User element from database.
    */
   async unban(user) {
     let result = await database.query(

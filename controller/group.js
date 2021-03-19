@@ -6,7 +6,7 @@ module.exports = {
   /**
    * Add a new Group to the database. If it's already then update the group name.
    * @param {Factory_Group} group - Group element to be pushed.
-   * @returns {Factory_Group} The full group element from database.
+   * @returns {Promise<Factory_Group>} The full group element from database.
    */
   async add(group) {
     let result = await database.query(
@@ -20,11 +20,11 @@ module.exports = {
    * Set all configs from new_config to one group.
    * @param {String} group_id - The Id of the group to be updated.
    * @param {Config} new_config - New config to be saved.
-   * @returns The full group element from database.
+   * @returns {Promise<Factory_Group>} The full group element from database.
    */
   async update(group_id, new_config) {
     let result = await database.query(
-      "UPDATE public.group SET config = $2, points = $3, type = $4, caida_continua = $5, mata_canto = $6, mata_mesa = $7, mesa = $8, caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13, registro = $14, maguaro = $15, registrico = $16, casa_chica = $17, casa_grande = $18, trivilin = $19 WHERE id_group = $1 RETURNING *;",
+      "UPDATE public.group SET game_mode = $2, points = $3, type = $4, caida_continua = $5, mata_canto = $6, mata_mesa = $7, mesa = $8, caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13, registro = $14, maguaro = $15, registrico = $16, casa_chica = $17, casa_grande = $18, trivilin = $19 WHERE id_group = $1 RETURNING *;",
       [
         group_id,
         new_config.game_mode,
@@ -51,7 +51,7 @@ module.exports = {
   },
 
   /**
-   * @returns All Groups from the database.
+   * @returns {Promise<Array<Factory_Group>>} All Groups from the database.
    */
   async list() {
     let result = await database.query("SELECT * FROM public.group;");
@@ -60,7 +60,7 @@ module.exports = {
 
   /**
    * @param {String} id_group - The Id of the group to be deleted
-   * @returns The deleted group.
+   * @returns {Promise<Factory_Group>} The deleted group.
    */
   async remove(id_group) {
     let result = await database.query(
