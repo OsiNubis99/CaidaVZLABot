@@ -32,6 +32,7 @@ module.exports = {
   no_admin_person: "No pareces ser un administrador del Bot." + ERROR,
   no_ban_groups: "No es posible Bloquear un Bot.",
   no_unban_groups: "No es posible Desbloquear un Bot.",
+  no_username: "NoUsername",
   remember_reply: "Recuerda responder al mensaje del otro jugador.",
   start_by: "Barajando...\nEscoge si empezar mesa con 1 o 4.",
   set_group_modes: "Escoge el nuevo modo de Juego",
