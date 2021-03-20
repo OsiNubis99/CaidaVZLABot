@@ -4,6 +4,7 @@ const resp = require("../lang/es");
 const Config = require("./Config");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
+const Sings = require("./Sings");
 
 class Game {
   config = Config.prototype;
@@ -135,6 +136,20 @@ class Game {
       });
       this.get_cards(number - 1);
     }
+  }
+
+  /**
+   * @param {String} id_user
+   * @returns {Array<Card|Sings>}
+   */
+  get_player_cards(id_user) {
+    let cards = [];
+    this.users.forEach((user) => {
+      if (user.id_user == id_user) cards = user.cards;
+      if (user.cards.length == 3 && !user.sing.active && user.sing.value > 0)
+        cards.push(user.sing);
+    });
+    return cards;
   }
 
   /**
