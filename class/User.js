@@ -5,6 +5,10 @@ const Sings = require("./Sings");
 
 class User {
   /**
+   * @type {Array<Card>}
+   */
+  cards;
+  /**
    * Create a User Object
    * @param {Factory_User} factory_user - User to be created
    */
@@ -14,7 +18,7 @@ class User {
     this.last_name = factory_user.last_name;
     this.username = factory_user.username;
     this.is_banned = factory_user.is_banned;
-    this.cards = [];
+    this.cards = new Array();
     this.caida = 0;
     this.caido = 0;
     this.sings = 0;
