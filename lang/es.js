@@ -23,6 +23,9 @@ module.exports = {
   game_is_running:
     "El juego ya empezó. Espera a que este termine o un administrador que use /reiniciar", // TODO Make a nice Game_running Message
   game_no_started: "El juego aun no empieza." + USE_START,
+  game_no_started_description: "Debes esperar que inicie el juego.",
+  game_no_started_message: "El juego aun no empieza.",
+  game_no_started_title: "El juego aun no empieza.",
   group_added: "Grupo agregado.",
   group_removed: "Grupo removido de la lista de permitidos",
   how_config: "TODO", // TODO Make a nice How_config Message
@@ -31,6 +34,12 @@ module.exports = {
     "Este comando solo esta disponible para su uso en grupos." + ERROR,
   no_admin_person: "No pareces ser un administrador del Bot." + ERROR,
   no_ban_groups: "No es posible Bloquear un Bot.",
+  no_cards_description: "No tienes ninguna carta aun.",
+  no_cards_message: "Esperando para Jugar...",
+  no_cards_title: "🤷🏼‍♂️ No Tienes Cartas",
+  no_game_description: "No estas unido a algún juego.",
+  no_game_message: "/unirse",
+  no_game_title: "No estas jugando",
   no_unban_groups: "No es posible Desbloquear un Bot.",
   no_username: "NoUsername",
   remember_reply: "Recuerda responder al mensaje del otro jugador.",
