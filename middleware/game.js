@@ -197,13 +197,11 @@ module.exports = {
     return group.print_before_game(req.group.id_group, req.message_id);
   },
   async set_inline_game_mode(req, game_mode) {
-    await get_group_configs(req.group);
-
     /**
-     * @type   {Game}
+     * @type {Game}
      */
     var group = games[req.group.id_group];
-    if (game_mode == group.config.game_mode) return false;
+    if (!group || game_mode == group.config.game_mode) return false;
     group.config.set_game_mode(game_mode);
     await GroupController.update(req.group.id_group, group.config);
     return group.print_before_game(req.group.id_group, req.message_id);

@@ -45,7 +45,10 @@ bot.on("callback_query", async (query) => {
   bot.answerCallbackQuery(query.id);
   if (query.data.match(/set_(.*)/)) {
     let game_mode = parseInt(query.data.match(/set_(.*)/)[1]);
-    response = await game.set_inline_game_mode(query.message, game_mode);
+    response = await game.set_inline_game_mode(
+      Factory_Request.fromTelegram(query.message),
+      game_mode
+    );
     if (response) bot.editMessageText(response.message, response.options);
   } else {
     switch (query.data) {
