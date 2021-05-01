@@ -32,7 +32,7 @@ class Game {
     this.decks = 0;
     this.last_card_played = null;
     this.last_hand = false;
-    this.last_player_on_take = false;
+    this.last_player_on_take = null;
     this.name = name;
     this.users = new Array();
     this.player = 0;
