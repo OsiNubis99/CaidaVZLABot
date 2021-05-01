@@ -4,13 +4,15 @@ const game = require("./middleware/game");
 const admin = require("./middleware/admin");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
+const Factory_User = require("./class/Factory_User");
 
 //**                    InLine Query                    */
 
-let inline_commands = ["points", "mode", "caida", "ronda", "cantos"];
-
-bot.on("inline_query", async (query) => {
-  bot.answerInlineQuery(query.id, await game.get_user_cards(query.from, query));
+bot.on("inline_query", (query) => {
+  bot.answerInlineQuery(
+    query.id,
+    game.get_user_cards(Factory_User.fromTelegram(query.from))
+  );
 });
 
 bot.on("chosen_inline_result", (query) => {

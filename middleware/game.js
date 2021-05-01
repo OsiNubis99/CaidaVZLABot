@@ -230,19 +230,104 @@ module.exports = {
     return message.reply(resp.game_is_running, req.message_id);
   },
 
-  async get_user_cards() {
+  /**
+   *
+   * @param {Factory_User} user - Who call the InlineQuery
+   * @returns {Array<TelegramBot.InlineQueryResult>}
+   */
+  get_user_cards(user) {
+    if (users[user.id_user]) {
+      /**
+       * @type {Game}
+       */
+      var group = games[users[user.id_user]];
+      if (group.decks > 0) {
+        let cards = [];
+        cards = group.get_player_cards(user.id_user);
+        if (cards.length > 0) {
+          if (cards == [1, 4]) {
+            //TODO InlineResult and run middleware
+            return [
+              {
+                id: 8,
+                type: "article",
+                title: resp.start_by_one_title,
+                input_message_content: {
+                  message_text: resp.start_by_one_message,
+                },
+                description: resp.start_by_one_description,
+              },
+              {
+                id: 9,
+                type: "article",
+                title: resp.start_by_four_title,
+                input_message_content: {
+                  message_text: resp.start_by_four_message,
+                },
+                description: resp.start_by_four_description,
+              },
+            ];
+          }
+          let response = [];
+          cards.forEach((element, index) => {
+            if (index == 3) {
+              response.push({
+                id: 4,
+                type: "article",
+                title: element.name,
+                input_message_content: {
+                  message_text: "Tengo " + element.name,
+                },
+                description: "Vale: " + element.value,
+              });
+            } else {
+              response.push({
+                id: index,
+                type: "article",
+                title: element.value,
+                input_message_content: {
+                  message_text:
+                    "Juego el " + element.value + " de " + element.type,
+                },
+                description: "De " + element.type,
+              });
+            }
+          });
+          return response;
+        }
+        return [
+          {
+            id: 3,
+            type: "article",
+            title: resp.no_cards_title,
+            input_message_content: {
+              message_text: resp.no_cards_message,
+            },
+            description: resp.no_cards_description,
+          },
+        ];
+      }
+      return [
+        {
+          id: 11,
+          type: "article",
+          title: resp.game_no_started_title,
+          input_message_content: {
+            message_text: resp.game_no_started_message,
+          },
+          description: resp.game_no_started_description,
+        },
+      ];
+    }
     return [
       {
-        id: 1,
+        id: 10,
         type: "article",
-        title: "hola 1",
+        title: resp.no_game_title,
         input_message_content: {
-          message_text: "string",
+          message_text: resp.no_game_message,
         },
-        description: "string",
-        thumb_url: "https://ofimaniaweb.com/img/miniLogo.webp",
-        thumb_width: 100,
-        thumb_height: 100,
+        description: resp.no_game_description,
       },
     ];
   },
