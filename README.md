@@ -4,7 +4,7 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 
-<!-- PROJECT LOGO -->
+<!-- PROJECT PRESENTATION -->
 <br />
 <p align="center">
   <a href="https://github.com/OsiNubis99/CaidaVZLABot">
@@ -128,12 +128,11 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-OsiNubis99 - [@OsiNubis](https://t.me/OsiNubis99) - AHurtado.WC@gmail.com
+OsiNubis99 - [@OsiNubis](https://t.me/OsiNubis99) - OsiNubis99@PM.me
 
 Project Link: [https://github.com/OsiNubis99/CaidaVZLABot](https://github.com/OsiNubis99/CaidaVZLABot)
 
 <!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
 [contributors-shield]: https://img.shields.io/github/contributors/OsiNubis99/CaidaVZLABot.svg?style=for-the-badge
 [contributors-url]: https://github.com/OsiNubis99/CaidaVZLABot/graphs/contributors
@@ -145,8 +144,3 @@ Project Link: [https://github.com/OsiNubis99/CaidaVZLABot](https://github.com/Os
 [issues-url]: https://github.com/OsiNubis99/CaidaVZLABot/issues
 [license-shield]: https://img.shields.io/github/license/OsiNubis99/CaidaVZLABot.svg?style=for-the-badge
 [license-url]: https://github.com/OsiNubis99/CaidaVZLABot/blob/master/LICENSE.txt
-[product-screenshot]: https://telegram.org/img/t_logo.svg?1
-
-```
-
-```
