@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.group
  "name"						varchar(100) NOT NULL,
  "game_mode"   		int DEFAULT 1,
  "points"   			int DEFAULT 24,
- "type"   				varchar DEFAULT 'parejas',
+ "type"   				varchar DEFAULT 'individual',
  "caida_continua"	varchar DEFAULT 'off',
  "mata_canto"   	varchar DEFAULT 'off',
  "mata_mesa"   		varchar DEFAULT 'off',

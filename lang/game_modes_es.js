@@ -11,7 +11,7 @@ module.exports = [
     description:
       "Modo de juego Oficial de Caida \nBasado en este sitio web https://aprendeajugarcaida.blogspot.com/2015/03/caida-un-juego-de-azar-y-habilidad.html",
     points: 24,
-    type: "parejas",
+    type: "individual",
     caida_continua: "off",
     mata_canto: "off",
     mata_mesa: "off",
