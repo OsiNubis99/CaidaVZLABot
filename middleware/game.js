@@ -4,19 +4,27 @@ const User = require("../class/User");
 const Config = require("../class/Config");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
+const TelegramBot = require("node-telegram-bot-api");
 const Factory_User = require("../class/Factory_User");
 const Factory_Group = require("../class/Factory_Group");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../controller");
 
-var games = new Array(Game.prototype);
-var users = new Array(String.prototype);
+/**
+ * @type {Array<Game>}
+ */
+var games = [];
+/**
+ * @type {Array<String>}
+ */
+var users = [];
 
 /**
  * Add all chat data to memory and save it on database.
  * @param {Factory_Group} group - Element to be saved.
  */
 async function get_group_configs(group) {
+  console.log("reset");
   let configs = await GroupController.add(group);
   games[group.id_group] = new Game(configs.name, new Config(configs));
 }
@@ -28,7 +36,7 @@ async function get_group_configs(group) {
 function cleanUsers(chatId) {
   users.forEach((element, index, array) => {
     if (element == chatId) {
-      array[index] = null;
+      array.splice(index, 1);
     }
   });
 }
@@ -45,7 +53,7 @@ module.exports = {
       let new_user = new User(await UserController.add(req.user));
       if (!new_user.is_banned) {
         /**
-         * @type   {Game}
+         * @type {Game}
          */
         var group = games[req.group.id_group];
         if (force || !group) {
@@ -66,14 +74,13 @@ module.exports = {
    * @returns Telegram message and options
    */
   async join(req) {
-    if (req.group.type == "supergroup" || req.group.type == "group") {
-      let new_user = new User(await UserController.add(req.user));
-      if (!new_user.is_banned) {
-        await get_group_configs(req.group);
-        /**
-         * @type   {Game}
-         */
-        var group = games[req.group.id_group];
+    let new_user = new User(await UserController.add(req.user));
+    if (!new_user.is_banned) {
+      /**
+       * @type {Game}
+       */
+      var group = games[req.group.id_group];
+      if (group) {
         if (group.decks == 0) {
           if (users[new_user.id_user] == null) {
             if (group.users.length < 4) {
@@ -86,41 +93,9 @@ module.exports = {
         }
         return message.reply(resp.game_is_running, req.message_id);
       }
-      return message.reply(resp.user_is_banned, req.message_id);
+      return message.reply(resp.game_no_created, req.message_id);
     }
-    return message.reply(resp.is_not_a_group, req.message_id);
-  },
-
-  /**
-   * Start a new Game hand
-   * @param {Factory_Request} req - Clean request data.
-   * @param {Boolean} inLine
-   * @returns Telegram message and options
-   */
-  async shuffle(req, inLine = true) {
-    if (req.group.type == "supergroup" || req.group.type == "group") {
-      await get_group_configs(req.group);
-      /**
-       * @type   {Game}
-       */
-      var group = games[req.group.id_group];
-      if (group.users.length > 1) {
-        group.shuffle();
-        return inLine
-          ? message.edit_keyboard(
-              resp.start_by,
-              req.message_id,
-              req.group.id_group,
-              keyboard.start_by(group.playerName())
-            )
-          : message.keyboard(
-              resp.start_by,
-              keyboard.start_by(group.playerName())
-            );
-      }
-      return inLine ? false : message.reply(resp.game_is_empty, req.message_id);
-    }
-    return inLine ? false : message.reply(resp.is_not_a_group, req.message_id);
+    return message.reply(resp.user_is_banned, req.message_id);
   },
 
   /**
@@ -129,16 +104,14 @@ module.exports = {
    * @returns Telegram message and options
    */
   async status(req) {
-    if (req.group.type == "supergroup" || req.group.type == "group") {
-      await get_group_configs(req.group);
-
-      /**
-       * @type   {Game}
-       */
-      var group = games[req.group.id_group];
-      return message.reply(group.print(), req.message_id);
+    /**
+     * @type {Game}
+     */
+    var group = games[req.group.id_group];
+    if (group) {
+      return message.reply(group.print(false), req.message_id);
     }
-    return message.reply(resp.is_not_a_group, req.message_id);
+    return message.reply(resp.game_no_created, req.message_id);
   },
 
   /**
@@ -147,54 +120,49 @@ module.exports = {
    * @returns Telegram message and options
    */
   async config(req) {
-    if (req.group.type == "supergroup" || req.group.type == "group") {
-      await get_group_configs(req.group);
-
-      /**
-       * @type   {Game}
-       */
-      var group = games[req.group.id_group];
+    /**
+     * @type {Game}
+     */
+    var group = games[req.group.id_group];
+    if (group) {
       let response = group.config.print();
       return message.keyboard(response, keyboard.group_settings());
     }
-    return message.reply(resp.is_not_a_group, req.message_id);
+    return message.reply(resp.game_no_created, req.message_id);
   },
 
   /**
-   *
+   * TODO Pretty comment
    * @param {Factory_Request} req - Clean request data.
    * @param {String} config - Specific config to be validated and updated.
    * @param {String|Number} value - Value to tested.
    * @returns Telegram message and options
    */
   async set_settings(req, config, value) {
-    if (req.group.type == "supergroup" || req.group.type == "group") {
-      await get_group_configs(req.group);
-
-      /**
-       * @type   {Game}
-       */
-      var group = games[req.group.id_group];
-      let config_is_not_ok = group.config.is_not_ok(config, value);
-      if (!config_is_not_ok) {
-        await GroupController.update(req.group.id_group, group.config);
-        return message.keyboard(resp.config_is_ok, keyboard.group_settings());
-      }
-      return message.reply(config_is_not_ok, req.message_id);
-    }
-    return message.reply(resp.is_not_a_group, req.message_id);
-  },
-  async set_inline_type(req) {
-    await get_group_configs(req.group);
-
+    if (!group) await get_group_configs(req.group);
     /**
-     * @type   {Game}
+     * @type {Game}
      */
     var group = games[req.group.id_group];
-    group.config.type =
-      group.config.type == "parejas" ? "individual" : "parejas";
-    await GroupController.update(req.group.id_group, group.config);
-    return group.print_before_game(req.group.id_group, req.message_id);
+    let config_is_not_ok = group.config.is_not_ok(config, value);
+    if (!config_is_not_ok) {
+      await GroupController.update(req.group.id_group, group.config);
+      return message.keyboard(resp.config_is_ok, keyboard.group_settings());
+    }
+    return message.reply(config_is_not_ok, req.message_id);
+  },
+  async set_inline_type(req) {
+    /**
+     * @type {Game}
+     */
+    var group = games[req.group.id_group];
+    if (group) {
+      group.config.type =
+        group.config.type == "parejas" ? "individual" : "parejas";
+      await GroupController.update(req.group.id_group, group.config);
+      return group.print_before_game(req.group.id_group, req.message_id);
+    }
+    return false;
   },
   async set_inline_game_mode(req, game_mode) {
     /**
@@ -204,33 +172,86 @@ module.exports = {
     if (!group || game_mode == group.config.game_mode) return false;
     group.config.set_game_mode(game_mode);
     await GroupController.update(req.group.id_group, group.config);
-    return group.print_before_game(req.group.id_group, req.message_id);
+    return group.print_before_game(req.message_id, req.group.id_group);
   },
 
   /**
-   *
+   * TODO Pretty comment
    * @param {Factory_Request} req - Clean request data.
    * @returns Telegram message and options
    */
-  async start(req) {
-    await get_group_configs(req.group);
-
+  start(req) {
     /**
-     * @type   {Game}
+     * @type {Game}
      */
     var group = games[req.group.id_group];
-    if (group.decks == 0) {
-      if (group.users.length > 1) {
-        return group.print_before_game();
+    if (group) {
+      if (group.decks == 0) {
+        if (group.users.length > 1) {
+          return group.print_before_game();
+        }
+        return message.reply(resp.game_is_empty, req.message_id);
       }
-      return message.reply(resp.game_is_empty, req.message_id);
+      return message.reply(resp.game_is_running, req.message_id);
     }
-    return message.reply(resp.game_is_running, req.message_id);
+    return message.reply(resp.game_no_created, req.message_id);
   },
 
   /**
-   *
-   * @param {Factory_User} user - Who call the InlineQuery
+   * Start a new Game hand
+   * @param {Factory_Request} req - Clean request data.
+   * @param {Boolean} inLine
+   * @returns Telegram message and options
+   */
+  shuffle(req, inLine = true) {
+    /**
+     * @type {Game}
+     */
+    var group = games[req.group.id_group];
+    if (group) {
+      if (group.users.length > 1) {
+        let response = group.shuffle();
+        return inLine
+          ? message.edit_keyboard(
+              response,
+              req.message_id,
+              req.group.id_group,
+              keyboard.make_a_choice(group.playerName())
+            )
+          : message.keyboard(
+              response,
+              keyboard.make_a_choice(group.playerName())
+            );
+      }
+      return inLine ? false : message.reply(resp.game_is_empty, req.message_id);
+    }
+    return message.reply(resp.game_no_created, req.message_id);
+  },
+
+  /**
+   * TODO Pretty comment
+   * @param {Factory_User} user - Whoever plays the card
+   * @param {Number} number -
+   * @returns
+   */
+  play_card(user, number) {
+    if (users[user.id_user]) {
+      /**
+       * @type {Game}
+       */
+      var group = games[users[user.id_user]];
+      return group.play_card(user.id_user, number);
+    }
+    return resp.no_game_description;
+  },
+
+  // TODO sing()
+
+  // TODO handing_out_cards()
+
+  /**
+   * TODO Pretty comment
+   * @param {Factory_User} user - Who calls the InlineQuery
    * @returns {Array<TelegramBot.InlineQueryResult>}
    */
   get_user_cards(user) {

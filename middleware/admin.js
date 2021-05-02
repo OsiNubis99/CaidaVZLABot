@@ -1,3 +1,5 @@
+// TODO all Admin module
+
 const resp = require("../lang/es");
 const bot = require("../config/bot");
 const {

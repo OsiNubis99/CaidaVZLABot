@@ -71,4 +71,17 @@ module.exports = {
     });
     return response.extract();
   },
+
+  /**
+   * @param {String} player_name - Player name
+   * @returns {TelegramBot.InlineKeyboardMarkup} Keyboard with two buttons. 'Set game_mode' and 'Back'.
+   */
+  make_a_choice(player_name) {
+    return new kb.InlineKeyboard()
+      .addRow({
+        text: "Pulsa para escoger " + player_name,
+        switch_inline_query_current_chat: "",
+      })
+      .extract();
+  },
 };

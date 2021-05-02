@@ -15,26 +15,16 @@ bot.on("inline_query", (query) => {
   );
 });
 
-bot.on("chosen_inline_result", (query) => {
-  if (query.result_id > 4) {
-    cantar(
-      {
-        from: {
-          id: query.from.id,
-        },
-      },
-      [0, query.result_id]
-    );
-  }
-  if (query.result_id < 3) {
-    jugarCarta(
-      {
-        from: {
-          id: query.from.id,
-        },
-      },
-      [0, query.result_id]
-    );
+bot.on("chosen_inline_result", (result) => {
+  bot.sendMessage("-358611014", result.result_id);
+  if (result.result_id < 3) {
+    console.log("Jugando el " + result.result_id);
+  } else if (result.result_id == 4) {
+    console.log("Cantando el " + result.result_id);
+  } else if (result.result_id == 8) {
+    console.log("Cantando el " + result.result_id);
+  } else if (result.result_id == 9) {
+    console.log("Cantando el " + result.result_id);
   }
 });
 
@@ -72,7 +62,7 @@ bot.on("callback_query", async (query) => {
         );
         bot.editMessageText(response.message, response.options);
         break;
-      case "run":
+      case "start":
         response = await game.shuffle(
           Factory_Request.fromTelegram(query.message)
         );

@@ -13,7 +13,7 @@ class Game {
   decks = Number.prototype;
   last_card_played = Card.prototype;
   last_hand = Boolean.prototype;
-  last_player_on_take = Boolean.prototype;
+  last_player_on_take = Number.prototype;
   name = String.prototype;
   users = Array(User.prototype);
   player = Number.prototype;
@@ -50,7 +50,7 @@ class Game {
   }
 
   /**
-   * @returns the current player game.
+   * @returns {String} the current player game.
    */
   playerName() {
     return this.users[this.player].first_name;
@@ -64,6 +64,35 @@ class Game {
   join(user) {
     this.users.push(user);
     return this.print(false);
+  }
+
+  /**
+   * @param {String} id_user
+   * @returns {Array<Card|Sings>}
+   */
+  get_player_cards(id_user) {
+    let cards = [];
+    this.users.forEach((user) => {
+      if (user.id_user == id_user) {
+        cards = user.cards;
+        if (user.cards.length == 3 && !user.sing.active && user.sing.value > 0)
+          cards.push(user.sing);
+      }
+    });
+    return cards;
+  }
+
+  /**
+   * TODO Pretty comment
+   * @param {Number} number - Number of cards to be added.
+   */
+  new_cards(number = 3) {
+    if (number > 0) {
+      this.users.forEach((user) => {
+        user.add_card(this.deck.shift(), this.config);
+      });
+      this.new_cards(number - 1);
+    }
   }
 
   /**
@@ -123,33 +152,37 @@ class Game {
       this.deck[currentIndex] = this.deck[randomIndex];
       this.deck[randomIndex] = temporaryValue;
     }
-    this.users[this.player].cards = [1, 4];
+    this.last_hand = false;
+    this.users[0].cards = [1, 4];
+    return resp.start_by;
   }
 
-  /**
-   * @param {Number} number - Number of cards to be added.
-   */
-  get_cards(number = 3) {
-    if (number > 0) {
-      this.users.forEach((user) => {
-        user.add_card(this.deck.shift(), this.config);
-      });
-      this.get_cards(number - 1);
+  handing_out_cards() {
+    //TODO Sings count
+    if (this.deck.length > 0) {
+      this.new_cards();
+      if (this.deck.length == 0) this.last_hand = true;
+      return this.print();
     }
+    this.users.push(this.users.shift());
+    return this.shuffle(false);
   }
 
-  /**
-   * @param {String} id_user
-   * @returns {Array<Card|Sings>}
-   */
-  get_player_cards(id_user) {
-    let cards = [];
-    this.users.forEach((user) => {
-      if (user.id_user == id_user) cards = user.cards;
-      if (user.cards.length == 3 && !user.sing.active && user.sing.value > 0)
-        cards.push(user.sing);
-    });
-    return cards;
+  play_card(id_user, number) {
+    /**
+     * @type {User}
+     */
+    let player = this.users[this.player];
+    if (player.id_user == id_user) {
+      let card = player.play(number);
+      if (card) {
+        //TODO Game Logic
+        if (this.users[-1].cards.length > 0) return this.print();
+        return this.handing_out_cards();
+      }
+      return resp.invalid_value;
+    }
+    return resp.bad_turn;
   }
 
   /**
