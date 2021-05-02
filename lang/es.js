@@ -22,6 +22,7 @@ module.exports = {
     "El máximo de jugadores es 4. Intenta jugar la siguiente partida!",
   game_is_running:
     "El juego ya empezó. Espera a que este termine o un administrador que use /reiniciar", // TODO Make a nice Game_running Message
+  game_no_created: "El juego aun no esta creado \nUsa /crear para poder jugar.",
   game_no_started: "El juego aun no empieza." + USE_START,
   game_no_started_description: "Debes esperar que inicie el juego.",
   game_no_started_message: "El juego aun no empieza.",
@@ -43,7 +44,8 @@ module.exports = {
   no_unban_groups: "No es posible Desbloquear un Bot.",
   no_username: "NoUsername",
   remember_reply: "Recuerda responder al mensaje del otro jugador.",
-  start_by: "Barajando...\nEscoge si empezar mesa con 1 o 4.",
+  start_by:
+    "Barajando...Pulsa el botón para escoger si empezar mesa con 1 o 4.",
   set_group_modes: "Escoge el nuevo modo de Juego",
   user_added: "Usuario agregado.",
   user_banned: "Usuario Bloqueado.",
