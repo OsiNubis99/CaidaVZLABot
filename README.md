@@ -8,7 +8,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/OsiNubis99/CaidaVZLABot">
-    <img src="https://telegram.org/img/t_logo.svg" alt="Logo" width="80" height="80">
+    <img src="docs/images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">Caida game Telegram bot</h3>
@@ -25,30 +25,23 @@
 </p>
 
 <!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#built-with">Built With</a>
-      <ul>
-        <li><a href="#dependencies">Dependencies</a></li>
-        <li><a href="#dev-dependencies">Dev Dependencies</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#deployment">Deployment</a></li>
-      </ul>
-    </li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ol>
-</details>
+
+- [Built With](#built-with)
+  - [Dependencies](#dependencies)
+  - [Dev Dependencies](#dev-dependencies)
+- [Usage](#usage)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Deployment](#deployment)
+    - [Heroku(Recomended)](#herokurecomended)
+    - [Local](#local)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+  - [Social medias](#social-medias)
+  - [Email](#email)
+- [Acknowledgements](#acknowledgements)
 
 <!-- ABOUT THE PROJECT -->
 
@@ -128,9 +121,20 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-OsiNubis99 - [@OsiNubis](https://t.me/OsiNubis99) - OsiNubis99@PM.me
+### Social medias
 
-Project Link: [https://github.com/OsiNubis99/CaidaVZLABot](https://github.com/OsiNubis99/CaidaVZLABot)
+[![Telegram](https://www.vectorlogo.zone/logos/telegram/telegram-icon.svg)](https://t.me/OsiNubis99)
+[![Vue](https://www.vectorlogo.zone/logos/twitter/twitter-icon.svg)](https://twitter.com/OsiNubis99)
+
+### Email
+
+My email address OsiNubis99@PM.me
+
+<!-- ACKNOWLEDGEMENTS -->
+
+## Acknowledgements
+
+- Logo made by [Toweraki](https://t.me/toweraki)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 
