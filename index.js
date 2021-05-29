@@ -51,7 +51,7 @@ var server = app.listen(port, function () {
 });
 
 var groups = [-1001432406771, -358611014];
-var bans = [];
+var bans = [1524553443];
 
 let data = bd.read();
 
@@ -295,6 +295,10 @@ bot.onText(/\/saluda(.*)/, (msg, match) => {
   let resp = "Hola " + msg.from.first_name + "\nTu mensaje fue: " + match[1];
   bot.sendMessage(chatId, resp);
   console.log(match);
+});
+
+bot.onText(/\/isbanned/, (msg, match) => {
+  bot.sendMessage(chatId, bans);
 });
 
 bot.onText(/\/toAll (.*)/, (msg, match) => {
