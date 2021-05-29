@@ -298,7 +298,7 @@ bot.onText(/\/saluda(.*)/, (msg, match) => {
 });
 
 bot.onText(/\/isbanned/, (msg, match) => {
-  bot.sendMessage(msg.chat.id, bans);
+  bot.sendMessage(msg.chat.id, JSON.stringify(bans));
 });
 
 bot.onText(/\/toAll (.*)/, (msg, match) => {
