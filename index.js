@@ -174,17 +174,13 @@ bot.onText(/\/configurar/, async (msg) => {
 	bot.sendMessage(msg.chat.id, response.message, response.options);
 });
 
-bot.onText(/\/set_(.*) (.*)/, async (msg, match) => {
+bot.onText(/\/configura(.*) (.*) (.*)/, async (msg, match) => {
 	let response = await game.set_settings(
 		Factory_Request.fromTelegram(msg),
-		match[1],
-		match[2]
+		match[2],
+		match[3]
 	);
 	bot.sendMessage(msg.chat.id, response.message, response.options);
-});
-
-bot.onText(/\/set_(.*)/, (msg, match) => {
-	bot.sendMessage(msg.chat.id, resp.set_invalid);
 });
 
 bot.onText(/\/log/, (msg) => {
@@ -222,5 +218,9 @@ bot.setMyCommands([
 	{
 		command: "configurar",
 		description: "Muestra el pane de configuración.",
+	},
+	{
+		command: "set",
+		description: "Para aplicar una configuración.",
 	},
 ]);

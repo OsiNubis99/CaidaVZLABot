@@ -19,6 +19,7 @@ class Game {
 	player = Number.prototype;
 	points = Array(Number.prototype);
 	table = Array(Card.prototype);
+	table_order = String.prototype;
 	took = Array(Number.prototype);
 
 	/**
@@ -32,13 +33,14 @@ class Game {
 		this.decks = 0;
 		this.last_card_played = null;
 		this.last_hand = false;
-		this.last_player_on_take = null;
+		this.last_player_on_take = 0;
 		this.name = name;
 		this.users = new Array();
 		this.player = 0;
-		this.points = new Array(4);
+		this.points = [0, 0, 0, 0];
 		this.table = new Array(10);
-		this.took = new Array(4);
+		this.table_order = "";
+		this.took = [0, 0, 0, 0];
 	}
 
 	/**
@@ -110,15 +112,16 @@ class Game {
 	 * Extract the first card to the game deck
 	 * and validate if it's already on the table and if it's sync to the user prediction.
 	 * @param {Number} next_card - User prediction next card value.
-	 * @returns {Number} - The value of next card if is sync with the card extracted
+	 * @returns {Number} - The value of next_card if is sync with the card extracted
 	 */
 	push_cards(next_card, save = false) {
 		let card = new Card(this.deck.shift());
-		if (this.table[card.position]) {
+		if (this.table[card.position] != null) {
 			this.deck.push(card.number);
 			return this.push_cards(next_card);
 		} else {
 			this.table[card.position] = card;
+			this.table_order += card.value + (save ? "\n" : " -> ");
 			if (save) this.last_card_played = card; // TODO disable if config caida_en_mesa is down
 			if (card.value == next_card) return next_card;
 			return 0;
@@ -147,12 +150,9 @@ class Game {
 	}
 
 	increase_points(player, points) {
-		this.points[player] += points;
-		return (
-			this.points[player] +
-				(this.config.type == "parejas" ? this.points[(player + 2) % 4] : 0) >
-			this.config.points
-		);
+		var position = this.config.type == "parejas" ? player % 2 : player;
+		this.points[position] += points;
+		return this.points[player] >= this.config.points;
 	}
 
 	/**
@@ -161,46 +161,8 @@ class Game {
 	shuffle() {
 		this.decks++;
 		this.deck = [
-			11,
-			10,
-			38,
-			19,
-			25,
-			18,
-			14,
-			2,
-			5,
-			39,
-			8,
-			15,
-			29,
-			24,
-			30,
-			1,
-			12,
-			16,
-			9,
-			35,
-			22,
-			32,
-			6,
-			4,
-			0,
-			27,
-			37,
-			17,
-			28,
-			33,
-			21,
-			3,
-			23,
-			34,
-			20,
-			7,
-			31,
-			36,
-			26,
-			13,
+			11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
+			22, 32, 6, 4, 0, 27, 37, 17, 28, 33, 21, 3, 23, 34, 20, 7, 31, 36, 26, 13,
 		];
 		var currentIndex = this.deck.length,
 			temporaryValue,
@@ -217,24 +179,73 @@ class Game {
 	}
 
 	handing_out_cards(start_by, added = "") {
-		//TODO All before handing out
+		var sings = [0, 0, 0, 0];
+		var biggest = 0;
+		this.users.forEach((user, index) => {
+			if (user.sing && user.sing.active) {
+				sings[index] = user.sing.value;
+				if (user.sing.value > sings[biggest]) biggest = index;
+			}
+		});
+		if (sings[biggest] > 0 && this.increase_points(biggest, sings[biggest]))
+			return this.kill(biggest);
+		if (this.points[0] >= this.config.points) return this.kill(0);
+		if (this.points[1] >= this.config.points) return this.kill(1);
+		if (this.points[2] >= this.config.points) return this.kill(2);
+		if (this.points[3] >= this.config.points) return this.kill(3);
 		if (this.deck.length > 0) {
 			this.users[this.users.length - 1].cards = [];
+			this.table_order = "";
 			let points = this.new_cards(3, start_by, start_by > 2);
+			added += this.table_order;
 			if (points > 0) {
-				this.increase_points(0, points * this.config.mesa);
+				if (this.increase_points(0, points * this.config.mesa))
+					return this.kill(0);
+				added += resp.sync_cards + points + "\n";
 			} else {
-				this.increase_points(1, points * this.config.mesa);
+				if (start_by > 0) {
+					if (this.increase_points(1, 1 * this.config.mesa))
+						return this.kill(1);
+					added += resp.bad_sync_cards;
+				}
 			}
 			if (this.deck.length == 0) {
 				this.last_hand = true;
 			}
-			return added + this.print();
+			return added + this.print(false);
 		}
-		// TODO All before shuffle
+		for (let position = 0; position < this.table.length; position++) {
+			if (this.table[position] != null) this.took[this.last_player_on_take]++;
+			this.table[position] = null;
+		}
+		if (this.users.length == 4 && this.config.type != "parejas") {
+			if (this.took[0] > 10 && this.increase_points(0, this.took[0] - 10))
+				return this.kill(0);
+			if (this.took[1] > 10 && this.increase_points(1, this.took[1] - 10))
+				return this.kill(1);
+			if (this.took[2] > 10 && this.increase_points(2, this.took[2] - 10))
+				return this.kill(2);
+			if (this.took[3] > 10 && this.increase_points(3, this.took[3] - 10))
+				return this.kill(3);
+		} else if (this.users.length == 3) {
+			if (this.took[0] > 14 && this.increase_points(0, this.took[0] - 14))
+				return this.kill(0);
+			if (this.took[1] > 13 && this.increase_points(1, this.took[1] - 13))
+				return this.kill(1);
+			if (this.took[2] > 13 && this.increase_points(2, this.took[2] - 13))
+				return this.kill(2);
+		} else {
+			if (this.took[0] > 20 && this.increase_points(0, this.took[0] - 20))
+				return this.kill(0);
+			if (this.took[1] > 20 && this.increase_points(1, this.took[1] - 20))
+				return this.kill(1);
+		}
+		this.last_player_on_take = 0;
+		this.took = [0, 0, 0, 0];
 		this.users.push(this.users.shift());
 		this.points.push(this.points.shift());
 		this.last_hand = false;
+		this.last_card_played = null;
 		return added + this.shuffle();
 	}
 
@@ -242,39 +253,55 @@ class Game {
 		/**
 		 * @type {User}
 		 */
-		let player = this.users[this.player];
-		if (player.id_user == id_user) {
-			let card = player.play(number);
+		if (this.users[this.player].id_user == id_user) {
+			let card = this.users[this.player].play(number);
 			if (card) {
 				var card_position = card.position;
-				var took = 0;
+				var took = 1;
 				var response = "";
-				while (this.table[card_position]) {
+				while (this.table[card_position] != null) {
 					this.table[card_position] = null;
+					card_position++;
 					took++;
 				}
-				if (took > 0) {
+				if (took > 1) {
 					// Took something
-					this.took[this.player] += took;
+					this.took[
+						this.config.type == "parejas" ? this.player % 2 : this.player
+					] += took;
+					this.last_player_on_take = this.player;
 					if (
 						this.last_card_played &&
 						this.last_card_played.position == card.position
 					) {
-						this.last_card_played = null;
 						// is fall down
 						if (this.config.caida > 0) {
+							this.users[this.last_player].caido += 1;
+							this.users[this.player].caida += 1;
 							this.increase_points(
 								this.player,
 								card.points * this.config.caida
 							);
 							response = resp.user_get_fall;
+							if (this.config.mata_canto == "on") {
+								this.users[this.last_player].sing.active = false;
+								response += resp.sing_killed;
+							}
 						}
-						if ((this.config.mata_canto = "on")) {
-							this.users[this.last_player].sing.active = false;
-							response += resp.sing_killed;
+					}
+					if (!this.last_hand) {
+						var clean = true;
+						this.table.forEach((card) => {
+							if (card != null) clean = false;
+						});
+						if (clean) {
+							this.increase_points(this.player, card.points * this.config.mesa);
+							response += resp.clean_table;
 						}
 					}
 				}
+				this.last_card_played = card;
+				this.last_player = player;
 				this.player = (this.player + 1) % this.users.length;
 				if (this.users[this.users.length - 1].cards.length > 0)
 					return response + this.print();
@@ -283,6 +310,27 @@ class Game {
 			return resp.invalid_value;
 		}
 		return resp.bad_turn;
+	}
+
+	/**
+	 *
+	 * @returns Printable message with the game information
+	 */
+	kill(player) {
+		var response =
+			"Gano " + this.users[player].print(false) + "\n" + this.print(false);
+		this.deck = new Array();
+		this.decks = 0;
+		this.last_card_played = null;
+		this.last_hand = false;
+		this.last_player_on_take = 0;
+		this.users = new Array();
+		this.player = 0;
+		this.points = [0, 0, 0, 0];
+		this.table = new Array(10);
+		this.table_order = "";
+		this.took = [0, 0, 0, 0];
+		return response;
 	}
 
 	/**

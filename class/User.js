@@ -54,6 +54,7 @@ class User {
 	 * @returns - Pretty response
 	 */
 	set_sing() {
+		this.sings++;
 		this.sing.active = true;
 		return this.first_name + " " + resp.did_sing + " " + this.sing.name;
 	}
@@ -78,7 +79,6 @@ class User {
 				return a.position <= b.position ? 1 : -1;
 			});
 			this.sing = new Sings(this.cards, configs);
-			if (this.sing.value != 0) this.sings++;
 		}
 	}
 }

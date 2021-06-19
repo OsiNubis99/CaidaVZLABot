@@ -5,6 +5,8 @@ const USE_START =
 	"\nUsa /iniciar para configurar e iniciar la partida o /inicia_ya para saltarte la configuración";
 module.exports = {
 	bad_turn: "Carta vista",
+	bad_sync_cards: "Mala echada!\n",
+	clean_table: "Mesa Limpia!\n",
 	config_bool_invalid: "Valor invalido, las opciones son: 'on' o 'off'" + ERROR,
 	config_type_invalid:
 		"Valor invalido, las opciones son: 'individual' o 'parejas'" + ERROR,
@@ -19,11 +21,11 @@ module.exports = {
 	game_already_created: "El juego ya esta creado." + USE_JOIN,
 	game_created: "Juego creado." + USE_JOIN,
 	game_is_empty:
-		"El mínimo de jugadores es 2. Espera a que más jugadores se unan a la partida!", // TODO Make a nice Game_is_empty Message
+		"El mínimo de jugadores es 2. Espera a que más jugadores se unan a la partida!",
 	game_is_full:
 		"El máximo de jugadores es 4. Intenta jugar la siguiente partida!",
 	game_is_running:
-		"El juego ya empezó. Espera a que este termine o un administrador que use /reiniciar", // TODO Make a nice Game_running Message
+		"El juego ya empezó. Espera a que este termine o usa /reiniciar",
 	game_no_created: "El juego aun no esta creado \nUsa /crear para poder jugar.",
 	game_no_started: "El juego aun no empieza." + USE_START,
 	game_no_started_description: "Debes esperar que inicie el juego.",
@@ -31,7 +33,8 @@ module.exports = {
 	game_no_started_title: "El juego aun no empieza.",
 	group_added: "Grupo agregado.",
 	group_removed: "Grupo removido de la lista de permitidos",
-	how_config: "TODO", // TODO Make a nice How_config Message
+	how_config:
+		"\nEn esta versión de CaidaVZLABot muchas cosas son configurables!\nUsa /configurar para ver las configuraciones actuales del grupo! \n\nPuedes definir hasta cuantos puntos llegará la partida con:\n/configura points [1,100] \nPuedes definir cuantos puntos dará hacer mesa limpia con:\n/configura mesa [0,100] \nPuedes definir si quieres la configuración caída continua, que hace que se pueda dar caída a cartas de la mano anterior, con:\n/configura caida_continua on/off\nPuedes definir si quieres caída mata canto, que hace que una caída inhabilite el canto de la persona que se cayó y no se sume, con:\n/configura mata_canto on/off\nPuedes definir si quieres caída mata mesa (en desarrollo, inhabilitada por defecto temporalmente no importa si esta en on) con:\n/configura mata_mesa on/off\nPuedes definir multiplicadores para las caídas y las rondas, y hacer que una caída valga x2 x3 o hasta x10 (x0 es inhabilitado, no cuentan)\n/configura caida [0,10]\n/configura ronda [0,10]\nPuedes definir el valor de los cantos (0 es inhabilitado, no cuentan y no será listado para ser cantado) uno por uno con:\n/configura chiguire [0,100]\n/configura patrulla [0,100]\n/configura vigia [0,100]\n/configura registro [0,100]\n/configura maguaro [0,100]\n/configura registrico [0,100]\n/configura casa_chica [0,100]\n/configura casa_grande [0,100]\n/configura trivilin [0,100]",
 	invalid_value: "Valor invalido, intenta con otro." + ERROR,
 	is_not_a_group:
 		"Este comando solo esta disponible para su uso en grupos." + ERROR,
@@ -56,6 +59,7 @@ module.exports = {
 	start_by_one_title: "Iniciar por 1",
 	set_group_modes: "Escoge el nuevo modo de Juego",
 	sing_killed: "La caida mato el canto del jugador anterior!\n",
+	sync_cards: "Pegado en mesa ",
 	user_added: "Usuario agregado.",
 	user_banned: "Usuario Bloqueado.",
 	user_get_fall: "Caidó\n",

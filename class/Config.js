@@ -40,6 +40,9 @@ class Config {
 	get_points() {
 		return "\n\t\tHasta " + this.points + " puntos";
 	}
+	get_mesa() {
+		return "\n\t\tMesa: Valor " + this.mesa + " puntos";
+	}
 	get_type() {
 		return "\n\t\tTipo de partida: " + this.type;
 	}
@@ -51,9 +54,6 @@ class Config {
 	}
 	get_mata_mesa() {
 		return "\n\t\tCaida mata canto: " + this.mata_canto;
-	}
-	get_mesa() {
-		return "\n\t\tMesa: Valor x" + this.mesa;
 	}
 	get_caida() {
 		return "\n\t\tCaida: Valor x" + this.caida;
@@ -96,12 +96,12 @@ class Config {
 		return (
 			"Configuración actual del Chat" +
 			this.get_points() +
+			this.get_mesa() +
 			this.get_type() +
 			this.get_caida_continua() +
 			this.get_mata_canto() +
 			this.get_mata_mesa() +
 			"\nMultiplicadores" +
-			this.get_mesa() +
 			this.get_caida() +
 			this.get_ronda() +
 			"\nCantos" +
@@ -148,7 +148,7 @@ class Config {
 			let min = 0;
 			let max = 100;
 			if (config == "points") min = 1;
-			if (config == "mesa" || config == "caida" || config == "ronda") max = 10;
+			if (config == "caida" || config == "ronda") max = 10;
 			if (min <= value && value <= max) {
 				this[config] = value;
 				this.game_mode = 0;

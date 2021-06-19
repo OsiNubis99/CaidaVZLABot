@@ -24,7 +24,6 @@ var users = [];
  * @param {Factory_Group} group - Element to be saved.
  */
 async function get_group_configs(group) {
-	console.log("reset");
 	let configs = await GroupController.add(group);
 	games[group.id_group] = new Game(configs.name, new Config(configs));
 }
@@ -143,17 +142,22 @@ module.exports = {
 	 * @returns Telegram message and options
 	 */
 	async set_settings(req, config, value) {
-		if (!group) await get_group_configs(req.group);
 		/**
 		 * @type {Game}
 		 */
 		var group = games[req.group.id_group];
-		let config_is_not_ok = group.config.is_not_ok(config, value);
-		if (!config_is_not_ok) {
-			await GroupController.update(req.group.id_group, group.config);
-			return message.keyboard(resp.config_is_ok, keyboard.group_settings());
+		if (group) {
+			if (group.decks == 0) {
+				let config_is_not_ok = group.config.is_not_ok(config, value);
+				if (!config_is_not_ok) {
+					await GroupController.update(req.group.id_group, group.config);
+					return message.keyboard(resp.config_is_ok, keyboard.group_settings());
+				}
+				return message.reply(config_is_not_ok, req.message_id);
+			}
+			return message.reply(resp.game_is_running, req.message_id);
 		}
-		return message.reply(config_is_not_ok, req.message_id);
+		return message.reply(resp.game_no_created, req.message_id);
 	},
 	async set_inline_type(req) {
 		/**
