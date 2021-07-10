@@ -37,14 +37,18 @@ class User {
 	 */
 	print(started) {
 		return (
-			"@" +
+			this.first_name +
+			" " +
+			"(@" +
 			this.username +
+			")" +
 			(started
-				? " Cantó: " +
-				  this.sing.name +
-				  (this.sing.value == 0 && this.sing.name != "No cantó" ? "😵" : " ") +
-				  " Cartas: " +
-				  this.cards.length
+				? "\nCartas: " +
+				  this.cards.length +
+				  " Cantó: " +
+				  (this.sing.name != "No cantó" && this.sing.active
+						? this.sing.name
+						: "No cantó")
 				: "")
 		);
 	}
