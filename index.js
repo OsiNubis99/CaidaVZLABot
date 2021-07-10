@@ -11,7 +11,11 @@ const Factory_User = require("./class/Factory_User");
 bot.on("inline_query", (query) => {
 	bot.answerInlineQuery(
 		query.id,
-		game.get_user_cards(Factory_User.fromTelegram(query.from))
+		game.get_user_cards(Factory_User.fromTelegram(query.from)),
+		{
+			is_personal: true,
+			cache_time: 1,
+		}
 	);
 });
 
