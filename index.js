@@ -41,6 +41,10 @@ bot.on("chosen_inline_result", (result) => {
 	}
 	if (response)
 		bot.sendMessage(response.chat_id, response.message, response.options);
+	else {
+		console.log(response);
+		console.log(result);
+	}
 });
 
 //**                      CallBacks                      */
@@ -95,11 +99,12 @@ bot.on("callback_query", async (query) => {
 //**                   Admins Commands                   */
 //TODO all Admin module
 
-// bot.onText(/\/addGroup/, (msg, match) => {
-//   bot.sendMessage(msg.chat.id, admin.add_group(msg), {
-//     reply_to_message_id: msg.message_id,
-//   });
-// });
+bot.onText(/\/message(.*) (.*)/, async (msg, match) => {
+	let response = await admin.message(Factory_Request.fromTelegram(msg));
+	response.forEach((group) => {
+		bot.sendMessage(group.id_group, match[2]);
+	});
+});
 
 // bot.onText(/\/lock/, (msg, match) => {
 //   bot.sendMessage(msg.chat.id, admin.ban_user(msg), {
@@ -131,15 +136,12 @@ bot.on("callback_query", async (query) => {
 //   });
 // });
 
-// bot.onText(/\/admin/, async (msg) => {
-//   // await user.add(msg.from);
-//   // await user.set_statics(msg.from.id, 1, 3, 5, 0);
-//   // console.log( JSON.stringify(await user.statics(msg.from.id)));
-//   bot.sendMessage(
-//     msg.chat.id,
-//     "/addGroup\n/removeGroup\n/lock\n/unlock\n/listGroups\n/listUsers"
-//   );
-// });
+bot.onText(/\/admin/, async (msg) => {
+	bot.sendMessage(
+		msg.chat.id,
+		"/message\n/lock\n/unlock\n/listGroups\n/listUsers"
+	);
+});
 
 //**                    Game Commands                    */
 

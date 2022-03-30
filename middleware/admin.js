@@ -1,11 +1,11 @@
 // TODO all admin module
-
 const resp = require("../lang/es");
-const { group, user } = require("../controller");
 const Factory_User = require("../class/Factory_User");
 const TelegramBot = require("node-telegram-bot-api");
+const Factory_Request = require("../class/Factory_Request");
+const { GroupController, UserController } = require("../controller");
 
-var admins = [114083702, 1088289802, 854224796, 355968156];
+var admins = [114083702];
 
 function is_admin(id) {
 	return admins.indexOf(id) >= 0;
@@ -21,7 +21,7 @@ module.exports = {
 		if (is_admin(msg.from.id)) {
 			if (msg.reply_to_message) {
 				if (!msg.reply_to_message.from.is_bot) {
-					user.ban(Factory_User.fromTelegram(msg.reply_to_message.from));
+					UserController.ban(Factory_User.fromTelegram(msg.reply_to_message.from));
 					return resp.user_banned;
 				} else {
 					return resp.no_ban_groups;
@@ -36,7 +36,7 @@ module.exports = {
 	add_group(msg) {
 		if (is_admin(msg.from.id)) {
 			if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
-				group.add(msg.chat);
+				GroupController.add(msg.chat);
 				return resp.group_added;
 			} else {
 				return resp.is_not_a_group;
@@ -47,7 +47,7 @@ module.exports = {
 	},
 	async list_user(msg) {
 		if (is_admin(msg.from.id)) {
-			var list = await user.list();
+			var list = await UserController.list();
 			var reply = "La lista de usuarios registrados es:";
 			list.forEach((user) => {
 				reply +=
@@ -69,7 +69,7 @@ module.exports = {
 	},
 	async list_group(msg) {
 		if (is_admin(msg.from.id)) {
-			var list = await group.list();
+			var list = await GroupController.list();
 			var reply = "La lista de grupos registrados es:";
 			list.forEach((group) => {
 				reply += "\n\t" + group.name;
@@ -81,12 +81,25 @@ module.exports = {
 			return resp.no_admin_person;
 		}
 	},
+
+	/**
+	 * Return the list of all groups in a JSON.
+	 * @param {Factory_Request} req - Clean request data.
+	 */
+	async message(req) {
+		if (is_admin(req.user.id_user)) {
+			var list = await GroupController.list();
+			return list;
+		} else {
+			return [req.group];
+		}
+	},
 	remove_group(msg, match) {
 		if (is_admin(msg.from.id)) {
 			let groups = match[1].split(" ");
 			groups.shift();
 			groups.forEach((id_group) => {
-				group.remove(id_group);
+				GroupController.remove(id_group);
 			});
 			return resp.group_removed;
 		} else {
@@ -97,7 +110,7 @@ module.exports = {
 		if (is_admin(msg.from.id)) {
 			if (msg.reply_to_message) {
 				if (!msg.reply_to_message.from.is_bot) {
-					user.unban(msg.reply_to_message.from);
+					UserController.unban(msg.reply_to_message.from);
 					return resp.user_unbanned;
 				} else {
 					return resp.no_unban_groups;
