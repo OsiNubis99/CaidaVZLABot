@@ -73,15 +73,14 @@ class Game {
    * @returns {Array<Card|Sings>}
    */
   get_player_cards(id_user) {
-    let cards = [];
-    this.users.forEach((user) => {
-      if (user.id_user == id_user) {
-        cards = user.cards;
-        if (user.cards.length == 3 && !user.sing.active && user.sing.value > 0)
-          cards.push(user.sing);
+    for (let i in this.users) {
+      if (this.users[i].id_user == id_user) {
+        if (this.users[i].cards.length == 3 && !this.users[i].sing.active && this.users[i].sing.value > 0)
+          return this.users[i].cards.concat(this.users[i].sing);
+        return this.users[i].cards;
       }
-    });
-    return cards;
+    };
+    return [];
   }
 
   /**
@@ -137,9 +136,7 @@ class Game {
   new_cards(number, next_card, desc) {
     if (number > 0) {
       let points = next_card != 0 ? this.push_cards(next_card) : 0;
-      this.users.forEach((user) => {
-        user.add_card(new Card(this.deck.shift()), this.config);
-      });
+      this.users.forEach(user => user.add_card(new Card(this.deck.shift()), this.config));
       if (next_card != 0) next_card = desc ? next_card - 1 : next_card + 1;
       return points + this.new_cards(number - 1, next_card, desc);
     } else {
@@ -331,6 +328,7 @@ class Game {
     this.table = new Array(10);
     this.table_order = "";
     this.took = [0, 0, 0, 0];
+    console.log(response);
     return response;
   }
 

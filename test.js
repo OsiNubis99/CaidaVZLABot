@@ -1,28 +1,30 @@
 const Card = require("./class/Card");
 const Game = require("./class/Game");
 const User = require("./class/User");
+const Config = require("./class/Config");
 
 let players = [];
+const game_mode = require("./lang/game_modes_es")[2];
+var game = new Game("nombre", new Config(game_mode));
+    players[0] = new User({ id_user: 1, first_name: "P1", username: "P1" });
+    players[1] = new User({ id_user: 2, first_name: "P2", username: "P2" });
+    players[2] = new User({ id_user: 3, first_name: "P3", username: "P3" });
+    players[3] = new User({ id_user: 4, first_name: "P4", username: "P4" });
 
-players["1"] = new User({ id_user: 1, first_name: "P1", username: "P1" });
-players["2"] = new User({ id_user: 2, first_name: "P2", username: "P2" });
-players["3"] = new User({ id_user: 3, first_name: "P3", username: "P3" });
-players["4"] = new User({ id_user: 4, first_name: "P4", username: "P4" });
-console.log(players["1"].print());
-// player.add_card(new Card(38));
-// console.log(player.print());
-// player.add_card(new Card(0));
-// console.log(player.print());
-// player.add_card(new Card(39));
-// console.log(player.print());
-
-var game = new Game("nombre", { mode: "parejas" });
-console.log(game.print());
-console.log(game.join(players[1]));
-console.log(game.print());
-game.join(players[2]);
-console.log(game.last_player());
-game.join(players[3]);
-console.log(game.last_player());
-game.join(players[4]);
-console.log(game.print());
+let play = 0;
+while (true) {
+  players.push(players.shift())
+  if (game.decks < 1){
+    play++;
+    if (play > 1) break;
+    players.forEach(item => game.join(item));
+    console.log('\x1b[35m ' + game.shuffle() + '\x1b[0m');
+    game.handing_out_cards(1);
+  } else if (game.deck.length == 40) game.handing_out_cards(4)
+  for (var count = 0; count < 3; ++count) {
+    players.forEach(item => {
+      if(count == 0 && game.decks > 0) game.sing(item.id_user);
+      if(game.decks > 0 ) game.play_card(item.id_user,0);
+    });
+  }
+}
