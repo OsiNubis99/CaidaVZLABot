@@ -227,9 +227,9 @@ module.exports = {
             )
           );
         }
-        return inLine ? false : message.reply(resp.game_is_running, req.message_id);
+        return inLine ? false : message.reply(resp.game_is_empty, req.message_id);
       }
-      return inLine ? false : message.reply(resp.game_is_empty, req.message_id);
+      return inLine ? false : message.reply(resp.game_is_running, req.message_id);
     }
     return inLine ? false : message.reply(resp.game_no_created, req.message_id);
   },
