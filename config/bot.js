@@ -10,7 +10,10 @@ if (env.node_env == "develop") {
 
 const bot = new TelegramBot(env.token, options);
 
-if (env.node_env == "production") bot.setWebHook(`${env.url}/bot${env.token}`);
+if (env.node_env == "production") {
+  bot.setWebHook(`${env.url}/bot${env.token}`);
+  console.log(`webhook set at: ${env.url}/bot${env.token}`);
+}
 
 bot.onText(/\/version(.*)/, (msg) => {
   bot.sendMessage(msg.chat.id, env.name + "@" + env.version);
