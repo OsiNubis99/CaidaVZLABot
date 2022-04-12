@@ -3,8 +3,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 module.exports = {
-  url: process.env.HEROKU_SERVER_URL, //Required Server_uri
-  bd_url: process.env.HEROKU_POSTGRESQL_URL, //Required DB_uri
+  url: process.env.SERVER_URL, //Required Server_uri
+  bd_url: process.env.POSTGRESQL_URL, //Required DB_uri
   version: process.env.npm_package_version,
   name: process.env.npm_package_name,
   token: process.env.TELEGRAM_TOKEN, //Required Token
