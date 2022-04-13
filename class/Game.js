@@ -194,7 +194,7 @@ class Game {
       let points = this.new_cards(3, start_by, start_by > 2);
       added += this.table_order;
       if (points > 0) {
-        if (this.increase_points(this.users.length - 1, points * this.config.mesa))
+        if (this.increase_points(this.users.length - 1, points))
           return this.kill(this.users.length - 1);
         added += resp.sync_cards + points + "\n";
       } else {
@@ -276,10 +276,12 @@ class Game {
             if (this.config.caida > 0) {
               this.users[this.last_player()].caido += 1;
               this.users[this.player].caida += 1;
-              this.increase_points(
-                this.player,
-                card.points * this.config.caida
-              );
+              if (
+                this.increase_points(
+                  this.player,
+                  card.points * this.config.caida
+                )
+              ) return this.kill(this.player);
               response = resp.user_get_fall;
               if (this.config.mata_canto == "on") {
                 this.users[this.last_player()].sing.active = false;
@@ -293,7 +295,7 @@ class Game {
               if (card != null) clean = false;
             });
             if (clean) {
-              this.increase_points(this.player, card.points * this.config.mesa);
+              if(this.increase_points(this.player, 1 * this.config.mesa)) return this.kill(this.player);
               response += resp.clean_table;
             }
           }
