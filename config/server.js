@@ -11,8 +11,8 @@ app.get("/", function (req, res) {
 });
 
 app.post(`/bot${env.token}`, (req, res) => {
-  bot.processUpdate(req.body);
   res.sendStatus(200);
+  bot.processUpdate(req.body);
 });
 
 app.listen(env.port, function () {
