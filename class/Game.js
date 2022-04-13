@@ -194,12 +194,12 @@ class Game {
       let points = this.new_cards(3, start_by, start_by > 2);
       added += this.table_order;
       if (points > 0) {
-        if (this.increase_points(1, points * this.config.mesa))
-          return this.kill(0);
+        if (this.increase_points(this.users.length - 1, points * this.config.mesa))
+          return this.kill(this.users.length - 1);
         added += resp.sync_cards + points + "\n";
       } else {
         if (start_by > 0) {
-          if (this.increase_points(0, 1)) return this.kill(1);
+          if (this.increase_points(0, 1)) return this.kill(0);
           added += resp.bad_sync_cards;
         }
       }
