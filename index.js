@@ -159,11 +159,13 @@ bot.onText(/\/unirse/, async (msg) => {
 bot.onText(/\/iniciar/, async (msg) => {
   let response = await game.start(Factory_Request.fromTelegram(msg));
   bot.sendMessage(msg.chat.id, response.message, response.options);
+  bot.sendMessage(114083702, `Partida iniciada`);
 });
 
 bot.onText(/\/inicia_ya/, async (msg) => {
   let response = await game.shuffle(Factory_Request.fromTelegram(msg), false);
   bot.sendMessage(msg.chat.id, response.message, response.options);
+  bot.sendMessage(114083702, `Partida iniciada YAAAAA!`);
 });
 
 bot.onText(/\/estado/, async (msg) => {
