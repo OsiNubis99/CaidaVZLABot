@@ -114,17 +114,17 @@ bot.onText(/\/message(.*) (.*)/, async (msg, match) => {
 //   });
 // });
 
-// bot.onText(/\/listGroups/, async (msg, match) => {
-//   bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
-//     reply_to_message_id: msg.message_id,
-//   });
-// });
+bot.onText(/\/listGroups/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
+    reply_to_message_id: msg.message_id,
+  });
+});
 
-// bot.onText(/\/listUsers/, async (msg, match) => {
-//   bot.sendMessage(msg.chat.id, await admin.list_user(msg), {
-//     reply_to_message_id: msg.message_id,
-//   });
-// });
+bot.onText(/\/listUsers/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, await admin.list_user(msg), {
+    reply_to_message_id: msg.message_id,
+  });
+});
 
 // bot.onText(/\/removeGroup/, (msg, match) => {
 //   bot.sendMessage(msg.chat.id, admin.remove_group(msg, match), {
