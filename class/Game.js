@@ -154,6 +154,7 @@ class Game {
    * Shuffle and save all cards generators on the Deck and increment decks played.
    */
   shuffle() {
+    console.log("shuffle")
     this.decks++;
     this.deck = [
       11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
@@ -174,6 +175,7 @@ class Game {
   }
 
   handing_out_cards(start_by, added = "") {
+    console.log("handing_out_cards")
     var sings = [0, 0, 0, 0];
     var biggest = 0;
     this.users.forEach((user, index) => {
@@ -276,16 +278,12 @@ class Game {
             if (this.config.caida > 0) {
               this.users[this.last_player()].caido += 1;
               this.users[this.player].caida += 1;
-              if (
-                this.increase_points(
-                  this.player,
-                  card.points * this.config.caida
-                )
-              ) return this.kill(this.player);
+              if (this.increase_points(this.player, card.points * this.config.caida)) return this.kill(this.player);
               response = resp.user_get_fall;
               if (this.config.mata_canto == "on") {
+                if (this.users[this.last_player()].sing.active)
+                  response += resp.sing_killed;
                 this.users[this.last_player()].sing.active = false;
-                response += resp.sing_killed;
               }
             }
           }
@@ -338,6 +336,7 @@ class Game {
    * @returns Printable message with the game and teams information
    */
   print(short_status = true) {
+    console.log("print de game")
     let response = "";
     let is_running = this.decks > 0;
     if (is_running) {
@@ -354,7 +353,9 @@ class Game {
           " de " +
           this.last_card_played.type;
       }
+      console.log("print 1")
       response += "\nSiguiente: " + this.playerName();
+      console.log("print 2")
     } else {
       response += resp.game_no_started;
     }

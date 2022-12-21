@@ -5,7 +5,7 @@ const USE_START =
   "\nUsa /iniciar para configurar e iniciar la partida o /inicia_ya para saltarte la configuración";
 module.exports = {
   bad_turn: "Carta vista",
-  bad_sync_cards: "Mala echada!\n",
+  bad_sync_cards: "Mal echada!\n",
   clean_table: "Mesa Limpia!\n",
   config_bool_invalid: "Valor invalido, las opciones son: 'on' o 'off'" + ERROR,
   config_type_invalid:

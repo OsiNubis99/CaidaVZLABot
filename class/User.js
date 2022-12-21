@@ -36,6 +36,7 @@ class User {
    * @returns Printable User Information
    */
   print(started) {
+    console.log("print de palyer")
     return (
       this.first_name +
       " " +
@@ -43,12 +44,10 @@ class User {
       this.username +
       ")" +
       (started
-        ? "\nCartas: " +
-          this.cards.length +
-          " Cantó: " +
+        ? ("\nCartas: " + this.cards.length + " Cantó: " +
           (this.sing.name != "No cantó" && this.sing.active
             ? this.sing.name
-            : "No cantó")
+            : "No cantó"))
         : "")
     );
   }
