@@ -278,7 +278,8 @@ class Game {
             if (this.config.caida > 0) {
               this.users[this.last_player()].caido += 1;
               this.users[this.player].caida += 1;
-              if (this.increase_points(this.player, card.points * this.config.caida)) return this.kill(this.player);
+              if (this.increase_points(this.player, card.points * this.config.caida))
+                return this.kill(this.player);
               response = resp.user_get_fall;
               if (this.config.mata_canto == "on") {
                 if (this.users[this.last_player()].sing.active)
@@ -293,7 +294,8 @@ class Game {
               if (card != null) clean = false;
             });
             if (clean) {
-              if (this.increase_points(this.player, 1 * this.config.mesa)) return this.kill(this.player);
+              if (this.increase_points(this.player, 1 * this.config.mesa))
+                return this.kill(this.player);
               response += resp.clean_table;
             }
           }
@@ -314,9 +316,14 @@ class Game {
    * @returns Printable message with the game information
    */
   kill(player) {
+    console.log(this.users, player)
     //TODO Save all collected info
     var response =
-      "Gano " + this.users[player].print(false) + "\n" + this.print(false);
+      "Gano "
+    console.log("print1")
+    response += this.users[player].print(false)
+    console.log("print2")
+    response += "\n" + this.print(false);
     this.deck = new Array();
     this.decks = 0;
     this.last_card_played = null;
