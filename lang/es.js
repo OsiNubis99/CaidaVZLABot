@@ -1,5 +1,3 @@
-const BETA =
-  "Esta es una version BETA de la 2.0, por favor si tienen algun error dejámelo saber escribiendo a @OsiNubis99\n";
 const ERROR =
   "\nSi estas experimentando algún error, por favor dejámelo saber escribiendo a @OsiNubis99.";
 const USE_JOIN = "\nUsa /unirse para unirte a la partida.";
@@ -21,7 +19,7 @@ module.exports = {
     "Configuración aplicada, usa /configurar para ver los valores actuales.",
   did_sing: "cantó",
   game_already_created: "El juego ya esta creado." + USE_JOIN,
-  game_created: BETA + "Juego creado." + USE_JOIN,
+  game_created: "Juego creado." + USE_JOIN,
   game_is_empty:
     "El mínimo de jugadores es 2. Espera a que más jugadores se unan a la partida!",
   game_is_full:
@@ -41,7 +39,6 @@ module.exports = {
   is_not_a_group:
     "Este comando solo esta disponible para su uso en grupos." + ERROR,
   no_admin_person: "No pareces ser un administrador del Bot." + ERROR,
-  no_ban_groups: "No es posible Bloquear un Bot.",
   no_cards_description: "No tienes ninguna carta aun.",
   no_cards_message: "Esperando para Jugar...",
   no_cards_title: "🤷🏼‍♂️ No Tienes Cartas",

@@ -1,7 +1,6 @@
 // TODO all admin module
 const resp = require("../lang/es");
 const Factory_User = require("../class/Factory_User");
-const TelegramBot = require("node-telegram-bot-api");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
 
@@ -13,19 +12,19 @@ function is_admin(id) {
 
 module.exports = {
 	/**
-	 *
-	 * @param {TelegramBot.Message} msg
-	 * @returns
+	 * Ban or unban a user
+	 * @param {Factory_Request} req - Clean request data.
+	 * @param {Boolean} is_banned - Value of is_banned.
+	 * @returns {Promise<Factory_User>} The full User element from database.
 	 */
-	ban_user(msg) {
-		if (is_admin(msg.from.id)) {
-			if (msg.reply_to_message) {
-				if (!msg.reply_to_message.from.is_bot) {
-					UserController.ban(Factory_User.fromTelegram(msg.reply_to_message.from));
+	ban_unban_user(req, is_banned) {
+		if (is_admin(req.user.id_user)) {
+			if (req.reply_to) {
+				UserController.ban_unban(req.reply_to.user, is_banned);
+				if (is_banned)
 					return resp.user_banned;
-				} else {
-					return resp.no_ban_groups;
-				}
+				else
+					return resp.user_unbanned;
 			} else {
 				return resp.remember_reply;
 			}
@@ -33,22 +32,25 @@ module.exports = {
 			return resp.no_admin_person;
 		}
 	},
-	add_group(msg) {
-		if (is_admin(msg.from.id)) {
-			if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
-				GroupController.add(msg.chat);
-				return resp.group_added;
-			} else {
-				return resp.is_not_a_group;
-			}
+
+
+	/**
+	 * Return the list of all groups in a JSON.
+	 * @param {Factory_Request} req - Clean request data.
+	 */
+	async all_groups(req) {
+		if (is_admin(req.user.id_user)) {
+			var list = await GroupController.list();
+			return list;
 		} else {
-			return resp.no_admin_person;
+			return [req.group];
 		}
 	},
+	// TODO
 	async list_user(msg) {
 		if (is_admin(msg.from.id)) {
 			var list = await UserController.list();
-			var reply = "La lista de usuarios registrados es:";
+			var reply = `La lista de usuarios registrados es: (${list.length})`;
 			list.forEach((user) => {
 				reply +=
 					"\n- " +
@@ -67,6 +69,7 @@ module.exports = {
 			return resp.no_admin_person;
 		}
 	},
+	// TODO
 	async list_group(msg) {
 		if (is_admin(msg.from.id)) {
 			var list = await GroupController.list();
@@ -81,19 +84,20 @@ module.exports = {
 			return resp.no_admin_person;
 		}
 	},
-
-	/**
-	 * Return the list of all groups in a JSON.
-	 * @param {Factory_Request} req - Clean request data.
-	 */
-	async message(req) {
-		if (is_admin(req.user.id_user)) {
-			var list = await GroupController.list();
-			return list;
+	// TODO
+	add_group(msg) {
+		if (is_admin(msg.from.id)) {
+			if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
+				GroupController.add(msg.chat);
+				return resp.group_added;
+			} else {
+				return resp.is_not_a_group;
+			}
 		} else {
-			return [req.group];
+			return resp.no_admin_person;
 		}
 	},
+	// TODO
 	remove_group(msg, match) {
 		if (is_admin(msg.from.id)) {
 			let groups = match[1].split(" ");
@@ -102,22 +106,6 @@ module.exports = {
 				GroupController.remove(id_group);
 			});
 			return resp.group_removed;
-		} else {
-			return resp.no_admin_person;
-		}
-	},
-	unban_user(msg) {
-		if (is_admin(msg.from.id)) {
-			if (msg.reply_to_message) {
-				if (!msg.reply_to_message.from.is_bot) {
-					UserController.unban(msg.reply_to_message.from);
-					return resp.user_unbanned;
-				} else {
-					return resp.no_unban_groups;
-				}
-			} else {
-				return resp.remember_reply;
-			}
 		} else {
 			return resp.no_admin_person;
 		}

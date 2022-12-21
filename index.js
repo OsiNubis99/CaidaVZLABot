@@ -78,7 +78,7 @@ bot.on("callback_query", async (query) => {
         bot.editMessageText(response.message, response.options);
         break;
       case "start":
-        response = await game.shuffle(
+        response = game.shuffle(
           Factory_Request.fromTelegram(query.message)
         );
         if (response) {
@@ -93,39 +93,41 @@ bot.on("callback_query", async (query) => {
 });
 
 //**                   Admins Commands                   */
-//TODO all Admin module
 
 bot.onText(/\/message(.*) (.*)/, async (msg, match) => {
-  let response = await admin.message(Factory_Request.fromTelegram(msg));
+  let response = await admin.all_groups(Factory_Request.fromTelegram(msg));
   response.forEach((group) => {
     bot.sendMessage(group.id_group, match[2]);
   });
 });
 
-// bot.onText(/\/lock/, (msg, match) => {
-//   bot.sendMessage(msg.chat.id, admin.ban_user(msg), {
-//     reply_to_message_id: msg.message_id,
-//   });
-// });
+bot.onText(/\/lock/, (msg) => {
+  bot.sendMessage(msg.chat.id, admin.ban_unban_user(Factory_Request.fromTelegram(msg), true), {
+    reply_to_message_id: msg.message_id,
+  });
+});
 
-// bot.onText(/\/unlock/, (msg, match) => {
-//   bot.sendMessage(msg.chat.id, admin.unban_user(msg), {
-//     reply_to_message_id: msg.message_id,
-//   });
-// });
+bot.onText(/\/unlock/, (msg) => {
+  bot.sendMessage(msg.chat.id, admin.ban_unban_user(Factory_Request.fromTelegram(msg), false), {
+    reply_to_message_id: msg.message_id,
+  });
+});
 
-bot.onText(/\/listGroups/, async (msg, match) => {
+// TODO
+bot.onText(/\/listGroups/, async (msg) => {
   bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
     reply_to_message_id: msg.message_id,
   });
 });
 
-bot.onText(/\/listUsers/, async (msg, match) => {
+// TODO
+bot.onText(/\/listUsers/, async (msg) => {
   bot.sendMessage(msg.chat.id, await admin.list_user(msg), {
     reply_to_message_id: msg.message_id,
   });
 });
 
+// TODO
 // bot.onText(/\/removeGroup/, (msg, match) => {
 //   bot.sendMessage(msg.chat.id, admin.remove_group(msg, match), {
 //     reply_to_message_id: msg.message_id,

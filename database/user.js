@@ -53,27 +53,15 @@ module.exports = {
   },
 
   /**
-   * Add a new user with is_banned as true. If it's already then set is_baned true.
+   * Add a new user with is_banned as ban param. If it's already then set is_baned and update first name and last name.
    * @param {Factory_User} user - User element to be updated or added.
+   * @param {Boolean} is_banned - Value of is_banned.
    * @returns {Promise<Factory_User>} The full User element from database.
    */
-  async ban(user) {
+  async ban_unban(user, is_banned) {
     let result = await database.query(
-      "INSERT INTO public.user ( id_user, first_name, last_name, username, is_banned) VALUES ($1,$2,$3,$4,true) ON CONFLICT (id_user) DO UPDATE SET first_name = $2, last_name = $3, username = $4, is_banned = true RETURNING * ;",
-      [user.id_user, user.first_name, user.last_name, user.username]
-    );
-    return result.rows[0];
-  },
-
-  /**
-   * Add a new user with is_banned as false. If it's already then set is_baned false.
-   * @param {Factory_User} user - User element to be updated or added.
-   * @returns {Promise<Factory_User>} The full User element from database.
-   */
-  async unban(user) {
-    let result = await database.query(
-      "INSERT INTO public.user ( id_user, first_name, last_name, username, is_banned) VALUES ($1,$2,$3,$4,false) ON CONFLICT (id_user) DO UPDATE SET first_name = $2, last_name = $3, username = $4, is_banned = false RETURNING * ;",
-      [user.id_user, user.first_name, user.last_name, user.username]
+      "INSERT INTO public.user ( id_user, first_name, last_name, username, is_banned) VALUES ($1,$2,$3,$4,?5) ON CONFLICT (id_user) DO UPDATE SET first_name = $2, last_name = $3, username = $4, is_banned = ?5 RETURNING * ;",
+      [user.id_user, user.first_name, user.last_name, user.username, is_banned]
     );
     return result.rows[0];
   },
