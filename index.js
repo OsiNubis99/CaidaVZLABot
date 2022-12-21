@@ -26,6 +26,7 @@ bot.on("chosen_inline_result", (result) => {
       Factory_User.fromTelegram(result.from),
       result.result_id
     );
+    //
   } else if (result.result_id == 4) {
     response = game.sing(Factory_User.fromTelegram(result.from));
   } else if (result.result_id == 8) {
@@ -82,7 +83,8 @@ bot.on("callback_query", async (query) => {
           Factory_Request.fromTelegram(query.message)
         );
         if (response) {
-          bot.sendMessage(msg.chat.id, response.message, response.options);
+          bot.sendMessage(query.message.chat.id, response.message, response.options);
+          //
           break;
         }
       default:
@@ -158,16 +160,17 @@ bot.onText(/\/unirse/, async (msg) => {
   bot.sendMessage(msg.chat.id, response.message, response.options);
 });
 
-bot.onText(/\/iniciar/, async (msg) => {
-  let response = await game.start(Factory_Request.fromTelegram(msg));
+bot.onText(/\/iniciar/, (msg) => {
+  let response = game.start(Factory_Request.fromTelegram(msg));
   bot.sendMessage(msg.chat.id, response.message, response.options);
   bot.sendMessage(114083702, `Partida iniciada`);
 });
 
-bot.onText(/\/inicia_ya/, async (msg) => {
-  let response = await game.shuffle(Factory_Request.fromTelegram(msg), false);
+bot.onText(/\/inicia_ya/, (msg) => {
+  let response = game.shuffle(Factory_Request.fromTelegram(msg), false);
   bot.sendMessage(msg.chat.id, response.message, response.options);
   bot.sendMessage(114083702, `Partida iniciada YAAAAA!`);
+  //
 });
 
 bot.onText(/\/estado/, async (msg) => {

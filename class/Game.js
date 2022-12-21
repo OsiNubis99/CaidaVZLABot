@@ -295,7 +295,7 @@ class Game {
               if (card != null) clean = false;
             });
             if (clean) {
-              if(this.increase_points(this.player, 1 * this.config.mesa)) return this.kill(this.player);
+              if (this.increase_points(this.player, 1 * this.config.mesa)) return this.kill(this.player);
               response += resp.clean_table;
             }
           }
@@ -330,7 +330,6 @@ class Game {
     this.table = new Array(10);
     this.table_order = "";
     this.took = [0, 0, 0, 0];
-    console.log(response);
     return response;
   }
 
