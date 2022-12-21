@@ -48,7 +48,7 @@ module.exports = {
 	},
 	// TODO
 	async list_user(msg) {
-		if (is_admin(msg.from.id)) {
+		if (is_admin(msg.from.id.toString())) {
 			var list = await UserController.list();
 			var reply = `La lista de usuarios registrados es: (${list.length})`;
 			list.forEach((user) => {
@@ -61,7 +61,7 @@ module.exports = {
 				reply +=
 					"\n\tusername: " +
 					(user.username ? "@" + user.username : "Undefined");
-				reply += user.is_banned ? "\n\tNo Puede Jugar" : "\n\tPuede Jugar";
+				reply += "\n\t" + (user.is_banned ? "No " : "") + "Puede Jugar";
 				reply += "\n";
 			});
 			return reply;
@@ -71,7 +71,7 @@ module.exports = {
 	},
 	// TODO
 	async list_group(msg) {
-		if (is_admin(msg.from.id)) {
+		if (is_admin(msg.from.id.toString())) {
 			var list = await GroupController.list();
 			var reply = "La lista de grupos registrados es:";
 			list.forEach((group) => {
@@ -86,7 +86,7 @@ module.exports = {
 	},
 	// TODO
 	add_group(msg) {
-		if (is_admin(msg.from.id)) {
+		if (is_admin(msg.from.id.toString())) {
 			if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
 				GroupController.add(msg.chat);
 				return resp.group_added;
