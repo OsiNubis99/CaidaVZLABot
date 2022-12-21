@@ -101,14 +101,14 @@ bot.onText(/\/message(.*) (.*)/, async (msg, match) => {
   });
 });
 
-bot.onText(/\/lock/, (msg) => {
-  bot.sendMessage(msg.chat.id, admin.ban_unban_user(Factory_Request.fromTelegram(msg), true), {
+bot.onText(/\/lock/, async (msg) => {
+  bot.sendMessage(msg.chat.id, await admin.ban_unban_user(Factory_Request.fromTelegram(msg), true), {
     reply_to_message_id: msg.message_id,
   });
 });
 
-bot.onText(/\/unlock/, (msg) => {
-  bot.sendMessage(msg.chat.id, admin.ban_unban_user(Factory_Request.fromTelegram(msg), false), {
+bot.onText(/\/unlock/, async (msg) => {
+  bot.sendMessage(msg.chat.id, await admin.ban_unban_user(Factory_Request.fromTelegram(msg), false), {
     reply_to_message_id: msg.message_id,
   });
 });

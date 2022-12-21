@@ -17,7 +17,7 @@ app.post(`/bot${env.token}`, (req, res) => {
 
 app.listen(env.port, function () {
   console.log(`Express server is listening on port ${env.port}`);
-  bot.sendMessage(114083702, 'I\'m alive`');
+  bot.sendMessage(114083702, 'I\'m alive');
 });
 
 module.exports = bot;

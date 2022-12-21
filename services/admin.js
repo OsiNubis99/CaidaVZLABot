@@ -4,7 +4,7 @@ const Factory_User = require("../class/Factory_User");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
 
-var admins = [114083702];
+var admins = ['114083702'];
 
 function is_admin(id) {
 	return admins.indexOf(id) >= 0;
@@ -17,10 +17,10 @@ module.exports = {
 	 * @param {Boolean} is_banned - Value of is_banned.
 	 * @returns {Promise<Factory_User>} The full User element from database.
 	 */
-	ban_unban_user(req, is_banned) {
+	async ban_unban_user(req, is_banned) {
 		if (is_admin(req.user.id_user)) {
 			if (req.reply_to) {
-				UserController.ban_unban(req.reply_to.user, is_banned);
+				await UserController.ban_unban(req.reply_to.user, is_banned);
 				if (is_banned)
 					return resp.user_banned;
 				else
