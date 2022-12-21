@@ -36,7 +36,6 @@ class User {
    * @returns Printable User Information
    */
   print(started) {
-    console.log("print de palyer")
     return (
       this.first_name +
       " " +

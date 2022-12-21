@@ -324,6 +324,7 @@ class Game {
     response += this.users[player].print(false)
     console.log("print2")
     response += "\n" + this.print(false);
+    console.log("print3")
     this.deck = new Array();
     this.decks = 0;
     this.last_card_played = null;
@@ -391,6 +392,7 @@ class Game {
         ? "\n\t" + this.users[3].print(is_running)
         : "\n\tVacío";
     } else {
+      console.log("print 3")
       response += this.users[0]
         ? "\nJugador 1: " +
         this.users[0].print(is_running) +
@@ -398,6 +400,7 @@ class Game {
           ? "\n\tPuntos: " + this.points[0] + " Tomado: " + this.took[0]
           : "")
         : "";
+      console.log("print 4")
       response += this.users[1]
         ? "\nJugador 2: " +
         this.users[1].print(is_running) +
@@ -405,6 +408,7 @@ class Game {
           ? "\n\tPuntos: " + this.points[1] + " Tomado: " + this.took[1]
           : "")
         : "";
+      console.log("print 5")
       response += this.users[2]
         ? "\nJugador 3: " +
         this.users[2].print(is_running) +
@@ -412,6 +416,7 @@ class Game {
           ? "\n\tPuntos: " + this.points[2] + " Tomado: " + this.took[2]
           : "")
         : "";
+      console.log("print 6")
       response += this.users[3]
         ? "\nJugador 4: " +
         this.users[3].print(is_running) +
@@ -420,6 +425,7 @@ class Game {
           : "")
         : "";
     }
+    console.log("print10")
     return response;
   }
 
