@@ -3,11 +3,9 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 module.exports = {
-  url: process.env.SERVER_URL, //Required Server_uri
   bd_url: process.env.POSTGRESQL_URL, //Required DB_uri
+  token: process.env.TELEGRAM_TOKEN, //Required Token
   version: process.env.npm_package_version,
   name: process.env.npm_package_name,
-  token: process.env.TELEGRAM_TOKEN, //Required Token
-  node_env: process.env.NODE_ENV, //Required "production"
-  port: process.env.PORT,
+  port: process.env.PORT || 3000,
 };

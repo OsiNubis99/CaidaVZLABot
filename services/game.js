@@ -8,7 +8,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const Factory_User = require("../class/Factory_User");
 const Factory_Group = require("../class/Factory_Group");
 const Factory_Request = require("../class/Factory_Request");
-const { GroupController, UserController } = require("../controller");
+const { GroupController, UserController } = require("../database");
 
 /**
  * @type {Array<Game>}

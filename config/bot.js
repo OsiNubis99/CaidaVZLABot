@@ -1,19 +1,11 @@
 const TelegramBot = require("node-telegram-bot-api");
 const env = require("./env");
 
-let options = {};
-if (env.node_env == "develop") {
-  options = {
-    polling: true,
-  };
-}
+let options = {
+  polling: true,
+};
 
 const bot = new TelegramBot(env.token, options);
-
-if (env.node_env == "production") {
-  bot.setWebHook(`${env.url}/bot${env.token}`);
-  console.log(`webhook set at: ${env.url}/bot${env.token}`);
-}
 
 bot.onText(/\/version(.*)/, (msg) => {
   bot.sendMessage(msg.chat.id, env.name + "@" + env.version);

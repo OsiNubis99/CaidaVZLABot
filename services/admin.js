@@ -3,7 +3,7 @@ const resp = require("../lang/es");
 const Factory_User = require("../class/Factory_User");
 const TelegramBot = require("node-telegram-bot-api");
 const Factory_Request = require("../class/Factory_Request");
-const { GroupController, UserController } = require("../controller");
+const { GroupController, UserController } = require("../database");
 
 var admins = [114083702];
 
