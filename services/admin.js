@@ -33,15 +33,13 @@ module.exports = {
 		}
 	},
 
-
 	/**
 	 * Return the list of all groups in a JSON.
 	 * @param {Factory_Request} req - Clean request data.
 	 */
 	async all_groups(req) {
 		if (is_admin(req.user.id_user)) {
-			var list = await GroupController.list();
-			return list;
+			return await GroupController.list();
 		} else {
 			return [req.group];
 		}

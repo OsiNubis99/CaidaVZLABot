@@ -24,10 +24,10 @@ module.exports = {
   },
 
   /**
-   * @param {String} id_user - Specific User id to get the statics
+   * @param {String} id_user - Specific User id to get the stats
    * @returns {Promise<Factory_User>} The full User element from database.
    */
-  async statics(id_user) {
+  async stats(id_user) {
     let result = await database.query(
       "SELECT * FROM public.user where id_user=$1;",
       [id_user]
@@ -36,19 +36,19 @@ module.exports = {
   },
 
   /**
-   * Set all statics to one user and return the full User element.
-   * @param {String} id_user - Specific User id to set the statics
-   * @param {Number} win - Number of won games to be added. It should be 1 or 0.
+   * Set all stats to one user and return the full User element.
+   * @param {String} id_user - Specific User id to set the stats
+   * @param {Number} win - It should be 2, 1 or 0.
    * @param {Number} sings - Number of sings of the user in the game.
    * @param {Number} caida - Number of times the user gave down another.
    * @param {Number} caido - Number of times the user was fallen by another.
    * @returns {Promise<Factory_User>} The full User element from database.
    */
-  async set_statics(id_user, win, sings, caida, caido) {
-    let result = await database.query(
-      "UPDATE public.user SET finished = finished + 1, win = win + $2, sings = sings + $3 , caida = caida + $4, caido = caido + $5 WHERE id_user = $1;",
-      [id_user, win, sings, caida, caido]
-    );
+  async set_stats(id_user, win, sings, caida, caido) {
+    let query = "UPDATE public.user SET finished = finished + 1"
+    query += win == 1 ? ", win = win + $2" : win == 2 ? ", win_custom = win_custom + $2" : ""
+    query += ", sings = sings + $3 , caida = caida + $4, caido = caido + $5 WHERE id_user = $1;"
+    let result = await database.query(query, [id_user, win, sings, caida, caido]);
     return result.rows[0];
   },
 

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.user
  "username"    varchar(50) NULL,
  "finished"    int DEFAULT 0,
  "win"         int DEFAULT 0,
+ "win_custom"  int DEFAULT 0,
  "sings"       int DEFAULT 0,
  "caida"       int DEFAULT 0,
  "caido"       int DEFAULT 0,

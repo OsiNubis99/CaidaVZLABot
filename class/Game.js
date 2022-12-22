@@ -1,10 +1,11 @@
 const User = require("./User");
 const Card = require("./Card");
+const Sings = require("./Sings");
 const resp = require("../lang/es");
 const Config = require("./Config");
+const UserDatabase = require("../database/user");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
-const Sings = require("./Sings");
 
 class Game {
   config = Config.prototype;
@@ -316,13 +317,19 @@ class Game {
    * @returns Printable message with the game information
    */
   kill(player) {
-    //TODO Save all collected info
+    let win = this.config.game_mode > 0 ? 1 : 2
+    for (var i = 0; i < this.users.length; ++i) {
+      let user = this.users[i]
+      let comparate = this.config.type == "parejas" ? i % 2 : i
+      let user_win = player == comparate ? win : 0
+      UserDatabase.set_stats(user.id_user, user_win, user.sings, user.caida, user.caido)
+    }
     var response =
       "Gano "
     response += this.users[player].print(false)
-    response += "\n" + this.print(false);
     this.deck = new Array();
     this.decks = 0;
+    response += "\n" + this.print(false, false);
     this.last_card_played = null;
     this.last_hand = false;
     this.last_player_on_take = 0;
@@ -339,7 +346,7 @@ class Game {
    * @param {Boolean} short_status - Only send the game status without teams information
    * @returns Printable message with the game and teams information
    */
-  print(short_status = true) {
+  print(short_status = true, no_started = true) {
     let response = "";
     let is_running = this.decks > 0;
     if (is_running) {
@@ -358,7 +365,8 @@ class Game {
       }
       response += "\nSiguiente: " + this.playerName();
     } else {
-      response += resp.game_no_started;
+      if (no_started)
+        response += resp.game_no_started;
     }
     if (short_status) {
       return response;

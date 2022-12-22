@@ -84,8 +84,6 @@ bot.on("callback_query", async (query) => {
         );
         if (response) {
           bot.sendMessage(query.message.chat.id, response.message, response.options);
-          //
-          break;
         }
       default:
         bot.deleteMessage(query.message.chat.id, query.message.message_id);
@@ -96,10 +94,10 @@ bot.on("callback_query", async (query) => {
 
 //**                   Admins Commands                   */
 
-bot.onText(/\/message(.*) (.*)/, async (msg, match) => {
+bot.onText(/\/message (.*)/, async (msg, match) => {
   let response = await admin.all_groups(Factory_Request.fromTelegram(msg));
   response.forEach((group) => {
-    bot.sendMessage(group.id_group, match[2]);
+    bot.sendMessage(group.id_group, match[1]);
   });
 });
 
@@ -170,7 +168,6 @@ bot.onText(/\/inicia_ya/, (msg) => {
   let response = game.shuffle(Factory_Request.fromTelegram(msg), false);
   bot.sendMessage(msg.chat.id, response.message, response.options);
   bot.sendMessage(114083702, `Partida iniciada YAAAAA!`);
-  //
 });
 
 bot.onText(/\/estado/, async (msg) => {
@@ -226,6 +223,6 @@ bot.setMyCommands([
   },
   {
     command: "configurar",
-    description: "Muestra el pane de configuración.",
+    description: "Muestra el panel de configuración.",
   },
 ]);
