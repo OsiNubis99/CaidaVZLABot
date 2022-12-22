@@ -245,16 +245,11 @@ module.exports = {
       /**
        * @type {Game}
        */
-      const group = games[users[user.id_user]];
-      console.log({ group })
-      const keyboard = keyboard.make_a_choice(group.playerName())
-      console.log({ keyboard })
-      const resp = group.play_card(user.id_user, number)
-      console.log({ resp })
+      let group = games[users[user.id_user]];
       return message.inLine_keyboard(
         users[user.id_user],
-        resp,
-        keyboard
+        group.play_card(user.id_user, number),
+        keyboard.make_a_choice(group.playerName())
       );
     }
     return false;

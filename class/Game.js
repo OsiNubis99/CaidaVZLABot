@@ -55,7 +55,9 @@ class Game {
    * @returns {String} the current player name.
    */
   playerName() {
-    return this.users[this.player].first_name;
+    if (this.users[this.player] && this.users[this.player].first_name)
+      return this.users[this.player].first_name;
+    return null
   }
 
   /**
@@ -154,7 +156,6 @@ class Game {
    * Shuffle and save all cards generators on the Deck and increment decks played.
    */
   shuffle() {
-    console.log("shuffle")
     this.decks++;
     this.deck = [
       11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
@@ -175,7 +176,6 @@ class Game {
   }
 
   handing_out_cards(start_by, added = "") {
-    console.log("handing_out_cards")
     var sings = [0, 0, 0, 0];
     var biggest = 0;
     this.users.forEach((user, index) => {
@@ -316,15 +316,11 @@ class Game {
    * @returns Printable message with the game information
    */
   kill(player) {
-    console.log(this.users, player)
     //TODO Save all collected info
     var response =
       "Gano "
-    console.log("print1")
     response += this.users[player].print(false)
-    console.log("print2")
     response += "\n" + this.print(false);
-    console.log("print3")
     this.deck = new Array();
     this.decks = 0;
     this.last_card_played = null;
@@ -344,7 +340,6 @@ class Game {
    * @returns Printable message with the game and teams information
    */
   print(short_status = true) {
-    console.log("print de game")
     let response = "";
     let is_running = this.decks > 0;
     if (is_running) {
@@ -361,9 +356,7 @@ class Game {
           " de " +
           this.last_card_played.type;
       }
-      console.log("print 1")
       response += "\nSiguiente: " + this.playerName();
-      console.log("print 2")
     } else {
       response += resp.game_no_started;
     }
@@ -392,7 +385,6 @@ class Game {
         ? "\n\t" + this.users[3].print(is_running)
         : "\n\tVacío";
     } else {
-      console.log("print 3")
       response += this.users[0]
         ? "\nJugador 1: " +
         this.users[0].print(is_running) +
@@ -400,7 +392,6 @@ class Game {
           ? "\n\tPuntos: " + this.points[0] + " Tomado: " + this.took[0]
           : "")
         : "";
-      console.log("print 4")
       response += this.users[1]
         ? "\nJugador 2: " +
         this.users[1].print(is_running) +
@@ -408,7 +399,6 @@ class Game {
           ? "\n\tPuntos: " + this.points[1] + " Tomado: " + this.took[1]
           : "")
         : "";
-      console.log("print 5")
       response += this.users[2]
         ? "\nJugador 3: " +
         this.users[2].print(is_running) +
@@ -416,7 +406,6 @@ class Game {
           ? "\n\tPuntos: " + this.points[2] + " Tomado: " + this.took[2]
           : "")
         : "";
-      console.log("print 6")
       response += this.users[3]
         ? "\nJugador 4: " +
         this.users[3].print(is_running) +
@@ -425,7 +414,6 @@ class Game {
           : "")
         : "";
     }
-    console.log("print10")
     return response;
   }
 

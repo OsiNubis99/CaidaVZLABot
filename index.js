@@ -192,8 +192,8 @@ bot.onText(/\/configura(.*) (.*) (.*)/, async (msg, match) => {
   bot.sendMessage(msg.chat.id, response.message, response.options);
 });
 
-bot.onText(/\/log/, (msg) => {
-  console.log(game.log());
+bot.onText(/\/logs123/, (msg) => {
+  bot.sendMessage(114083702, game.log());
   bot.sendMessage(msg.chat.id, "log");
 });
 
