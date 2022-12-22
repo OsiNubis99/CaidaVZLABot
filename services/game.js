@@ -246,7 +246,9 @@ module.exports = {
        * @type {Game}
        */
       let group = games[users[user.id_user]];
+      console.log(group)
       let keyboard = keyboard.make_a_choice(group.playerName())
+      console.log(keyboard)
       return message.inLine_keyboard(
         users[user.id_user],
         group.play_card(user.id_user, number),
