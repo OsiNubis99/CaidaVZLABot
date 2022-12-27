@@ -48,9 +48,9 @@ module.exports = {
    */
   async ban_unban(user, is_banned) {
     let result = await database.query(
-      "INSERT INTO public.user ( id_user, first_name, last_name, username, is_banned) VALUES ($1,$2,$3,$4,?5) ON CONFLICT (id_user) DO UPDATE SET first_name = $2, last_name = $3, username = $4, is_banned = ?5 RETURNING * ;",
+      "INSERT INTO public.user ( id_user, first_name, last_name, username, is_banned) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id_user) DO UPDATE SET first_name = $2, last_name = $3, username = $4, is_banned = $5 RETURNING * ;",
       [user.id_user, user.first_name, user.last_name, user.username, is_banned]
     );
-    return result.rows[0];
+    return result.rows[0].is_banned;
   },
 };

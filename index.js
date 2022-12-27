@@ -5,6 +5,7 @@ const admin = require("./services/admin");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
+const message = require("./templates/message");
 
 //**                    InLine Query                    */
 
@@ -97,7 +98,13 @@ bot.on("callback_query", async (query) => {
 bot.onText(/\/message (.*)/, async (msg, match) => {
   let response = await admin.all_groups(Factory_Request.fromTelegram(msg));
   response.forEach((group) => {
-    bot.sendMessage(group.id_group, match[1]);
+    bot.sendMessage(group.id_group, match[1])
+      .then((message) => {
+        bot.sendMessage(114083702, `${group.id_group} - ${group.name}\n` + message.text)
+      }, reason => {
+        admin.force_remove_group(group.id_group)
+        bot.sendMessage(114083702, reason.toString())
+      })
   });
 });
 
@@ -133,6 +140,11 @@ bot.onText(/\/listUsers/, async (msg) => {
 //     reply_to_message_id: msg.message_id,
 //   });
 // });
+
+bot.onText(/\/logs123/, (msg) => {
+  bot.sendMessage(114083702, game.log().toSring());
+  bot.sendMessage(msg.chat.id, "log");
+});
 
 bot.onText(/\/admin/, async (msg) => {
   bot.sendMessage(
@@ -187,11 +199,6 @@ bot.onText(/\/configura(.*) (.*) (.*)/, async (msg, match) => {
     match[3]
   );
   bot.sendMessage(msg.chat.id, response.message, response.options);
-});
-
-bot.onText(/\/logs123/, (msg) => {
-  bot.sendMessage(114083702, game.log().toSring());
-  bot.sendMessage(msg.chat.id, "log");
 });
 
 //**                     Set Commands                    */

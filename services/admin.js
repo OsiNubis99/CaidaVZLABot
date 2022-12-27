@@ -20,8 +20,7 @@ module.exports = {
 	async ban_unban_user(req, is_banned) {
 		if (is_admin(req.user.id_user)) {
 			if (req.reply_to) {
-				await UserController.ban_unban(req.reply_to.user, is_banned);
-				if (is_banned)
+				if (await UserController.ban_unban(req.reply_to.user, is_banned))
 					return resp.user_banned;
 				else
 					return resp.user_unbanned;
@@ -96,16 +95,11 @@ module.exports = {
 		}
 	},
 	// TODO
-	remove_group(msg, match) {
-		if (is_admin(msg.from.id)) {
-			let groups = match[1].split(" ");
-			groups.shift();
-			groups.forEach((id_group) => {
-				GroupController.remove(id_group);
-			});
-			return resp.group_removed;
-		} else {
-			return resp.no_admin_person;
-		}
+	/**
+	 * Return the list of all groups in a JSON.
+	 * @param {String} id_group - Clean request data.
+	 */
+	async force_remove_group(id_group) {
+		return await GroupController.remove(id_group);
 	},
 };
