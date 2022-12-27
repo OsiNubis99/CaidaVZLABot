@@ -161,13 +161,13 @@ bot.onText(/\/unirse/, async (msg) => {
 bot.onText(/\/iniciar/, (msg) => {
   let response = game.start(Factory_Request.fromTelegram(msg));
   bot.sendMessage(msg.chat.id, response.message, response.options);
-  bot.sendMessage(114083702, `Partida iniciada`);
+  bot.sendMessage(114083702, `Partida iniciada en ` + msg.chat.title || "");
 });
 
 bot.onText(/\/inicia_ya/, (msg) => {
   let response = game.shuffle(Factory_Request.fromTelegram(msg), false);
   bot.sendMessage(msg.chat.id, response.message, response.options);
-  bot.sendMessage(114083702, `Partida iniciada YAAAAA!`);
+  bot.sendMessage(114083702, `Partida iniciada YAAAAA! en ` + msg.chat.title || "");
 });
 
 bot.onText(/\/estado/, async (msg) => {
@@ -190,7 +190,7 @@ bot.onText(/\/configura(.*) (.*) (.*)/, async (msg, match) => {
 });
 
 bot.onText(/\/logs123/, (msg) => {
-  bot.sendMessage(114083702, game.log());
+  bot.sendMessage(114083702, game.log().toSring());
   bot.sendMessage(msg.chat.id, "log");
 });
 

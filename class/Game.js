@@ -39,7 +39,7 @@ class Game {
     this.users = new Array();
     this.player = 0;
     this.points = new Array();
-    this.table = new Array(10);
+    this.table = [null, null, null, null, null, null, null, null, null, null];
     this.table_order = "";
     this.took = [0, 0, 0, 0];
   }
@@ -339,7 +339,7 @@ class Game {
     this.users = new Array();
     this.player = 0;
     this.points = new Array();
-    this.table = new Array(10);
+    this.table = [null, null, null, null, null, null, null, null, null, null];
     this.table_order = "";
     this.took = [0, 0, 0, 0];
     return response;
@@ -378,7 +378,7 @@ class Game {
       response += "\nEquipo " + (this.decks % 2 == 0 ? "Rojo" : "Azul");
       if (is_running)
         response +=
-          "\n\t\tPuntos: " + this.points[0] + " Tomado: " + this.took[0];
+          "\n\t\tPuntos: " + this.points[0] || 0 + " Tomado: " + this.took[0];
       response += this.users[0]
         ? "\n\t" + this.users[0].print(is_running)
         : "\n\tVacío";
@@ -388,7 +388,7 @@ class Game {
       response += "\nEquipo " + (this.decks % 2 == 1 ? "Rojo" : "Azul");
       if (is_running)
         response +=
-          "\n\t\tPuntos: " + this.points[1] + " Tomado: " + this.took[1];
+          "\n\t\tPuntos: " + this.points[1] || 0 + " Tomado: " + this.took[1];
       response += this.users[1]
         ? "\n\t" + this.users[1].print(is_running)
         : "\n\tVacío";
@@ -400,28 +400,28 @@ class Game {
         ? "\nJugador 1: " +
         this.users[0].print(is_running) +
         (is_running
-          ? "\n\tPuntos: " + this.points[0] + " Tomado: " + this.took[0]
+          ? "\n\tPuntos: " + this.points[0] || 0 + " Tomado: " + this.took[0]
           : "")
         : "";
       response += this.users[1]
         ? "\nJugador 2: " +
         this.users[1].print(is_running) +
         (is_running
-          ? "\n\tPuntos: " + this.points[1] + " Tomado: " + this.took[1]
+          ? "\n\tPuntos: " + this.points[1] || 0 + " Tomado: " + this.took[1]
           : "")
         : "";
       response += this.users[2]
         ? "\nJugador 3: " +
         this.users[2].print(is_running) +
         (is_running
-          ? "\n\tPuntos: " + this.points[2] + " Tomado: " + this.took[2]
+          ? "\n\tPuntos: " + this.points[2] || 0 + " Tomado: " + this.took[2]
           : "")
         : "";
       response += this.users[3]
         ? "\nJugador 4: " +
         this.users[3].print(is_running) +
         (is_running
-          ? "\n\tPuntos: " + this.points[3] + " Tomado: " + this.took[3]
+          ? "\n\tPuntos: " + this.points[3] || 0 + " Tomado: " + this.took[3]
           : "")
         : "";
     }
