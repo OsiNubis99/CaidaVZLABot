@@ -30,16 +30,16 @@ class Game {
    */
   constructor(name, config) {
     this.config = config;
+    this.name = name;
     this.deck = new Array();
     this.decks = 0;
     this.last_card_played = null;
     this.last_hand = false;
     this.last_player_on_take = 0;
-    this.name = name;
     this.users = new Array();
     this.player = 0;
-    this.points = [0, 0, 0, 0];
-    this.table = [null, null, null, null, null, null, null, null, null, null];
+    this.points = new Array();
+    this.table = new Array(10);
     this.table_order = "";
     this.took = [0, 0, 0, 0];
   }
@@ -149,7 +149,10 @@ class Game {
 
   increase_points(player, points) {
     var position = this.config.type == "parejas" ? player % 2 : player;
-    this.points[position] += points;
+    if (!this.points[position])
+      this.points[position] = points;
+    else
+      this.points[position] += points;
     return this.points[player] >= this.config.points;
   }
 
@@ -335,7 +338,7 @@ class Game {
     this.last_player_on_take = 0;
     this.users = new Array();
     this.player = 0;
-    this.points = [0, 0, 0, 0];
+    this.points = new Array();
     this.table = new Array(10);
     this.table_order = "";
     this.took = [0, 0, 0, 0];

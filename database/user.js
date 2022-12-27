@@ -24,18 +24,6 @@ module.exports = {
   },
 
   /**
-   * @param {String} id_user - Specific User id to get the stats
-   * @returns {Promise<Factory_User>} The full User element from database.
-   */
-  async stats(id_user) {
-    let result = await database.query(
-      "SELECT * FROM public.user where id_user=$1;",
-      [id_user]
-    );
-    return result.rows[0];
-  },
-
-  /**
    * Set all stats to one user and return the full User element.
    * @param {String} id_user - Specific User id to set the stats
    * @param {Number} win - It should be 2, 1 or 0.
