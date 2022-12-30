@@ -180,7 +180,7 @@ bot.onText(/\/reiniciar/, async (msg) => {
       if (item.user.id == msg.from.id) is_admin = true
     });
     if (is_admin) {
-      let response = await game.create(Factory_Request.fromTelegram(msg));
+      let response = await game.create(Factory_Request.fromTelegram(msg), true);
       bot.sendMessage(msg.chat.id, response.message, response.options);
     } else
       bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {

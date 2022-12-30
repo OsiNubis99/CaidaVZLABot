@@ -61,10 +61,11 @@ module.exports = {
          */
         var group = games[req.group.id_group];
         if (force || !group) {
-        if (group)
-          cleanUsers(group.users, req.group.id_group);
-        await get_group_configs(req.group);
-        return message.reply(resp.game_created, req.message_id);
+		console.log(group)
+          if (group)
+            cleanUsers(group.users, req.group.id_group);
+          await get_group_configs(req.group);
+          return message.reply(resp.game_created, req.message_id);
         }
         return message.reply(resp.game_already_created, req.message_id);
       }
