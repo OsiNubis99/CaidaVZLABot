@@ -43,24 +43,33 @@ module.exports = {
 			return [req.group];
 		}
 	},
+
+	/**
+	 * Add a permited group to database
+	 */
+	add_group(req, chatId, name) {
+		if (is_admin(req.user.id_user) || chatId) {
+			GroupController.add("-" + chatId, name);
+			return resp.group_added;
+		}
+		return resp.no_admin_person;
+	},
+
+	/**
+	 * Add a permited group to database
+	 */
+	paid(req, chatId, times) {
+		if (is_admin(req.user.id_user) || chatId) {
+			GroupController.paid("-" + chatId, times);
+			return resp.group_added;
+		}
+		return resp.no_admin_person;
+	},
 	// TODO
 	async list_user(msg) {
 		if (is_admin(msg.from.id.toString())) {
 			var list = await UserController.list();
 			var reply = `La lista de usuarios registrados es: (${list.length})`;
-			list.forEach((user) => {
-				reply +=
-					"\n- " +
-					user.first_name +
-					" " +
-					(user.last_name ? user.last_name : "" + ":");
-				reply += "\n\tid: " + user.id_user;
-				reply +=
-					"\n\tusername: " +
-					(user.username ? "@" + user.username : "Undefined");
-				reply += "\n\t" + (user.is_banned ? "No " : "") + "Puede Jugar";
-				reply += "\n";
-			});
 			return reply;
 		} else {
 			return resp.no_admin_person;
@@ -68,31 +77,15 @@ module.exports = {
 	},
 	// TODO
 	async list_group(msg) {
-		if (is_admin(msg.from.id.toString())) {
-			var list = await GroupController.list();
-			var reply = "La lista de grupos registrados es:";
-			list.forEach((group) => {
-				reply += "\n\t" + group.name;
-				reply += "\nid: " + group.id_group;
-				reply += "\n";
-			});
-			return reply;
-		} else {
-			return resp.no_admin_person;
+		var list = await GroupController.listPublic();
+		var reply = "La lista de grupos publicos es:";
+		for (var i = 0; i < list.length; ++i) {
+			let group = list[i]
+			reply += "\n";
+			reply += "\n\t" + group.name;
+			reply += "\nlink: " + await bot.exportChatInviteLink(group.id_group)
 		}
-	},
-	// TODO
-	add_group(msg) {
-		if (is_admin(msg.from.id.toString())) {
-			if (msg.chat.type == "supergroup" || msg.chat.type == "group") {
-				GroupController.add(msg.chat);
-				return resp.group_added;
-			} else {
-				return resp.is_not_a_group;
-			}
-		} else {
-			return resp.no_admin_person;
-		}
+		return reply;
 	},
 	// TODO
 	/**

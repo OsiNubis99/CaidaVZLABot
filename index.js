@@ -120,8 +120,20 @@ bot.onText(/\/unlock/, async (msg) => {
   });
 });
 
+bot.onText(/\/addg-(.*)-(.*)/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, admin.add_group(Factory_Request.fromTelegram(msg), match[1], match[2]), {
+    reply_to_message_id: msg.message_id,
+  });
+});
+
+bot.onText(/\/paid-(.*)-(.*)/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, admin.paid(Factory_Request.fromTelegram(msg), match[1], match[2]), {
+    reply_to_message_id: msg.message_id,
+  });
+});
+
 // TODO
-bot.onText(/\/listGroups/, async (msg) => {
+bot.onText(/\/list_groups/, async (msg) => {
   bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
     reply_to_message_id: msg.message_id,
   });
@@ -161,8 +173,20 @@ bot.onText(/\/crear/, async (msg) => {
 });
 
 bot.onText(/\/reiniciar/, async (msg) => {
-  let response = await game.create(Factory_Request.fromTelegram(msg), true);
-  bot.sendMessage(msg.chat.id, response.message, response.options);
+  let admins = await bot.getChatAdministrators(msg.chat.id)
+  if (admins) {
+    let is_admin = false
+    admins.forEach(item => {
+      if (item.user.id == msg.from.id) is_admin = true
+    });
+    if (is_admin) {
+      let response = await game.create(Factory_Request.fromTelegram(msg));
+      bot.sendMessage(msg.chat.id, response.message, response.options);
+    } else
+      bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {
+        reply_to_message_id: msg.message_id,
+      });
+  }
 });
 
 bot.onText(/\/unirse/, async (msg) => {
@@ -231,5 +255,13 @@ bot.setMyCommands([
   {
     command: "configurar",
     description: "Muestra el panel de configuración.",
+  },
+  {
+    command: "help",
+    description: "Muestra una ayuda de como usar el bot.",
+  },
+  {
+    command: "list_groups",
+    description: "Muestra la lista de grupos publicos en el bot",
   },
 ]);

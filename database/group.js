@@ -57,6 +57,10 @@ module.exports = {
     let result = await database.query("SELECT * FROM public.group;");
     return result.rows;
   },
+  async listPublic() {
+    let result = await database.query("SELECT * FROM public.group where public = true;");
+    return result.rows;
+  },
 
   /**
    * @param {String} id_group - The Id of the group to be deleted

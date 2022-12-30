@@ -23,6 +23,10 @@ CREATE TABLE IF NOT EXISTS public.group
 (
  "id_group"        varchar(50) NOT NULL,
  "name"            varchar(100) NOT NULL,
+ "public"          boolean DEFAULT false,
+ "apid_at"         date DEFAULT CURRENT_DATE,
+ "created_at"      date DEFAULT CURRENT_DATE,
+ "paid_times"      int DEFAULT 1,
  "game_mode"       int DEFAULT 1,
  "points"          int DEFAULT 24,
  "mesa"            int DEFAULT 4,

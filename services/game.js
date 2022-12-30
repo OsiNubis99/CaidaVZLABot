@@ -31,18 +31,19 @@ async function get_group_configs(group) {
 /**
  * Search all users on the game and delete their object.
  * @param {String} chatId - Id that will be cleaned.
+ * @param {Array<Factory_User>} listUsers - Id that will be cleaned.
  */
-function cleanUsers(chatId) {
-  users.forEach((element, index, array) => {
-    if (element == chatId) {
-      array.splice(index, 1);
+function cleanUsers(listUsers, chatId) {
+  listUsers.forEach((element) => {
+    if (users[element.id_user] == chatId) {
+      users[element.id_user] = undefined
     }
   });
 }
 
 module.exports = {
   log() {
-    return { games, users };
+    return { games: games.length, users: users.length };
   },
 
   /**
@@ -53,16 +54,17 @@ module.exports = {
    */
   async create(req, force) {
     if (req.group.type == "supergroup" || req.group.type == "group") {
-      let new_user = new User(await UserController.add(req.user));
-      if (!new_user.is_banned) {
+      let user = new User(await UserController.add(req.user));
+      if (!user.is_banned) {
         /**
          * @type {Game}
          */
         var group = games[req.group.id_group];
         if (force || !group) {
-          await get_group_configs(req.group);
-          cleanUsers(req.group.id_group);
-          return message.reply(resp.game_created, req.message_id);
+        if (group)
+          cleanUsers(group.users, req.group.id_group);
+        await get_group_configs(req.group);
+        return message.reply(resp.game_created, req.message_id);
         }
         return message.reply(resp.game_already_created, req.message_id);
       }
