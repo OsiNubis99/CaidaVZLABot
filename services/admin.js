@@ -117,7 +117,7 @@ module.exports = {
 			+ `\nCasa chica: ${user.alive_casa_chica} vivas / ${user.casa_chica} cantadas `
 			+ `\nCasa grande: ${user.alive_casa_grande} vivas / ${user.casa_grande} cantadas `
 			+ `\nTrivilin: ${user.alive_trivilin} vivas / ${user.trivilin} cantadas `
-			+ (user.is_banned ? "Esta" : "No esta") + " baneado"
+			+ "\n" + (user.is_banned ? "Esta" : "No esta") + " baneado"
 		return message.reply(resp, req.message_id);
 	}
 };
