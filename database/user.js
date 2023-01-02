@@ -32,11 +32,25 @@ module.exports = {
    * @param {Number} caido - Number of times the user was fallen by another.
    * @returns {Promise<Factory_User>} The full User element from database.
    */
-  async set_stats(id_user, win, sings, caida, caido) {
+  async set_stats(id_user, win, caida, caido) {
     let query = "UPDATE public.user SET finished = finished + 1"
-    query += win == 1 ? ", win = win + $2" : win == 2 ? ", win_custom = win_custom + $2" : ""
-    query += ", sings = sings + $3 , caida = caida + $4, caido = caido + $5 WHERE id_user = $1;"
-    let result = await database.query(query, [id_user, win, sings, caida, caido]);
+    query += win == 1 ? ", win = win + 1" : win == 2 ? ", win_custom = win_custom + 1" : ""
+    query += ", caida = caida + $2, caido = caido + $3 WHERE id_user = $1;"
+    let result = await database.query(query, [id_user, caida, caido]);
+    return result.rows[0];
+  },
+
+  /**
+   * increment a sing for one user.
+   * @param {String} id_user - Specific User id to set the stats
+   * @param {String} sing - Sing name.
+   * @returns {Promise<Factory_User>} The full User element from database.
+   */
+  async set_sing(id_user, sing) {
+    let result = await database.query(
+      "UPDATE public.user SET " + sing + " = " + sing + " + 1 WHERE id_user = $1;",
+      [id_user]
+    );
     return result.rows[0];
   },
 

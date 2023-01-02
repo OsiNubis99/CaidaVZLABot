@@ -105,6 +105,10 @@ class Game {
   sing(id_user) {
     var user_index = this.get_user_index(id_user);
     if (user_index >= 0) {
+      if (this.users[user_index].sing.value > 0) {
+        UserDatabase.set_sing(this.users[user_index].id_user, this.users[user_index].sing.dbName)
+        console.log(this.users[user_index].id_user, this.users[user_index].sing.dbName)
+      }
       return this.users[user_index].set_sing();
     }
     return resp.no_game_description;
@@ -180,20 +184,6 @@ class Game {
   }
 
   handing_out_cards(start_by, added = "") {
-    var sings = [0, 0, 0, 0];
-    var biggest = 0;
-    this.users.forEach((user, index) => {
-      if (user.sing && user.sing.active) {
-        sings[index] = user.sing.value;
-        if (user.sing.value > sings[biggest]) biggest = index;
-      }
-    });
-    if (sings[biggest] > 0 && this.increase_points(biggest, sings[biggest]))
-      return this.kill(biggest);
-    if (this.points[0] >= this.config.points) return this.kill(0);
-    if (this.points[1] >= this.config.points) return this.kill(1);
-    if (this.points[2] >= this.config.points) return this.kill(2);
-    if (this.points[3] >= this.config.points) return this.kill(3);
     if (this.deck.length > 0) {
       this.users[this.users.length - 1].cards = [];
       this.table_order = "";
@@ -214,10 +204,12 @@ class Game {
       }
       return added + this.print(false);
     }
+    // Clean las tabble
     for (let position = 0; position < this.table.length; position++) {
       if (this.table[position] != null) this.took[this.last_player_on_take]++;
       this.table[position] = null;
     }
+    // Add took points
     if (this.users.length == 4 && this.config.type != "parejas") {
       if (this.took[0] > 10 && this.increase_points(0, this.took[0] - 10))
         return this.kill(0);
@@ -240,6 +232,7 @@ class Game {
       if (this.took[1] > 20 && this.increase_points(1, this.took[1] - 20))
         return this.kill(1);
     }
+    // Reset table
     this.last_player_on_take = 0;
     this.took = [0, 0, 0, 0];
     this.users.push(this.users.shift());
@@ -306,8 +299,24 @@ class Game {
         }
         this.last_card_played = card;
         this.player = (this.player + 1) % this.users.length;
+        if (this.points[0] >= this.config.points) return this.kill(0);
+        if (this.points[1] >= this.config.points) return this.kill(1);
+        if (this.points[2] >= this.config.points) return this.kill(2);
+        if (this.points[3] >= this.config.points) return this.kill(3);
         if (this.users[this.users.length - 1].cards.length > 0)
           return response + this.print();
+        let sings = [0, 0, 0, 0];
+        let biggest = 0;
+        this.users.forEach((user, index) => {
+          if (user.sing && user.sing.active) {
+            sings[index] = user.sing.value;
+            if (user.sing.value > sings[biggest]) biggest = index;
+          }
+        });
+        if (sings[biggest] > 0) {
+          UserDatabase.set_sing(this.users[biggest].id_user, "alive_" + this.users[biggest].sing.dbName)
+          if (this.increase_points(biggest, sings[biggest])) return this.kill(biggest);
+        }
         return this.handing_out_cards(0, response);
       }
       return resp.invalid_value;
@@ -325,7 +334,7 @@ class Game {
       let user = this.users[i]
       let comparate = this.config.type == "parejas" ? i % 2 : i
       let user_win = player == comparate ? win : 0
-      UserDatabase.set_stats(user.id_user, user_win, user.sings, user.caida, user.caido)
+      UserDatabase.set_stats(user.id_user, user_win, user.caida, user.caido)
     }
     var response =
       "Gano "

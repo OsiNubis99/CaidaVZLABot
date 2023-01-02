@@ -9,10 +9,6 @@ class User {
    * @type {Array<Card>}
    */
   cards;
-  /**
-   * @type {Array<Sings>}
-   */
-  sings;
   sing = Sings.prototype;
   /**
    * Create a User Object
@@ -27,7 +23,6 @@ class User {
     this.cards = new Array();
     this.caida = 0;
     this.caido = 0;
-    this.sings = 0;
     this.sing = new Sings([]);
   }
 
@@ -56,7 +51,6 @@ class User {
    * @returns - Pretty response
    */
   set_sing() {
-    this.sings++;
     this.sing.active = true;
     return this.first_name + " " + resp.did_sing + " " + this.sing.name;
   }
