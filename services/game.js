@@ -248,8 +248,8 @@ module.exports = {
       let group = games[users[user.id_user]];
       let response = group.play_card(user.id_user, number);
       if (response.finished) {
-        games[users[user.id_user]] = new Game(group.name, new Config(group.config));
-        cleanUsers(group.users, req.group.id_group);
+        games[group.id_group] = new Game(group.name, new Config(group.config));
+        cleanUsers(group.users, group.id_group);
         response = response.response
       }
       return message.inLine_keyboard(
@@ -290,8 +290,8 @@ module.exports = {
       if (user.id_user == group.users[group.users.length - 1].id_user) {
         let response = group.handing_out_cards(number);
         if (response.finished) {
-          games[users[user.id_user]] = new Game(group.name, new Config(group.config));
-          cleanUsers(group.users, req.group.id_group);
+          games[group.id_group] = new Game(group.name, new Config(group.config));
+          cleanUsers(group.users, group.id_group);
           response = response.response
         }
         return message.inLine_keyboard(
