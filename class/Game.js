@@ -107,7 +107,6 @@ class Game {
     if (user_index >= 0) {
       if (this.users[user_index].sing.value > 0) {
         UserDatabase.set_sing(this.users[user_index].id_user, this.users[user_index].sing.dbName)
-        console.log(this.users[user_index].id_user, this.users[user_index].sing.dbName)
       }
       return this.users[user_index].set_sing();
     }
