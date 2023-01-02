@@ -11,6 +11,10 @@ bot.onText(/\/version(.*)/, (msg) => {
   bot.sendMessage(msg.chat.id, env.name + "@" + env.version);
 });
 
+bot.onText(/\/id/, (msg, match) => {
+  bot.sendMessage(msg.chat.id, `El id del chat es: ${msg.chat.id}`);
+});
+
 bot.onText(/\/saluda(.*)/, (msg, match) => {
   let chatId = msg.chat.id;
   let resp =
@@ -24,15 +28,14 @@ function sayHi(msg) {
   bot.sendMessage(
     msg.chat.id,
     `Sigue estos pasos:
-  1. Agrega este bot a un grupo.
-  2. En el grupo, iniciar la partida con /crear.
-  3. Una vez creado la partida, los jugadores podrán unir usando /unirse, se podrán unir un máximo de cuatro jugadores.
-  4. Luego de que estén todos los integrantes que jugarán utilizar /iniciar para configurar la partida e iniciar.
-  5. En el cuadro del chat, escribir @CaidaVZLABot y aparecerán sus cartas (serán completamente anónimas) y una carta de cantos.
+  1. Unete a algun grupo publico. Escribele a @OsiNubis99 para jugar en tu grupo privado.
+  2. Los jugadores se podrán unir usando /unirse, se podrán unir un máximo de cuatro jugadores.
+  3. Luego de que estén todos los integrantes que jugarán utilizar /iniciar para configurar la partida e iniciar o /inicia_ya para no configurar.
+  4. En el cuadro del chat, escribe @CaidaVZLABot y aparecerán sus cartas (serán completamente anónimas) y una carta de cantos.
 
-  /saltar - Está acción hará pasar a un jugador y se jugará una carta al azar. Solo la puede ejecutar un administrador del grupo.
+  /reinicial - Reinicia la partida, solo puede ser usada por los #admin del grupo.
+  /list_groups - Lista los grupos publicos.
   /configuracion
-    *Cambiar el idioma (Desarrollo)
     *Cambiar el modo de juego, si hay 4 jugadores, seleccionar si se juega individual o en parejas.
     *Configurar los cantos a utilizar en la partida
     *Definir el límites de puntos en una partida (1 ~ 100)`

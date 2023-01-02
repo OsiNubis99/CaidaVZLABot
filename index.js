@@ -5,7 +5,6 @@ const admin = require("./services/admin");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
-const message = require("./templates/message");
 
 //**                    InLine Query                    */
 
@@ -27,7 +26,6 @@ bot.on("chosen_inline_result", (result) => {
       Factory_User.fromTelegram(result.from),
       result.result_id
     );
-    //
   } else if (result.result_id == 4) {
     response = game.sing(Factory_User.fromTelegram(result.from));
   } else if (result.result_id == 8) {
@@ -154,23 +152,17 @@ bot.onText(/\/listUsers/, async (msg) => {
 // });
 
 bot.onText(/\/logs123/, (msg) => {
-  bot.sendMessage(114083702, game.log().toSring());
   bot.sendMessage(msg.chat.id, "log");
 });
 
 bot.onText(/\/admin/, async (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    "/message\n/lock\n/unlock\n/listGroups\n/listUsers"
+    "/message\n/lock\n/unlock\n/listUsers"
   );
 });
 
 //**                    Game Commands                    */
-
-bot.onText(/\/crear/, async (msg) => {
-  let response = await game.create(Factory_Request.fromTelegram(msg), false);
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-});
 
 bot.onText(/\/reiniciar/, async (msg) => {
   let admins = await bot.getChatAdministrators(msg.chat.id)
@@ -228,10 +220,6 @@ bot.onText(/\/configura(.*) (.*) (.*)/, async (msg, match) => {
 //**                     Set Commands                    */
 
 bot.setMyCommands([
-  {
-    command: "crear",
-    description: "Crea una nueva partida.",
-  },
   {
     command: "unirse",
     description: "Te agrega a la partida.",

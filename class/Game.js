@@ -330,19 +330,9 @@ class Game {
     var response =
       "Gano "
     response += this.users[player].print(false)
-    this.deck = new Array();
     this.decks = 0;
     response += "\n" + this.print(false, false);
-    this.last_card_played = null;
-    this.last_hand = false;
-    this.last_player_on_take = 0;
-    this.users = new Array();
-    this.player = 0;
-    this.points = new Array();
-    this.table = [null, null, null, null, null, null, null, null, null, null];
-    this.table_order = "";
-    this.took = [0, 0, 0, 0];
-    return response;
+    return { finished: true, response };
   }
 
   /**

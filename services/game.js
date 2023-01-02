@@ -6,7 +6,6 @@ const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 const TelegramBot = require("node-telegram-bot-api");
 const Factory_User = require("../class/Factory_User");
-const Factory_Group = require("../class/Factory_Group");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
 
@@ -18,15 +17,6 @@ var games = [];
  * @type {Array<String>}
  */
 var users = [];
-
-/**
- * Add all chat data to memory and save it on database.
- * @param {Factory_Group} group - Element to be saved.
- */
-async function get_group_configs(group) {
-  let configs = await GroupController.add(group);
-  games[group.id_group] = new Game(configs.name, new Config(configs));
-}
 
 /**
  * Search all users on the game and delete their object.
@@ -43,16 +33,15 @@ function cleanUsers(listUsers, chatId) {
 
 module.exports = {
   log() {
-    return { games: games.length, users: users.length };
+    console.log({ users })
   },
 
   /**
    * Create a new game with the request data if it isn't already there.
    * @param {Factory_Request} req - Clean request data.
-   * @param {Boolean} force - Create a new game even it's one already created.
    * @returns Telegram message and options.
    */
-  async create(req, force) {
+  async create(req) {
     if (req.group.type == "supergroup" || req.group.type == "group") {
       let user = new User(await UserController.add(req.user));
       if (!user.is_banned) {
@@ -60,14 +49,15 @@ module.exports = {
          * @type {Game}
          */
         var group = games[req.group.id_group];
-        if (force || !group) {
-		console.log(group)
-          if (group)
-            cleanUsers(group.users, req.group.id_group);
-          await get_group_configs(req.group);
-          return message.reply(resp.game_created, req.message_id);
+        if (group)
+          cleanUsers(group.users, req.group.id_group);
+        let configs = await GroupController.getOneById(req.group.id_group);
+        if (configs) {
+          games[req.group.id_group] = new Game(configs.name, new Config(configs));
+          return message.reply(resp.game_is_restarted, req.message_id);
         }
-        return message.reply(resp.game_already_created, req.message_id);
+        else
+          return message.reply(resp.group_invalid, req.message_id);
       }
       return message.reply(resp.user_is_banned, req.message_id);
     }
@@ -80,26 +70,33 @@ module.exports = {
    * @returns Telegram message and options
    */
   async join(req) {
-    let new_user = new User(await UserController.add(req.user));
-    if (!new_user.is_banned) {
+    let user = new User(await UserController.add(req.user));
+    if (!user.is_banned) {
       /**
        * @type {Game}
        */
       var group = games[req.group.id_group];
-      if (group) {
-        if (group.decks == 0) {
-          if (users[new_user.id_user] == null) {
-            if (group.users.length < 4) {
-              users[new_user.id_user] = req.group.id_group;
-              return message.reply(group.join(new_user), req.message_id);
-            }
-            return message.reply(resp.game_is_full, req.message_id);
-          }
-          return message.reply(resp.user_is_already_joined, req.message_id);
-        }
-        return message.reply(resp.game_is_running, req.message_id);
+      if (!group) {
+        let configs = await GroupController.getOneById(req.group.id_group);
+        if (!configs)
+          return message.reply(resp.group_invalid, req.message_id);
+        games[req.group.id_group] = new Game(configs.name, new Config(configs));
+        group = games[req.group.id_group];
       }
-      return message.reply(resp.game_no_created, req.message_id);
+      if (group.decks == 0) {
+        if (!users[user.id_user]) {
+          if (group.users.length < 4) {
+            users[user.id_user] = req.group.id_group;
+            return message.reply(group.join(user), req.message_id);
+          }
+          return message.reply(resp.game_is_full, req.message_id);
+        }
+        if (users[user.id_user] == req.group.id_group)
+          return message.reply(resp.user_is_already_joined, req.message_id);
+        else
+          return message.reply(resp.user_is_already_joined_other_group, req.message_id);
+      }
+      return message.reply(resp.game_is_running, req.message_id);
     }
     return message.reply(resp.user_is_banned, req.message_id);
   },
@@ -117,7 +114,7 @@ module.exports = {
     if (group) {
       return message.reply(group.print(false), req.message_id);
     }
-    return message.reply(resp.game_no_created, req.message_id);
+    return message.reply(resp.group_invalid, req.message_id);
   },
 
   /**
@@ -134,7 +131,7 @@ module.exports = {
       let response = group.config.print();
       return message.keyboard(response, keyboard.group_settings());
     }
-    return message.reply(resp.game_no_created, req.message_id);
+    return message.reply(resp.group_invalid, req.message_id);
   },
 
   /**
@@ -160,7 +157,7 @@ module.exports = {
       }
       return message.reply(resp.game_is_running, req.message_id);
     }
-    return message.reply(resp.game_no_created, req.message_id);
+    return message.reply(resp.group_invalid, req.message_id);
   },
   async set_inline_type(req) {
     /**
@@ -205,7 +202,7 @@ module.exports = {
       }
       return message.reply(resp.game_is_running, req.message_id);
     }
-    return message.reply(resp.game_no_created, req.message_id);
+    return message.reply(resp.group_invalid, req.message_id);
   },
 
   /**
@@ -234,7 +231,7 @@ module.exports = {
       }
       return inLine ? false : message.reply(resp.game_is_running, req.message_id);
     }
-    return inLine ? false : message.reply(resp.game_no_created, req.message_id);
+    return inLine ? false : message.reply(resp.group_invalid, req.message_id);
   },
 
   /**
@@ -249,9 +246,15 @@ module.exports = {
        * @type {Game}
        */
       let group = games[users[user.id_user]];
+      let response = group.play_card(user.id_user, number);
+      if (response.finished) {
+        cleanUsers(group.users, req.group.id_group);
+        games[req.group.id_group] = new Game(group.name, new Config(group.config));
+        response = response.response
+      }
       return message.inLine_keyboard(
         users[user.id_user],
-        group.play_card(user.id_user, number),
+        response,
         keyboard.make_a_choice(group.playerName())
       );
     }
@@ -284,12 +287,19 @@ module.exports = {
        * @type {Game}
        */
       var group = games[users[user.id_user]];
-      if (user.id_user == group.users[group.users.length - 1].id_user)
+      if (user.id_user == group.users[group.users.length - 1].id_user) {
+        let response = group.handing_out_cards(number);
+        if (response.finished) {
+          cleanUsers(group.users, req.group.id_group);
+          games[req.group.id_group] = new Game(group.name, new Config(group.config));
+          response = response.response
+        }
         return message.inLine_keyboard(
           users[user.id_user],
-          group.handing_out_cards(number),
+          response,
           keyboard.make_a_choice(group.playerName())
         );
+      }
     }
     return false;
   },

@@ -5,13 +5,39 @@ const Factory_Group = require("../class/Factory_Group");
 module.exports = {
   /**
    * Add a new Group to the database. If it's already then update the group name.
-   * @param {Factory_Group} group - Group element to be pushed.
+   * @param {String} id_group - Group id to be pushed.
+   * @param {String} name - Group name to be pushed.
    * @returns {Promise<Factory_Group>} The full group element from database.
    */
-  async add(group) {
+  async add(id_group, name) {
     let result = await database.query(
       "INSERT INTO public.group ( id_group, name ) VALUES ($1,$2) ON CONFLICT (id_group) DO UPDATE SET name = $2 RETURNING * ;",
-      [group.id_group, group.name]
+      [id_group, name]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Add a new Group to the database. If it's already then update the group name.
+   * @param {String} id_group - Group id to be pushed.
+   * @param {Number} times - Group name to be pushed.
+   * @returns {Promise<Factory_Group>} The full group element from database.
+   */
+  async paid(id_group, times) {
+    let result = await database.query(
+      "UPDATE public.group SET paid_at = CURRENT_DATE + INTERVAL '$2' MONTH, paid_times = 1 + $2 WHERE id_group = $1 RETURNING *;",
+      [id_group, times - 1]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Return all data of one group
+   */
+  async getOneById(id) {
+    let result = await database.query(
+      "SELECT * FROM public.group WHERE (paid_at >= CURRENT_DATE - INTERVAL '1' MONTH OR public = true) AND id_group = $1;",
+      [id]
     );
     return result.rows[0];
   },
