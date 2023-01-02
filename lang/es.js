@@ -1,8 +1,5 @@
 const ERROR =
   "\nSi estas experimentando algún error, por favor dejámelo saber escribiendo a @OsiNubis99.";
-const USE_JOIN = "\nUsa /unirse para unirte a la partida.";
-const USE_START =
-  "\nUsa /iniciar para configurar e iniciar la partida o /inicia_ya para saltarte la configuración";
 module.exports = {
   bad_turn: "Carta vista",
   bad_sync_cards: "Mal echada!\n",
@@ -18,15 +15,12 @@ module.exports = {
   config_is_ok:
     "Configuración aplicada, usa /configurar para ver los valores actuales.",
   did_sing: "cantó",
-  game_already_created: "El juego ya esta creado." + USE_JOIN,
-  game_created: "Juego creado." + USE_JOIN,
   game_is_empty:
     "El mínimo de jugadores es 2. Espera a que más jugadores se unan a la partida!",
   game_is_full:
     "El máximo de jugadores es 4. Intenta jugar la siguiente partida!",
   game_is_running:
     "El juego ya empezó. Espera a que este termine o usa /reiniciar",
-  game_no_created: "El juego aun no esta creado \nUsa /crear para poder jugar.",
   game_no_started: "El juego aun no empieza.",
   game_is_restarted: "El juego fue reiniciado, pueden unirse con /unirse",
   game_no_started_description: "Debes esperar que inicie el juego.",
