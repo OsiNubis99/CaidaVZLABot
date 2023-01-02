@@ -58,10 +58,10 @@ module.exports = {
 	/**
 	 * Add a permited group to database
 	 */
-	paid(req, chatId, times) {
+	async paid(req, chatId, times) {
 		if (is_admin(req.user.id_user) || chatId) {
-			GroupController.paid("-" + chatId, times);
-			return resp.group_added;
+			let group = await GroupController.paid("-" + chatId, times);
+			return `El grupo ${group.name} sera valido hasta ${group.paid_up_to}`;
 		}
 		return resp.no_admin_person;
 	},

@@ -25,8 +25,8 @@ module.exports = {
    */
   async paid(id_group, times) {
     let result = await database.query(
-      "UPDATE public.group SET paid_at = CURRENT_DATE + INTERVAL '$2' MONTH, paid_times = 1 + $2 WHERE id_group = $1 RETURNING *;",
-      [id_group, times - 1]
+      "UPDATE public.group SET paid_up_to = CURRENT_DATE + INTERVAL '$2' MONTH, paid_times = $2 WHERE id_group = $1 RETURNING * ;",
+      [id_group, times]
     );
     return result.rows[0];
   },
@@ -36,7 +36,7 @@ module.exports = {
    */
   async getOneById(id) {
     let result = await database.query(
-      "SELECT * FROM public.group WHERE (paid_at >= CURRENT_DATE - INTERVAL '1' MONTH OR public = true) AND id_group = $1;",
+      "SELECT * FROM public.group WHERE (paid_up_to >= CURRENT_DATE OR public = true) AND id_group = $1;",
       [id]
     );
     return result.rows[0];

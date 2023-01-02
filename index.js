@@ -125,7 +125,7 @@ bot.onText(/\/addg-(.*)-(.*)/, async (msg, match) => {
 });
 
 bot.onText(/\/paid-(.*)-(.*)/, async (msg, match) => {
-  bot.sendMessage(msg.chat.id, admin.paid(Factory_Request.fromTelegram(msg), match[1], match[2]), {
+  bot.sendMessage(msg.chat.id, await admin.paid(Factory_Request.fromTelegram(msg), match[1], match[2]), {
     reply_to_message_id: msg.message_id,
   });
 });
