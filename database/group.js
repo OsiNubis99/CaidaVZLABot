@@ -25,7 +25,7 @@ module.exports = {
    */
   async paid(id_group, times) {
     let result = await database.query(
-      "UPDATE public.group SET paid_up_to = CURRENT_DATE + INTERVAL '$2' MONTH, paid_times = $2 WHERE id_group = $1 RETURNING * ;",
+      "UPDATE public.group SET paid_up_to = CURRENT_DATE + INTERVAL '" + times + "' MONTH, paid_times = paid_times + $2 WHERE id_group = $1 RETURNING * ;",
       [id_group, times]
     );
     return result.rows[0];
