@@ -144,6 +144,11 @@ bot.onText(/\/listUsers/, async (msg) => {
   });
 });
 
+bot.onText(/\/stats/, async (msg) => {
+  let response = await admin.get_user_stats(Factory_Request.fromTelegram(msg));
+  bot.sendMessage(msg.chat.id, response.message, response.options);
+});
+
 // TODO
 // bot.onText(/\/removeGroup/, (msg, match) => {
 //   bot.sendMessage(msg.chat.id, admin.remove_group(msg, match), {
@@ -251,5 +256,9 @@ bot.setMyCommands([
   {
     command: "list_groups",
     description: "Muestra la lista de grupos publicos en el bot",
+  },
+  {
+    command: "stats",
+    description: "Muestra las estadisticas del usuario",
   },
 ]);
