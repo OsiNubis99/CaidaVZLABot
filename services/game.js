@@ -241,19 +241,20 @@ module.exports = {
    * @returns
    */
   play_card(user, number) {
-    if (users[user.id_user]) {
+    let chatId = users[user.id_user]
+    if (chatId) {
       /**
        * @type {Game}
        */
-      let group = games[users[user.id_user]];
+      let group = games[chatId];
       let response = group.play_card(user.id_user, number);
       if (response.finished) {
-        games[users[user.id_user]] = new Game(group.name, new Config(group.config));
-        cleanUsers(group.users, users[user.id_user]);
+        games[chatId] = new Game(group.name, new Config(group.config));
+        cleanUsers(group.users, chatId);
         response = response.response
       }
       return message.inLine_keyboard(
-        users[user.id_user],
+        chatId,
         response,
         keyboard.make_a_choice(group.playerName())
       );
@@ -282,20 +283,21 @@ module.exports = {
   },
 
   handing_out_cards(user, number) {
-    if (users[user.id_user]) {
+    let chatId = users[user.id_user]
+    if (chatId) {
       /**
        * @type {Game}
        */
-      var group = games[users[user.id_user]];
+      var group = games[chatId];
       if (user.id_user == group.users[group.users.length - 1].id_user) {
         let response = group.handing_out_cards(number);
         if (response.finished) {
-          games[users[user.id_user]] = new Game(group.name, new Config(group.config));
-          cleanUsers(group.users, users[user.id_user]);
+          games[chatId] = new Game(group.name, new Config(group.config));
+          cleanUsers(group.users, chatId);
           response = response.response
         }
         return message.inLine_keyboard(
-          users[user.id_user],
+          chatId,
           response,
           keyboard.make_a_choice(group.playerName())
         );
