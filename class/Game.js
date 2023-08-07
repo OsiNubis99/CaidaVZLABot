@@ -184,6 +184,7 @@ class Game {
 
   handing_out_cards(start_by, added = "") {
     if (this.deck.length > 0) {
+      this.player = 0;
       this.users[this.users.length - 1].cards = [];
       this.table_order = "";
       let points = this.new_cards(3, start_by, start_by > 2);
@@ -297,13 +298,14 @@ class Game {
           }
         }
         this.last_card_played = card;
-        this.player = (this.player + 1) % this.users.length;
         if (this.points[0] >= this.config.points) return this.kill(0);
         if (this.points[1] >= this.config.points) return this.kill(1);
         if (this.points[2] >= this.config.points) return this.kill(2);
         if (this.points[3] >= this.config.points) return this.kill(3);
-        if (this.users[this.users.length - 1].cards.length > 0)
+        if (this.users[this.users.length - 1].cards.length > 0) {
+          this.player = (this.player + 1) % this.users.length;
           return response + this.print();
+        }
         let sings = [0, 0, 0, 0];
         let biggest = 0;
         this.users.forEach((user, index) => {
