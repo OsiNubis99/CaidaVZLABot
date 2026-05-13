@@ -19,41 +19,43 @@ const path = require("path");
 const SRC = path.join(__dirname, "..", "public", "cards", "_source_baraja_espanola_completa.png");
 const OUT_DIR = path.join(__dirname, "..", "public", "cards");
 
-const COLS = 11;
+const COLS = 10; // 10 values per row: 1, 2, 3, 4, 5, 6, 7, 10, 11, 12
 const ROWS_OF_CARDS = 4;
+const ROW_SLOTS = 5; // 4 rows of cards + 1 row with back card on left
 
-const VALUES = [null, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12]; // col 0 is cover; cols 1..10 are these values
+const VALUES = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 const TYPES = ["Oro", "Copa", "Espada", "Basto"];
 
 async function main() {
   const meta = await sharp(SRC).metadata();
   console.log(`Source: ${meta.width} x ${meta.height}`);
 
-  const cellW = Math.floor(meta.width / COLS);
-  // The image has 4 rows of cards then a partial 5th row (reverse + black).
-  // Card row height is image_height / 5 (5 row-positions), so:
-  const cellH = Math.floor(meta.height / 5);
-  console.log(`Cell size: ${cellW} x ${cellH}`);
+  // Use exact float math to avoid drift; sharp accepts integer left/top/width/height.
+  const cellWf = meta.width / COLS;
+  const cellHf = meta.height / ROW_SLOTS;
+  const cellW = Math.floor(cellWf);
+  const cellH = Math.floor(cellHf);
+  console.log(`Cell size: ${cellW} x ${cellH} (float ${cellWf} x ${cellHf})`);
 
   for (let row = 0; row < ROWS_OF_CARDS; row++) {
-    for (let col = 1; col < COLS; col++) {
+    for (let col = 0; col < COLS; col++) {
       const value = VALUES[col];
       const type = TYPES[row];
-      const left = col * cellW;
-      const top = row * cellH;
+      const left = Math.floor(col * cellWf);
+      const top = Math.floor(row * cellHf);
       const out = path.join(OUT_DIR, `${value}-${type}.png`);
       await sharp(SRC)
         .extract({ left, top, width: cellW, height: cellH })
         .png()
         .toFile(out);
-      console.log(`  wrote ${path.basename(out)}`);
     }
   }
+  console.log(`  wrote 40 card PNGs`);
 
-  // Reverse card at row 4, col 0
+  // Back card at row 4, col 0
   const backOut = path.join(OUT_DIR, "back.png");
   await sharp(SRC)
-    .extract({ left: 0, top: 4 * cellH, width: cellW, height: cellH })
+    .extract({ left: 0, top: Math.floor(4 * cellHf), width: cellW, height: cellH })
     .png()
     .toFile(backOut);
   console.log(`  wrote back.png`);
