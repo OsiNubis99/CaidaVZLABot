@@ -18,18 +18,25 @@ const { GroupController, UserController } = require("../database");
 
 // Attach next-turn metadata so the index handler can fire an opt-in DM
 // to the upcoming player and arm the TURBO auto-skip timer.
-function attachNextTurn(group, finished, response) {
+function attachNextTurn(group, finished, response, chatIdHint) {
   if (!group || finished) return response;
   if (group.decks === 0) return response;
-  const next = group.users && group.users[group.player];
+  // Pre-deck guess state: the "next" actor is the player holding the
+  // "Start_By" sentinel (the guesser), not group.users[group.player].
+  const lastUser = group.users && group.users[group.users.length - 1];
+  const isStartByState =
+    lastUser && Array.isArray(lastUser.cards) && lastUser.cards[0] === "Start_By";
+  const next = isStartByState ? lastUser : group.users && group.users[group.player];
   if (!next || !next.id_user) return response;
   const timeout = (group.config && group.config.turn_timeout_seconds) || 0;
-  return {
+  const out = {
     ...response,
     nextUserId: next.id_user,
     groupName: group.name,
     turnTimeoutSeconds: timeout,
   };
+  if (chatIdHint && !out.chat_id) out.chat_id = chatIdHint;
+  return out;
 }
 
 // Persist (or drop) the in-memory game for a given chat after a mutation.
@@ -84,8 +91,10 @@ function cleanUsers(listUsers, chatId) {
 }
 
 // On startup, re-hydrate any games that were in flight when the bot
-// shut down so players don't lose their seat after a deploy.
-db.ready
+// shut down so players don't lose their seat after a deploy. The
+// resulting promise is exported (module.exports.loadedPromise) so
+// callers like index.js can wait on it before re-arming TURBO timers.
+const loadedPromise = db.ready
   .then(() => persistence.loadAll())
   .then(({ games: g, users: u }) => {
     Object.assign(games, g);
@@ -96,6 +105,7 @@ db.ready
   });
 
 module.exports = {
+  loadedPromise,
   log() {
     console.log({ users })
   },
@@ -325,12 +335,13 @@ module.exports = {
             decks: group.decks,
             player_count: group.users.length,
           });
-          return message.keyboard(
+          const baseMsg = message.keyboard(
             response,
             keyboard.make_a_choice(
               group.users[group.users.length - 1].first_name
             )
           );
+          return attachNextTurn(group, false, baseMsg, req.group.id_group);
         }
         return inLine ? false : message.reply(resp.game_is_empty, req.message_id);
       }
@@ -474,10 +485,12 @@ module.exports = {
   },
 
   /**
-   * Force the current player of a chat to auto-play their first card.
-   * Used by the TURBO auto-skip timer in index.js. Returns the same
-   * shape as play_card, or null if the chat's game state changed
-   * already (someone else already moved, or game ended).
+   * Force the player whose turn is being auto-skipped to take the
+   * default action. Handles three states:
+   *   - Mid-deck: play their first card (`play_card`).
+   *   - Start_By guess: auto-pick "Iniciar por 1" (handing_out_cards 1).
+   * Returns the same response shape as the called method, or null if
+   * the chat's game state has changed already.
    *
    * @param {String} chatId
    * @param {String} expectedUserId - guard so a stale timer never
@@ -486,12 +499,45 @@ module.exports = {
   async autoSkipTurn(chatId, expectedUserId) {
     const group = games[chatId];
     if (!group || group.decks === 0) return null;
+    const last = group.users && group.users[group.users.length - 1];
+    const inStartByState =
+      last && Array.isArray(last.cards) && last.cards[0] === "Start_By";
+    if (inStartByState) {
+      if (String(last.id_user) !== String(expectedUserId)) return null;
+      return module.exports.handing_out_cards(
+        { id_user: last.id_user, first_name: last.first_name },
+        1,
+      );
+    }
     const current = group.users && group.users[group.player];
     if (!current || String(current.id_user) !== String(expectedUserId)) return null;
     return module.exports.play_card(
       { id_user: current.id_user, first_name: current.first_name },
       0,
     );
+  },
+
+  /**
+   * Snapshot of currently-loaded games for restart-time timer re-arming.
+   * Returns an array of { chatId, nextUserId, turnTimeoutSeconds }
+   * entries — one per game that has a defined next player and a
+   * non-zero timeout.
+   */
+  pendingTimerArmList() {
+    const out = [];
+    for (const chatId of Object.keys(games)) {
+      const g = games[chatId];
+      if (!g || g.decks === 0) continue;
+      const timeout = g.config && g.config.turn_timeout_seconds;
+      if (!timeout || timeout <= 0) continue;
+      const last = g.users && g.users[g.users.length - 1];
+      const isStartByState =
+        last && Array.isArray(last.cards) && last.cards[0] === "Start_By";
+      const next = isStartByState ? last : g.users && g.users[g.player];
+      if (!next || !next.id_user) continue;
+      out.push({ chatId, nextUserId: next.id_user, turnTimeoutSeconds: timeout });
+    }
+    return out;
   },
 
   /**

@@ -2,10 +2,6 @@ const Card = require("./Card");
 const Config = require("./Config");
 
 class Sings {
-  active = Boolean.prototype;
-  value = Number.prototype;
-  name = String.prototype;
-
   /**
    * Create a Sings Object
    * @param {Card[]} cards - 3 cards to be tested.

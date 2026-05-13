@@ -2,30 +2,12 @@ const resp = require("../lang/es");
 const game_modes = require("../lang/game_modes_es");
 const Factory_Group = require("./Factory_Group");
 
+// Stored fields (set in constructor via set_game_mode + the visual/turbo
+// extras below): game_mode, points, type, caida_continua, mata_canto,
+// mata_mesa, mesa, caida, ronda, chiguire, patrulla, vigia, registro,
+// maguaro, registrico, casa_chica, casa_grande, trivilin, visual_cards,
+// visual_table, turn_timeout_seconds, locale.
 class Config {
-  game_mode = Number.prototype;
-  points = Number.prototype;
-  type = String.prototype;
-  caida_continua = String.prototype;
-  mata_canto = String.prototype;
-  mata_mesa = String.prototype; // TODO add this function and caida_en_mesa
-  mesa = Number.prototype;
-  caida = Number.prototype;
-  ronda = Number.prototype;
-  chiguire = Number.prototype;
-  patrulla = Number.prototype;
-  vigia = Number.prototype;
-  registro = Number.prototype;
-  maguaro = Number.prototype;
-  registrico = Number.prototype;
-  casa_chica = Number.prototype;
-  casa_grande = Number.prototype;
-  trivilin = Number.prototype;
-  visual_cards = Boolean.prototype;
-  visual_table = Boolean.prototype;
-  turn_timeout_seconds = Number.prototype;
-  locale = String.prototype;
-
   /**
    * Create a Config Object
    * @param {Factory_Group} new_config - Object with all configs.

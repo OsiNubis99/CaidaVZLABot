@@ -6,11 +6,6 @@ const Factory_User = require("./Factory_User");
 
 class User {
   /**
-   * @type {Array<Card>}
-   */
-  cards;
-  sing = Sings.prototype;
-  /**
    * Create a User Object
    * @param {Factory_User} factory_user - User to be created
    */

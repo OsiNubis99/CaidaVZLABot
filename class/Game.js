@@ -7,22 +7,14 @@ const UserDatabase = require("../database/user");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 
+/**
+ * In-memory Game state. Persisted via services/gameSerialize.js — the
+ * fields enumerated there (config, deck, decks, last_card_played,
+ * last_hand, last_player_on_take, name, users, player, points, table,
+ * table_order, took) are the durable shape; this constructor sets the
+ * initial values.
+ */
 class Game {
-  config = Config.prototype;
-  deck = Array(Number.prototype);
-  deck = Array(Number.prototype);
-  decks = Number.prototype;
-  last_card_played = Card.prototype;
-  last_hand = Boolean.prototype;
-  last_player_on_take = Number.prototype;
-  name = String.prototype;
-  users = Array(User.prototype);
-  player = Number.prototype;
-  points = Array(Number.prototype);
-  table = Array(Card.prototype);
-  table_order = String.prototype;
-  took = Array(Number.prototype);
-
   /**
    * Create a Game Object
    * @param {String} name - Group Name where the game is running.

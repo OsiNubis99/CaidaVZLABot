@@ -3,15 +3,10 @@ const Factory_Group = require("./Factory_Group");
 const Factory_User = require("./Factory_User");
 
 class Factory_Request {
-  message_id = Number.prototype;
-  user = Factory_User.prototype;
-  reply_to = Factory_Request.prototype;
-  group = Factory_Group.prototype;
-
   constructor(message_id, user, reply_to, group) {
     this.message_id = message_id || false;
     this.user = user;
-    this.reply_to = reply_to
+    this.reply_to = reply_to;
     this.group = group;
   }
 

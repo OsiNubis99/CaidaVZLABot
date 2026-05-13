@@ -277,6 +277,7 @@ bot.on(
         const response = await game.shuffle(Factory_Request.fromTelegram(query.message));
         if (response) {
           await bot.sendMessage(query.message.chat.id, response.message, response.options);
+          scheduleSkip(response);
         }
         await bot.deleteMessage(query.message.chat.id, query.message.message_id);
         break;
@@ -562,6 +563,7 @@ bot.onText(
     const response = await game.shuffle(Factory_Request.fromTelegram(msg), false);
     if (response) {
       await bot.sendMessage(msg.chat.id, response.message, response.options);
+      scheduleSkip(response);
     }
     logger.info(
       { chat_id: msg.chat.id, chat_title: msg.chat.title },
@@ -624,4 +626,24 @@ setInterval(
   },
   24 * 60 * 60 * 1000,
 );
+
+// After hydrating persisted games on startup, re-arm TURBO skip timers
+// for any game that's mid-deck and has a non-zero turn_timeout. Without
+// this, a deploy mid-deck would silently disable auto-skip until each
+// chat's next manual move re-armed it.
+game.loadedPromise
+  .then(() => {
+    const pending = game.pendingTimerArmList();
+    for (const p of pending) {
+      scheduleSkip({
+        chat_id: p.chatId,
+        nextUserId: p.nextUserId,
+        turnTimeoutSeconds: p.turnTimeoutSeconds,
+      });
+    }
+    if (pending.length > 0) {
+      logger.info({ count: pending.length }, "re-armed TURBO timers after reload");
+    }
+  })
+  .catch((err) => logger.warn({ err: err.message }, "TURBO timer re-arm failed"));
 
