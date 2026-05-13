@@ -156,7 +156,7 @@ class Game {
       this.points[position] = points;
     else
       this.points[position] += points;
-    return this.points[player] >= this.config.points;
+    return this.points[position] >= this.config.points;
   }
 
   /**
@@ -168,15 +168,10 @@ class Game {
       11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
       22, 32, 6, 4, 0, 27, 37, 17, 28, 33, 21, 3, 23, 34, 20, 7, 31, 36, 26, 13,
     ];
-    var currentIndex = this.deck.length,
-      temporaryValue,
-      randomIndex;
-    while (0 !== currentIndex) {
-      currentIndex -= 1;
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      temporaryValue = this.deck[currentIndex];
-      this.deck[currentIndex] = this.deck[randomIndex];
-      this.deck[randomIndex] = temporaryValue;
+    // Fisher-Yates shuffle (unbiased)
+    for (let i = this.deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
     }
     this.users[this.users.length - 1].cards = ["Start_By"];
     return resp.start_by;

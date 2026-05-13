@@ -248,7 +248,9 @@ module.exports = {
        */
       let group = games[chatId];
       let response = group.play_card(user.id_user, number);
+      let finished = false;
       if (response.finished) {
+        finished = true;
         games[chatId] = new Game(group.name, new Config(group.config));
         cleanUsers(group.users, chatId);
         response = response.response
@@ -256,7 +258,7 @@ module.exports = {
       return message.inLine_keyboard(
         chatId,
         response,
-        keyboard.make_a_choice(group.playerName())
+        finished ? undefined : keyboard.make_a_choice(group.playerName())
       );
     }
     return false;
@@ -291,7 +293,9 @@ module.exports = {
       var group = games[chatId];
       if (user.id_user == group.users[group.users.length - 1].id_user) {
         let response = group.handing_out_cards(number);
+        let finished = false;
         if (response.finished) {
+          finished = true;
           games[chatId] = new Game(group.name, new Config(group.config));
           cleanUsers(group.users, chatId);
           response = response.response
@@ -299,7 +303,7 @@ module.exports = {
         return message.inLine_keyboard(
           chatId,
           response,
-          keyboard.make_a_choice(group.playerName())
+          finished ? undefined : keyboard.make_a_choice(group.playerName())
         );
       }
     }

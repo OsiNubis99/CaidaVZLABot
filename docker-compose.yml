@@ -29,6 +29,8 @@ services:
       POSTGRESQL_URL: postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       PGSSL: "false"
       PORT: "3000"
+      ADMIN_USER_IDS: ${ADMIN_USER_IDS}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
 
 volumes:
   caida-pgdata:

@@ -2,275 +2,307 @@ const resp = require("./lang/es");
 const bot = require("./config/server");
 const game = require("./services/game");
 const admin = require("./services/admin");
+const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
 
 process.on("unhandledRejection", (reason) => {
-  console.error("[unhandledRejection]", reason && reason.stack || reason);
+  logger.error({ err: reason }, "unhandledRejection");
 });
 process.on("uncaughtException", (err) => {
-  console.error("[uncaughtException]", err && err.stack || err);
+  logger.error({ err }, "uncaughtException");
 });
+
+// helper: wrap async handlers so any throw is logged, not lost
+function safe(name, fn) {
+  return async (...args) => {
+    try {
+      await fn(...args);
+    } catch (err) {
+      logger.error({ err, handler: name }, "handler error");
+    }
+  };
+}
 
 //**                    InLine Query                    */
 
-bot.on("inline_query", (query) => {
-  bot.answerInlineQuery(
-    query.id,
-    game.get_user_cards(Factory_User.fromTelegram(query.from)),
-    {
-      is_personal: true,
-      cache_time: 1,
-    }
-  );
-});
+bot.on(
+  "inline_query",
+  safe("inline_query", async (query) => {
+    await bot.answerInlineQuery(
+      query.id,
+      game.get_user_cards(Factory_User.fromTelegram(query.from)),
+      { is_personal: true, cache_time: 1 },
+    );
+  }),
+);
 
-bot.on("chosen_inline_result", (result) => {
-  let response = false;
-  if (0 <= result.result_id && result.result_id < 3) {
-    response = game.play_card(
-      Factory_User.fromTelegram(result.from),
-      result.result_id
-    );
-  } else if (result.result_id == 4) {
-    response = game.sing(Factory_User.fromTelegram(result.from));
-  } else if (result.result_id == 8) {
-    response = game.handing_out_cards(
-      Factory_User.fromTelegram(result.from),
-      1
-    );
-  } else if (result.result_id == 9) {
-    response = game.handing_out_cards(
-      Factory_User.fromTelegram(result.from),
-      4
-    );
-  }
-  if (response)
-    bot.sendMessage(response.chat_id, response.message, response.options);
-});
+bot.on(
+  "chosen_inline_result",
+  safe("chosen_inline_result", async (result) => {
+    let response = false;
+    const user = Factory_User.fromTelegram(result.from);
+    if (0 <= result.result_id && result.result_id < 3) {
+      response = game.play_card(user, result.result_id);
+    } else if (result.result_id == 4) {
+      response = game.sing(user);
+    } else if (result.result_id == 8) {
+      response = game.handing_out_cards(user, 1);
+    } else if (result.result_id == 9) {
+      response = game.handing_out_cards(user, 4);
+    }
+    if (response) {
+      await bot.sendMessage(response.chat_id, response.message, response.options);
+    }
+  }),
+);
 
 //**                      CallBacks                      */
 
-bot.on("callback_query", async (query) => {
-  let response = "";
-  bot.answerCallbackQuery(query.id);
-  if (query.data.match(/set_(.*)/)) {
-    let game_mode = parseInt(query.data.match(/set_(.*)/)[1]);
-    response = await game.set_inline_game_mode(
-      Factory_Request.fromTelegram(query.message),
-      game_mode
-    );
-    if (response) bot.editMessageText(response.message, response.options);
-  } else {
+bot.on(
+  "callback_query",
+  safe("callback_query", async (query) => {
+    await bot.answerCallbackQuery(query.id);
+    if (query.data.match(/set_(.*)/)) {
+      const game_mode = parseInt(query.data.match(/set_(.*)/)[1]);
+      const response = await game.set_inline_game_mode(
+        Factory_Request.fromTelegram(query.message),
+        game_mode,
+      );
+      if (response) await bot.editMessageText(response.message, response.options);
+      return;
+    }
     switch (query.data) {
       case "how_config":
-        bot.editMessageText(resp.how_config, {
+        await bot.editMessageText(resp.how_config, {
           reply_markup: keyboard.back,
           chat_id: query.message.chat.id,
           message_id: query.message.message_id,
         });
         break;
-      case "back":
-        response = await game.config(
-          Factory_Request.fromTelegram(query.message),
-          true
-        );
-        bot.editMessageText(response.message, response.options);
+      case "back": {
+        const response = await game.config(Factory_Request.fromTelegram(query.message), true);
+        await bot.editMessageText(response.message, response.options);
         break;
-      case "type":
-        response = await game.set_inline_type(
-          Factory_Request.fromTelegram(query.message)
-        );
-        bot.editMessageText(response.message, response.options);
+      }
+      case "type": {
+        const response = await game.set_inline_type(Factory_Request.fromTelegram(query.message));
+        await bot.editMessageText(response.message, response.options);
         break;
-      case "start":
-        response = game.shuffle(
-          Factory_Request.fromTelegram(query.message)
-        );
+      }
+      case "start": {
+        const response = game.shuffle(Factory_Request.fromTelegram(query.message));
         if (response) {
-          bot.sendMessage(query.message.chat.id, response.message, response.options);
+          await bot.sendMessage(query.message.chat.id, response.message, response.options);
         }
+        await bot.deleteMessage(query.message.chat.id, query.message.message_id);
+        break;
+      }
       default:
-        bot.deleteMessage(query.message.chat.id, query.message.message_id);
+        await bot.deleteMessage(query.message.chat.id, query.message.message_id);
         break;
     }
-  }
-});
+  }),
+);
 
 //**                   Admins Commands                   */
 
-bot.onText(/\/message (.*)/, async (msg, match) => {
-  let response = await admin.all_groups(Factory_Request.fromTelegram(msg));
-  response.forEach((group) => {
-    bot.sendMessage(group.id_group, match[1])
-      .then((message) => {
-        bot.sendMessage(114083702, `${group.id_group} - ${group.name}\n` + message.text)
-      }, reason => {
-        admin.force_remove_group(group.id_group)
-        bot.sendMessage(114083702, reason.toString())
-      })
-  });
-});
+bot.onText(
+  /\/message (.*)/,
+  safe("/message", async (msg, match) => {
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, resp.no_admin_person, {
+        reply_to_message_id: msg.message_id,
+      });
+      return;
+    }
+    const groups = await admin.all_groups(Factory_Request.fromTelegram(msg));
+    for (const group of groups) {
+      try {
+        const sent = await bot.sendMessage(group.id_group, match[1]);
+        logger.info(
+          { group_id: group.id_group, group_name: group.name, text_len: sent.text.length },
+          "broadcast sent",
+        );
+      } catch (err) {
+        logger.warn(
+          { err: err.message, group_id: group.id_group, group_name: group.name },
+          "broadcast failed; removing group",
+        );
+        await admin.force_remove_group(msg.from.id, group.id_group);
+      }
+    }
+  }),
+);
 
-bot.onText(/\/lock/, async (msg) => {
-  bot.sendMessage(msg.chat.id, await admin.ban_unban_user(Factory_Request.fromTelegram(msg), true), {
-    reply_to_message_id: msg.message_id,
-  });
-});
+bot.onText(
+  /\/lock/,
+  safe("/lock", async (msg) => {
+    await bot.sendMessage(
+      msg.chat.id,
+      await admin.ban_unban_user(Factory_Request.fromTelegram(msg), true),
+      { reply_to_message_id: msg.message_id },
+    );
+  }),
+);
 
-bot.onText(/\/unlock/, async (msg) => {
-  bot.sendMessage(msg.chat.id, await admin.ban_unban_user(Factory_Request.fromTelegram(msg), false), {
-    reply_to_message_id: msg.message_id,
-  });
-});
+bot.onText(
+  /\/unlock/,
+  safe("/unlock", async (msg) => {
+    await bot.sendMessage(
+      msg.chat.id,
+      await admin.ban_unban_user(Factory_Request.fromTelegram(msg), false),
+      { reply_to_message_id: msg.message_id },
+    );
+  }),
+);
 
-bot.onText(/\/addg-(.*)-(.*)/, async (msg, match) => {
-  bot.sendMessage(msg.chat.id, admin.add_group(Factory_Request.fromTelegram(msg), match[1], match[2]), {
-    reply_to_message_id: msg.message_id,
-  });
-});
+bot.onText(
+  /\/addg-(.*)-(.*)/,
+  safe("/addg", async (msg, match) => {
+    await bot.sendMessage(
+      msg.chat.id,
+      admin.add_group(Factory_Request.fromTelegram(msg), match[1], match[2]),
+      { reply_to_message_id: msg.message_id },
+    );
+  }),
+);
 
-bot.onText(/\/paid-(.*)-(.*)/, async (msg, match) => {
-  bot.sendMessage(msg.chat.id, await admin.paid(Factory_Request.fromTelegram(msg), match[1], match[2]), {
-    reply_to_message_id: msg.message_id,
-  });
-});
+bot.onText(
+  /\/paid-(.*)-(.*)/,
+  safe("/paid", async (msg, match) => {
+    await bot.sendMessage(
+      msg.chat.id,
+      await admin.paid(Factory_Request.fromTelegram(msg), match[1], match[2]),
+      { reply_to_message_id: msg.message_id },
+    );
+  }),
+);
 
-// TODO
-bot.onText(/\/list_groups/, async (msg) => {
-  bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
-    reply_to_message_id: msg.message_id,
-  });
-});
+bot.onText(
+  /\/list_groups/,
+  safe("/list_groups", async (msg) => {
+    await bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
+      reply_to_message_id: msg.message_id,
+    });
+  }),
+);
 
-// TODO
-bot.onText(/\/listUsers/, async (msg) => {
-  bot.sendMessage(msg.chat.id, await admin.list_user(msg), {
-    reply_to_message_id: msg.message_id,
-  });
-});
+bot.onText(
+  /\/listUsers/,
+  safe("/listUsers", async (msg) => {
+    await bot.sendMessage(msg.chat.id, await admin.list_user(msg), {
+      reply_to_message_id: msg.message_id,
+    });
+  }),
+);
 
-bot.onText(/\/stats/, async (msg) => {
-  let response = await admin.get_user_stats(Factory_Request.fromTelegram(msg));
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-});
+bot.onText(
+  /\/stats/,
+  safe("/stats", async (msg) => {
+    const response = await admin.get_user_stats(Factory_Request.fromTelegram(msg));
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
 
-// TODO
-// bot.onText(/\/removeGroup/, (msg, match) => {
-//   bot.sendMessage(msg.chat.id, admin.remove_group(msg, match), {
-//     reply_to_message_id: msg.message_id,
-//   });
-// });
-
-bot.onText(/\/logs123/, (msg) => {
-  bot.sendMessage(msg.chat.id, "log");
-});
-
-bot.onText(/\/admin/, async (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "/message\n/lock\n/unlock\n/listUsers"
-  );
-});
+bot.onText(
+  /\/admin/,
+  safe("/admin", async (msg) => {
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, resp.no_admin_person);
+      return;
+    }
+    // F2 will replace this with an interactive BotFather-like menu.
+    await bot.sendMessage(msg.chat.id, "/message\n/lock\n/unlock\n/listUsers");
+  }),
+);
 
 //**                    Game Commands                    */
 
-bot.onText(/\/reiniciar/, async (msg) => {
-  if (msg.chat.type === "private") return;
-  try {
-    let admins = await bot.getChatAdministrators(msg.chat.id);
-    if (admins) {
-      let is_admin = false;
-      admins.forEach(item => {
-        if (item.user.id == msg.from.id) is_admin = true;
+bot.onText(
+  /\/reiniciar/,
+  safe("/reiniciar", async (msg) => {
+    if (msg.chat.type === "private") return;
+    const admins = await bot.getChatAdministrators(msg.chat.id);
+    const isChatAdmin = admins && admins.some((a) => a.user.id == msg.from.id);
+    if (!isChatAdmin) {
+      await bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {
+        reply_to_message_id: msg.message_id,
       });
-      if (is_admin) {
-        let response = await game.create(Factory_Request.fromTelegram(msg), true);
-        bot.sendMessage(msg.chat.id, response.message, response.options);
-      } else
-        bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {
-          reply_to_message_id: msg.message_id,
-        });
+      return;
     }
-  } catch (err) {
-    console.error("/reiniciar failed:", err.message);
-  }
-});
+    const response = await game.create(Factory_Request.fromTelegram(msg), true);
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
 
-bot.onText(/\/unirse/, async (msg) => {
-  let response = await game.join(Factory_Request.fromTelegram(msg));
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-});
+bot.onText(
+  /\/unirse/,
+  safe("/unirse", async (msg) => {
+    const response = await game.join(Factory_Request.fromTelegram(msg));
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
 
-bot.onText(/\/iniciar/, (msg) => {
-  let response = game.start(Factory_Request.fromTelegram(msg));
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-  bot.sendMessage(114083702, `Partida iniciada en ` + msg.chat.title || "");
-});
+bot.onText(
+  /\/iniciar/,
+  safe("/iniciar", async (msg) => {
+    const response = game.start(Factory_Request.fromTelegram(msg));
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+    logger.info(
+      { chat_id: msg.chat.id, chat_title: msg.chat.title },
+      "game started (/iniciar)",
+    );
+  }),
+);
 
-bot.onText(/\/inicia_ya/, (msg) => {
-  let response = game.shuffle(Factory_Request.fromTelegram(msg), false);
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-  bot.sendMessage(114083702, `Partida iniciada YAAAAA! en ` + msg.chat.title || "");
-});
+bot.onText(
+  /\/inicia_ya/,
+  safe("/inicia_ya", async (msg) => {
+    const response = game.shuffle(Factory_Request.fromTelegram(msg), false);
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+    logger.info(
+      { chat_id: msg.chat.id, chat_title: msg.chat.title },
+      "game started (/inicia_ya)",
+    );
+  }),
+);
 
-bot.onText(/\/estado/, async (msg) => {
-  let response = await game.status(Factory_Request.fromTelegram(msg));
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-});
+bot.onText(
+  /\/estado/,
+  safe("/estado", async (msg) => {
+    const response = await game.status(Factory_Request.fromTelegram(msg));
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
 
-bot.onText(/\/configurar/, async (msg) => {
-  let response = await game.config(Factory_Request.fromTelegram(msg));
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-});
+bot.onText(
+  /\/configurar/,
+  safe("/configurar", async (msg) => {
+    const response = await game.config(Factory_Request.fromTelegram(msg));
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
 
-bot.onText(/\/configura(.*) (.*) (.*)/, async (msg, match) => {
-  let response = await game.set_settings(
-    Factory_Request.fromTelegram(msg),
-    match[2],
-    match[3]
-  );
-  bot.sendMessage(msg.chat.id, response.message, response.options);
-});
+bot.onText(
+  /\/configura(.*) (.*) (.*)/,
+  safe("/configura", async (msg, match) => {
+    const response = await game.set_settings(Factory_Request.fromTelegram(msg), match[2], match[3]);
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
 
 //**                     Set Commands                    */
 
 bot.setMyCommands([
-  {
-    command: "unirse",
-    description: "Te agrega a la partida.",
-  },
-  {
-    command: "iniciar",
-    description: "Inicia la partida.",
-  },
-  {
-    command: "inicia_ya",
-    description: "Inicia la partida, pero se salta las configuraciones",
-  },
-  {
-    command: "estado",
-    description: "Muestra información sobre la partida.",
-  },
-  {
-    command: "reiniciar",
-    description: "Elimina la partida actual y crea una nueva.",
-  },
-  {
-    command: "configurar",
-    description: "Muestra el panel de configuración.",
-  },
-  {
-    command: "help",
-    description: "Muestra una ayuda de como usar el bot.",
-  },
-  {
-    command: "list_groups",
-    description: "Muestra la lista de grupos publicos en el bot",
-  },
-  {
-    command: "stats",
-    description: "Muestra las estadisticas del usuario",
-  },
+  { command: "unirse", description: "Te agrega a la partida." },
+  { command: "iniciar", description: "Inicia la partida." },
+  { command: "inicia_ya", description: "Inicia la partida, pero se salta las configuraciones" },
+  { command: "estado", description: "Muestra información sobre la partida." },
+  { command: "reiniciar", description: "Elimina la partida actual y crea una nueva." },
+  { command: "configurar", description: "Muestra el panel de configuración." },
+  { command: "help", description: "Muestra una ayuda de como usar el bot." },
+  { command: "list_groups", description: "Muestra la lista de grupos publicos en el bot" },
+  { command: "stats", description: "Muestra las estadisticas del usuario" },
 ]);
