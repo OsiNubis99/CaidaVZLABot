@@ -1,4 +1,3 @@
-const { describe, it, expect } = require("vitest");
 const Card = require("../class/Card");
 const Sings = require("../class/Sings");
 const Config = require("../class/Config");

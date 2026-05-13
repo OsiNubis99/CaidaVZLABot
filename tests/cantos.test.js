@@ -1,4 +1,3 @@
-const { describe, it, expect } = require("vitest");
 const cantos = require("../services/cantos");
 
 describe("cantos icons", () => {
