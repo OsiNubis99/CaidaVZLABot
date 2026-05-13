@@ -6,6 +6,7 @@ const cardsService = require("./cards");
 const cantos = require("./cantos");
 const mesa = require("./mesa");
 const persistence = require("./persistence");
+const events = require("./events");
 const db = require("../config/db");
 const logger = require("../config/logger");
 const message = require("../templates/message");
@@ -16,13 +17,19 @@ const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
 
 // Attach next-turn metadata so the index handler can fire an opt-in DM
-// to the upcoming player.
+// to the upcoming player and arm the TURBO auto-skip timer.
 function attachNextTurn(group, finished, response) {
   if (!group || finished) return response;
   if (group.decks === 0) return response;
   const next = group.users && group.users[group.player];
   if (!next || !next.id_user) return response;
-  return { ...response, nextUserId: next.id_user, groupName: group.name };
+  const timeout = (group.config && group.config.turn_timeout_seconds) || 0;
+  return {
+    ...response,
+    nextUserId: next.id_user,
+    groupName: group.name,
+    turnTimeoutSeconds: timeout,
+  };
 }
 
 // Persist (or drop) the in-memory game for a given chat after a mutation.
@@ -112,6 +119,10 @@ module.exports = {
         if (configs) {
           games[req.group.id_group] = new Game(configs.name, new Config(configs));
           await persistOrRemove(req.group.id_group, false);
+          events.record(req.group.id_group, events.EVENT_TYPES.GAME_CREATED, {
+            requester: req.user.id_user,
+            group_name: configs.name,
+          });
           return message.reply(resp.game_is_restarted, req.message_id);
         }
         else
@@ -147,6 +158,11 @@ module.exports = {
             users[user.id_user] = req.group.id_group;
             const joinResp = group.join(user);
             await persistOrRemove(req.group.id_group, false);
+            events.record(req.group.id_group, events.EVENT_TYPES.PLAYER_JOINED, {
+              user_id: user.id_user,
+              first_name: user.first_name,
+              username: user.username,
+            });
             return message.reply(joinResp, req.message_id);
           }
           return message.reply(resp.game_is_full, req.message_id);
@@ -285,6 +301,10 @@ module.exports = {
         if (group.users.length > 1) {
           let response = group.shuffle();
           await persistOrRemove(req.group.id_group, false);
+          events.record(req.group.id_group, events.EVENT_TYPES.DECK_SHUFFLED, {
+            decks: group.decks,
+            player_count: group.users.length,
+          });
           return message.keyboard(
             response,
             keyboard.make_a_choice(
@@ -312,10 +332,37 @@ module.exports = {
        * @type {Game}
        */
       let group = games[chatId];
+      // Snapshot info needed for event emission BEFORE play mutates state.
+      const cardsBefore = group.get_player_cards(user.id_user);
+      const playedCard = cardsBefore && cardsBefore[number];
       let response = group.play_card(user.id_user, number);
       let finished = false;
+      if (typeof response === "string" && playedCard && playedCard.value) {
+        events.record(chatId, events.EVENT_TYPES.CARD_PLAYED, {
+          user_id: user.id_user,
+          first_name: user.first_name,
+          value: playedCard.value,
+          type: playedCard.type,
+        });
+        if (response.indexOf(resp.user_get_fall) >= 0) {
+          events.record(chatId, events.EVENT_TYPES.CAIDA, {
+            user_id: user.id_user,
+            first_name: user.first_name,
+            value: playedCard.value,
+            type: playedCard.type,
+          });
+        }
+      }
       if (response.finished) {
         finished = true;
+        const winnerIdx = group.player; // kill sets this.player to the winner
+        const winner = group.users[winnerIdx];
+        events.record(chatId, events.EVENT_TYPES.GAME_FINISHED, {
+          winner_user_id: winner ? winner.id_user : null,
+          winner_first_name: winner ? winner.first_name : null,
+          points: group.points,
+          decks: group.decks,
+        });
         games[chatId] = new Game(group.name, new Config(group.config));
         cleanUsers(group.users, chatId);
         response = response.response
@@ -344,11 +391,21 @@ module.exports = {
        */
       var group = games[users[user.id_user]];
       const chatId = users[user.id_user];
+      const userIdx = group.get_user_index(user.id_user);
+      const singName =
+        userIdx >= 0 && group.users[userIdx].sing ? group.users[userIdx].sing.name : null;
       const msg = message.inLine_keyboard(
         chatId,
         group.sing(user.id_user),
         keyboard.make_a_choice(group.playerName()),
       );
+      if (singName && singName !== "No cantó") {
+        events.record(chatId, events.EVENT_TYPES.SING, {
+          user_id: user.id_user,
+          first_name: user.first_name,
+          sing_name: singName,
+        });
+      }
       await persistOrRemove(chatId, false);
       return await attachMesaPhoto(group, false, msg);
     }
@@ -365,8 +422,20 @@ module.exports = {
       if (user.id_user == group.users[group.users.length - 1].id_user) {
         let response = group.handing_out_cards(number);
         let finished = false;
+        events.record(chatId, events.EVENT_TYPES.HAND_DEALT, {
+          start_by: number,
+          decks: group.decks,
+        });
         if (response.finished) {
           finished = true;
+          const winnerIdx = group.player;
+          const winner = group.users[winnerIdx];
+          events.record(chatId, events.EVENT_TYPES.GAME_FINISHED, {
+            winner_user_id: winner ? winner.id_user : null,
+            winner_first_name: winner ? winner.first_name : null,
+            points: group.points,
+            decks: group.decks,
+          });
           games[chatId] = new Game(group.name, new Config(group.config));
           cleanUsers(group.users, chatId);
           response = response.response
@@ -382,6 +451,27 @@ module.exports = {
       }
     }
     return false;
+  },
+
+  /**
+   * Force the current player of a chat to auto-play their first card.
+   * Used by the TURBO auto-skip timer in index.js. Returns the same
+   * shape as play_card, or null if the chat's game state changed
+   * already (someone else already moved, or game ended).
+   *
+   * @param {String} chatId
+   * @param {String} expectedUserId - guard so a stale timer never
+   *   plays the wrong player's card.
+   */
+  async autoSkipTurn(chatId, expectedUserId) {
+    const group = games[chatId];
+    if (!group || group.decks === 0) return null;
+    const current = group.users && group.users[group.player];
+    if (!current || String(current.id_user) !== String(expectedUserId)) return null;
+    return module.exports.play_card(
+      { id_user: current.id_user, first_name: current.first_name },
+      0,
+    );
   },
 
   /**

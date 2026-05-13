@@ -23,6 +23,8 @@ class Config {
   trivilin = Number.prototype;
   visual_cards = Boolean.prototype;
   visual_table = Boolean.prototype;
+  turn_timeout_seconds = Number.prototype;
+  locale = String.prototype;
 
   /**
    * Create a Config Object
@@ -34,6 +36,8 @@ class Config {
     // changing the mode does not toggle visuals off.
     this.visual_cards = new_config.visual_cards !== false;
     this.visual_table = new_config.visual_table !== false;
+    this.turn_timeout_seconds = Number(new_config.turn_timeout_seconds) || 0;
+    this.locale = new_config.locale || "es";
   }
   get_game_mode() {
     return (
@@ -124,7 +128,10 @@ class Config {
       this.get_trivilin() +
       "\nVisuales" +
       "\n\t\tCartas con imagen: " + (this.visual_cards ? "on" : "off") +
-      "\n\t\tMesa con imagen: " + (this.visual_table ? "on" : "off")
+      "\n\t\tMesa con imagen: " + (this.visual_table ? "on" : "off") +
+      "\nTurno" +
+      "\n\t\tTimeout por turno: " + (this.turn_timeout_seconds > 0 ? this.turn_timeout_seconds + "s" : "off") +
+      "\n\t\tIdioma: " + this.locale
     );
   }
 
@@ -161,6 +168,21 @@ class Config {
         return false;
       }
       return resp.config_bool_invalid;
+    }
+    if (config == "turn_timeout_seconds" || config == "turn_timeout") {
+      const n = parseInt(value, 10);
+      if (Number.isInteger(n) && n >= 0 && n <= 600) {
+        this.turn_timeout_seconds = n;
+        return false;
+      }
+      return resp.config_number_invalid;
+    }
+    if (config == "locale") {
+      if (value === "es" || value === "en" || value === "pt") {
+        this.locale = value;
+        return false;
+      }
+      return resp.config_locale_invalid;
     }
     if (typeof this[config] === "number") {
       let min = 0;

@@ -10,6 +10,7 @@ module.exports = {
   config_number_invalid:
     "Valor numérico fuera de los limites, el mínimo es 0 y el máximo es 100" +
     ERROR,
+  config_locale_invalid: "Idioma inválido. Opciones: es, en, pt." + ERROR,
   config_undefined:
     "Configuración invalida, por favor revisa /configurar" + ERROR,
   config_not_implemented:

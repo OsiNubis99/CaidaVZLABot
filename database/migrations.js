@@ -31,6 +31,21 @@ const STATEMENTS = [
 
   // opt-in DM-when-it-is-your-turn notification (round 2)
   `ALTER TABLE public.user ADD COLUMN IF NOT EXISTS notify_on_turn boolean DEFAULT false`,
+
+  // round 3: replay/historial — append-only event log per group game.
+  `CREATE TABLE IF NOT EXISTS public.game_events (
+     id bigserial PRIMARY KEY,
+     id_group varchar(50) NOT NULL,
+     event_type text NOT NULL,
+     payload jsonb NOT NULL,
+     created_at timestamptz DEFAULT CURRENT_TIMESTAMP
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_game_events_group_time
+     ON public.game_events (id_group, created_at DESC)`,
+
+  // round 3: per-group locale and turn-timeout (TURBO).
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS locale text DEFAULT 'es'`,
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS turn_timeout_seconds int DEFAULT 0`,
 ];
 
 async function run() {

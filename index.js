@@ -6,11 +6,56 @@ const adminUI = require("./services/adminUI");
 const cards = require("./services/cards");
 const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
+const events = require("./services/events");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
 const { UserController } = require("./database");
+
+// TURBO mode: per-chat timer that auto-plays the current player's
+// first card if they don't move within `turn_timeout_seconds`. The
+// timer is cleared and re-armed after every successful move.
+const skipTimers = new Map();
+
+function clearSkipTimer(chatId) {
+  const h = skipTimers.get(chatId);
+  if (h) {
+    clearTimeout(h);
+    skipTimers.delete(chatId);
+  }
+}
+
+function scheduleSkip(response) {
+  if (!response || !response.chat_id) return;
+  const chatId = response.chat_id;
+  clearSkipTimer(chatId);
+  const seconds = response.turnTimeoutSeconds;
+  if (!seconds || seconds <= 0) return;
+  if (!response.nextUserId) return;
+  const expectedUserId = response.nextUserId;
+  const handle = setTimeout(async () => {
+    skipTimers.delete(chatId);
+    try {
+      const result = await game.autoSkipTurn(chatId, expectedUserId);
+      if (!result) return;
+      await bot.sendMessage(chatId, "⏰ Tiempo agotado — turno saltado.");
+      if (result.photo) {
+        await bot.sendPhoto(chatId, result.photo, {
+          caption: (result.message || "").slice(0, 1024),
+          reply_markup: result.options && result.options.reply_markup,
+        });
+      } else {
+        await bot.sendMessage(chatId, result.message, result.options);
+      }
+      await maybeDmNextTurn(result);
+      scheduleSkip(result);
+    } catch (err) {
+      logger.warn({ err: err.message, chatId }, "auto-skip failed");
+    }
+  }, seconds * 1000);
+  skipTimers.set(chatId, handle);
+}
 
 async function maybeDmNextTurn(response) {
   if (!response || !response.nextUserId) return;
@@ -59,6 +104,7 @@ const COMMAND_LIMITS = {
   "/list_groups": { windowMs: 10_000, max: 3 },
   "/admin": { windowMs: 5_000, max: 10 },
   "/notify": { windowMs: 5_000, max: 5 },
+  "/historial": { windowMs: 30_000, max: 3 },
 };
 
 async function rateLimited(msg, command) {
@@ -126,6 +172,7 @@ bot.on(
       await bot.sendMessage(response.chat_id, response.message, response.options);
     }
     await maybeDmNextTurn(response);
+    scheduleSkip(response);
   }),
 );
 
@@ -330,6 +377,20 @@ bot.onText(
 );
 
 bot.onText(
+  /\/historial/,
+  safe("/historial", async (msg) => {
+    if (await rateLimited(msg, "/historial")) return;
+    const rows = await events.lastGameEvents(String(msg.chat.id), 300);
+    let text = events.renderTranscript(rows);
+    if (text.length > 4000) text = text.slice(0, 3997) + "...";
+    await bot.sendMessage(msg.chat.id, text, {
+      parse_mode: "Markdown",
+      reply_to_message_id: msg.message_id,
+    });
+  }),
+);
+
+bot.onText(
   /\/notify(?:\s+(on|off))?/,
   safe("/notify", async (msg, match) => {
     const arg = (match[1] || "").toLowerCase();
@@ -511,5 +572,14 @@ bot.setMyCommands([
   { command: "stats", description: "Muestra las estadisticas del usuario" },
   { command: "top", description: "Top 10 jugadores globales" },
   { command: "notify", description: "Avisar por DM cuando sea tu turno (on/off)" },
+  { command: "historial", description: "Resumen de la última partida del grupo" },
 ]);
+
+// Prune the events table once a day so it doesn't grow forever.
+setInterval(
+  () => {
+    events.pruneOlderThan(30).catch(() => {});
+  },
+  24 * 60 * 60 * 1000,
+);
 
