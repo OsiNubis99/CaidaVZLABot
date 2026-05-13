@@ -114,7 +114,7 @@ module.exports = {
     if (group) {
       return message.reply(group.print(false), req.message_id);
     }
-    return message.reply(resp.group_invalid, req.message_id);
+    return message.reply(resp.no_active_game, req.message_id);
   },
 
   /**
@@ -131,7 +131,7 @@ module.exports = {
       let response = group.config.print();
       return message.keyboard(response, keyboard.group_settings());
     }
-    return message.reply(resp.group_invalid, req.message_id);
+    return message.reply(resp.no_active_game, req.message_id);
   },
 
   /**
@@ -157,7 +157,7 @@ module.exports = {
       }
       return message.reply(resp.game_is_running, req.message_id);
     }
-    return message.reply(resp.group_invalid, req.message_id);
+    return message.reply(resp.no_active_game, req.message_id);
   },
   async set_inline_type(req) {
     /**
@@ -202,7 +202,7 @@ module.exports = {
       }
       return message.reply(resp.game_is_running, req.message_id);
     }
-    return message.reply(resp.group_invalid, req.message_id);
+    return message.reply(resp.no_active_game, req.message_id);
   },
 
   /**
@@ -231,7 +231,7 @@ module.exports = {
       }
       return inLine ? false : message.reply(resp.game_is_running, req.message_id);
     }
-    return inLine ? false : message.reply(resp.group_invalid, req.message_id);
+    return inLine ? false : message.reply(resp.no_active_game, req.message_id);
   },
 
   /**
