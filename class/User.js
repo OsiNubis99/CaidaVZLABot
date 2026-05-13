@@ -23,22 +23,21 @@ class User {
 
   /**
    * @param {Boolean} started - Set true if the game is already started.
+   * @param {Object} [lang] - Localized strings table. Falls back to the
+   *   global es table when omitted (callers from Game.js pass through
+   *   the active group's lang).
    * @returns Printable User Information
    */
-  print(started) {
-    return (
-      this.first_name +
-      " " +
-      "(@" +
-      this.username +
-      ")" +
-      (started
-        ? ("\nCartas: " + this.cards.length + " Cantó: " +
-          (this.sing.name != "No cantó" && this.sing.active
-            ? this.sing.name
-            : "No cantó"))
-        : "")
-    );
+  print(started, lang) {
+    const L = lang || resp;
+    let out = this.first_name + L.ig_user_handle_open + this.username + L.ig_user_handle_close;
+    if (!started) return out;
+    const sang =
+      this.sing && this.sing.active && this.sing.name && this.sing.name !== "No cantó"
+        ? this.sing.name
+        : L.ig_user_no_sang;
+    out += L.ig_user_cards_label + this.cards.length + L.ig_user_sang_label + sang;
+    return out;
   }
 
   /**

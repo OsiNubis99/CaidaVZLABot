@@ -2,6 +2,7 @@ const User = require("./User");
 const Card = require("./Card");
 const Sings = require("./Sings");
 const resp = require("../lang/es");
+const { getLang } = require("../lang");
 const Config = require("./Config");
 const UserDatabase = require("../database/user");
 const message = require("../templates/message");
@@ -34,6 +35,14 @@ class Game {
     this.table = [null, null, null, null, null, null, null, null, null, null];
     this.table_order = "";
     this.took = [0, 0, 0, 0];
+  }
+
+  /**
+   * Resolve the in-game language table from the group's locale. Lazy
+   * so locale changes apply without rebuilding the Game.
+   */
+  _lang() {
+    return getLang(this.config && this.config.locale);
   }
 
   /**
@@ -345,9 +354,9 @@ class Game {
       let user_win = player == comparate ? win : 0
       UserDatabase.set_stats(user.id_user, user_win, user.caida, user.caido)
     }
-    var response =
-      "Gano "
-    response += this.users[player].print(false)
+    const L = this._lang();
+    let response = L.ig_won_prefix;
+    response += this.users[player].print(false, L);
     this.decks = 0;
     response += "\n" + this.print(false, false);
     return { finished: true, response };
@@ -370,84 +379,64 @@ class Game {
   }
 
   _renderHeader(is_running, no_started) {
+    const L = this._lang();
     let response = "";
     if (is_running) {
-      response += this.last_hand ? "Ultimas!\n" : "";
-      response += "Mesa:";
+      response += this.last_hand ? L.ig_last_hand : "";
+      response += L.ig_mesa_label;
       this.table.forEach((item) => {
         if (item != null) response += " " + item.value;
-        else response += " []";
+        else response += L.ig_empty_slot;
       });
       if (this.last_card_played) {
         response +=
-          "\nUltima carta: " +
+          L.ig_last_card_label +
           this.last_card_played.value +
-          " de " +
+          L.ig_card_of +
           this.last_card_played.type;
       }
-      response += "\nSiguiente: " + this.playerName();
+      response += L.ig_next_label + this.playerName();
     } else if (no_started) {
-      response += resp.game_no_started;
+      response += L.game_no_started;
     }
     return response;
   }
 
   _renderTeamsParejas(is_running) {
+    const L = this._lang();
     let response = "";
-    response += "\nEquipo " + (this.decks % 2 == 0 ? "Rojo" : "Azul");
+    response += L.ig_team_prefix + (this.decks % 2 == 0 ? L.ig_team_red : L.ig_team_blue);
     if (is_running)
-      response +=
-        "\n\t\tPuntos: " + (this.points[0] || 0) + " Tomado: " + this.took[0];
+      response += L.ig_points_label + (this.points[0] || 0) + L.ig_taken_label + this.took[0];
     response += this.users[0]
-      ? "\n\t" + this.users[0].print(is_running)
-      : "\n\tVacío";
+      ? L.ig_team_player_prefix + this.users[0].print(is_running, L)
+      : L.ig_empty_team_slot;
     response += this.users[2]
-      ? "\n\t" + this.users[2].print(is_running)
-      : "\n\tVacío";
-    response += "\nEquipo " + (this.decks % 2 == 1 ? "Rojo" : "Azul");
+      ? L.ig_team_player_prefix + this.users[2].print(is_running, L)
+      : L.ig_empty_team_slot;
+    response += L.ig_team_prefix + (this.decks % 2 == 1 ? L.ig_team_red : L.ig_team_blue);
     if (is_running)
-      response +=
-        "\n\t\tPuntos: " + (this.points[1] || 0) + " Tomado: " + this.took[1];
+      response += L.ig_points_label + (this.points[1] || 0) + L.ig_taken_label + this.took[1];
     response += this.users[1]
-      ? "\n\t" + this.users[1].print(is_running)
-      : "\n\tVacío";
+      ? L.ig_team_player_prefix + this.users[1].print(is_running, L)
+      : L.ig_empty_team_slot;
     response += this.users[3]
-      ? "\n\t" + this.users[3].print(is_running)
-      : "\n\tVacío";
+      ? L.ig_team_player_prefix + this.users[3].print(is_running, L)
+      : L.ig_empty_team_slot;
     return response;
   }
 
   _renderTeamsIndividual(is_running) {
-    let response = "";
-    response += this.users[0]
-      ? "\nJugador 1: " +
-      this.users[0].print(is_running) +
-      (is_running
-        ? "\n\tPuntos: " + (this.points[0] || 0) + " Tomado: " + this.took[0]
-        : "")
-      : "";
-    response += this.users[1]
-      ? "\nJugador 2: " +
-      this.users[1].print(is_running) +
-      (is_running
-        ? "\n\tPuntos: " + (this.points[1] || 0) + " Tomado: " + this.took[1]
-        : "")
-      : "";
-    response += this.users[2]
-      ? "\nJugador 3: " +
-      this.users[2].print(is_running) +
-      (is_running
-        ? "\n\tPuntos: " + (this.points[2] || 0) + " Tomado: " + this.took[2]
-        : "")
-      : "";
-    response += this.users[3]
-      ? "\nJugador 4: " +
-      this.users[3].print(is_running) +
-      (is_running
-        ? "\n\tPuntos: " + (this.points[3] || 0) + " Tomado: " + this.took[3]
-        : "")
-      : "";
-    return response;
+    const L = this._lang();
+    const renderPlayer = (idx) => {
+      if (!this.users[idx]) return "";
+      const base = L.ig_player_prefix + (idx + 1) + ": " + this.users[idx].print(is_running, L);
+      const pts = is_running
+        ? L.ig_player_points + (this.points[idx] || 0) + L.ig_taken_label + this.took[idx]
+        : "";
+      return base + pts;
+    };
+    return renderPlayer(0) + renderPlayer(1) + renderPlayer(2) + renderPlayer(3);
   }
 
   /**
