@@ -2,6 +2,7 @@ const resp = require("./lang/es");
 const bot = require("./config/server");
 const game = require("./services/game");
 const admin = require("./services/admin");
+const adminUI = require("./services/adminUI");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
@@ -64,6 +65,44 @@ bot.on(
   "callback_query",
   safe("callback_query", async (query) => {
     await bot.answerCallbackQuery(query.id);
+
+    // Admin UI callbacks: only allowed for admins.
+    if (query.data.startsWith("a:")) {
+      if (!admin.is_admin(query.from.id)) {
+        await bot.answerCallbackQuery(query.id, {
+          text: "No tienes permisos.",
+          show_alert: true,
+        });
+        return;
+      }
+      const chat_id = query.message.chat.id;
+      const message_id = query.message.message_id;
+      const editOpts = (view) => ({ ...view.options, chat_id, message_id });
+
+      const parts = query.data.split(":");
+      const action = parts[1];
+      let view;
+      if (action === "l") view = await adminUI.listView();
+      else if (action === "g") view = await adminUI.groupDetailView(parts[2]);
+      else if (action === "tp") view = await adminUI.togglePublic(parts[2]);
+      else if (action === "p") view = await adminUI.extendPayment(parts[2], parts[3]);
+      else if (action === "rn") {
+        adminUI.startRename(query.from.id, parts[2]);
+        view = adminUI.renamePromptView(parts[2]);
+      } else if (action === "dq") view = adminUI.deletePromptView(parts[2]);
+      else if (action === "dc") view = await adminUI.deleteConfirm(parts[2]);
+      else return;
+      try {
+        await bot.editMessageText(view.message, editOpts(view));
+      } catch (err) {
+        // editMessageText fails if content is identical; ignore that case.
+        if (!String(err.message).includes("message is not modified")) {
+          logger.warn({ err: err.message, action }, "admin callback edit failed");
+        }
+      }
+      return;
+    }
+
     if (query.data.match(/set_(.*)/)) {
       const game_mode = parseInt(query.data.match(/set_(.*)/)[1]);
       const response = await game.set_inline_game_mode(
@@ -213,8 +252,36 @@ bot.onText(
       await bot.sendMessage(msg.chat.id, resp.no_admin_person);
       return;
     }
-    // F2 will replace this with an interactive BotFather-like menu.
-    await bot.sendMessage(msg.chat.id, "/message\n/lock\n/unlock\n/listUsers");
+    const view = await adminUI.listView();
+    await bot.sendMessage(msg.chat.id, view.message, view.options);
+  }),
+);
+
+bot.onText(
+  /^\/cancelar/,
+  safe("/cancelar", async (msg) => {
+    if (adminUI.getPendingRename(msg.from.id)) {
+      adminUI.cancelRename(msg.from.id);
+      await bot.sendMessage(msg.chat.id, "Renombrado cancelado.", {
+        reply_to_message_id: msg.message_id,
+      });
+    }
+  }),
+);
+
+// Intercept plain-text messages from admins who are in a rename flow.
+bot.on(
+  "message",
+  safe("rename_listener", async (msg) => {
+    if (!msg.text || msg.text.startsWith("/")) return;
+    if (!admin.is_admin(msg.from.id)) return;
+    const pending = adminUI.getPendingRename(msg.from.id);
+    if (!pending) return;
+    const newName = msg.text.trim().slice(0, 100);
+    if (!newName) return;
+    adminUI.cancelRename(msg.from.id);
+    const view = await adminUI.applyRename(pending.id_group, newName);
+    await bot.sendMessage(msg.chat.id, view.message, view.options);
   }),
 );
 
@@ -306,3 +373,4 @@ bot.setMyCommands([
   { command: "list_groups", description: "Muestra la lista de grupos publicos en el bot" },
   { command: "stats", description: "Muestra las estadisticas del usuario" },
 ]);
+
