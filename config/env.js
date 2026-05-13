@@ -16,4 +16,5 @@ module.exports = {
   port: process.env.PORT || 3000,
   log_level: process.env.LOG_LEVEL || "info",
   admin_ids,
+  stats_token: process.env.STATS_TOKEN || "",
 };

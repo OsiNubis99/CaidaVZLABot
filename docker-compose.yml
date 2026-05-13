@@ -31,6 +31,7 @@ services:
       PORT: "3000"
       ADMIN_USER_IDS: ${ADMIN_USER_IDS}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      STATS_TOKEN: ${STATS_TOKEN:-}
 
   # Daily pg_dump retained on its own volume. Retention: 14 daily / 4 weekly / 3 monthly.
   # Image is maintained and pinned to the postgres major version we use.
