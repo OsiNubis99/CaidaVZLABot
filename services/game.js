@@ -2,12 +2,32 @@ const resp = require("../lang/es");
 const Game = require("../class/Game");
 const User = require("../class/User");
 const Config = require("../class/Config");
+const cardsService = require("./cards");
+const cantos = require("./cantos");
+const mesa = require("./mesa");
+const logger = require("../config/logger");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 const TelegramBot = require("node-telegram-bot-api");
 const Factory_User = require("../class/Factory_User");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
+
+// Render the current table as a PNG and attach it as `photo` to the
+// response, when visual_table is enabled and the game is mid-deck.
+// Errors are swallowed and the response falls back to the text-only mesa.
+async function attachMesaPhoto(group, finished, response) {
+  if (!group || !group.config || !group.config.visual_table) return response;
+  if (finished) return response;
+  if (!group.table || group.decks === 0) return response;
+  try {
+    const photo = await mesa.render(group.table);
+    return { ...response, photo };
+  } catch (err) {
+    logger.warn({ err: err.message }, "mesa render failed; falling back to text");
+    return response;
+  }
+}
 
 /**
  * @type {Array<Game>}
@@ -240,7 +260,7 @@ module.exports = {
    * @param {Number} number - Index of the card to play
    * @returns
    */
-  play_card(user, number) {
+  async play_card(user, number) {
     let chatId = users[user.id_user]
     if (chatId) {
       /**
@@ -255,11 +275,12 @@ module.exports = {
         cleanUsers(group.users, chatId);
         response = response.response
       }
-      return message.inLine_keyboard(
+      const msg = message.inLine_keyboard(
         chatId,
         response,
         finished ? undefined : keyboard.make_a_choice(group.playerName())
       );
+      return await attachMesaPhoto(group, finished, msg);
     }
     return false;
   },
@@ -269,22 +290,23 @@ module.exports = {
    * @param {Factory_User} user - Whoever plays the card
    * @returns
    */
-  sing(user) {
+  async sing(user) {
     if (users[user.id_user]) {
       /**
        * @type {Game}
        */
       var group = games[users[user.id_user]];
-      return message.inLine_keyboard(
+      const msg = message.inLine_keyboard(
         users[user.id_user],
         group.sing(user.id_user),
-        keyboard.make_a_choice(group.playerName())
+        keyboard.make_a_choice(group.playerName()),
       );
+      return await attachMesaPhoto(group, false, msg);
     }
     return false;
   },
 
-  handing_out_cards(user, number) {
+  async handing_out_cards(user, number) {
     let chatId = users[user.id_user]
     if (chatId) {
       /**
@@ -300,111 +322,120 @@ module.exports = {
           cleanUsers(group.users, chatId);
           response = response.response
         }
-        return message.inLine_keyboard(
+        const msg = message.inLine_keyboard(
           chatId,
           response,
-          finished ? undefined : keyboard.make_a_choice(group.playerName())
+          finished ? undefined : keyboard.make_a_choice(group.playerName()),
         );
+        return await attachMesaPhoto(group, finished, msg);
       }
     }
     return false;
   },
 
   /**
-   * TODO Pretty comment
-   * @param {Factory_User} user - Who calls the InlineQuery
-   * @returns {Array<TelegramBot.InlineQueryResult>}
+   * Build the inline-query result list for the user. When the player's
+   * group has visual_cards enabled and the file_id cache is populated,
+   * each playable card is returned as a cached_photo so the picker
+   * shows the actual card art; otherwise it falls back to text articles.
+   * @param {Factory_User} user
+   * @returns {Promise<Array<TelegramBot.InlineQueryResult>>}
    */
-  get_user_cards(user) {
+  async get_user_cards(user) {
     if (users[user.id_user]) {
       /**
        * @type {Game}
        */
       var group = games[users[user.id_user]];
       if (group.decks > 0) {
-        let cards = group.get_player_cards(user.id_user);
-        if (cards.length > 0) {
-          if (cards[0] == "Start_By") {
+        let cardsHand = group.get_player_cards(user.id_user);
+        if (cardsHand.length > 0) {
+          if (cardsHand[0] == "Start_By") {
             return [
               {
-                id: 8,
+                id: "8",
                 type: "article",
                 title: resp.start_by_one_title,
-                input_message_content: {
-                  message_text: resp.start_by_one_message,
-                },
+                input_message_content: { message_text: resp.start_by_one_message },
                 description: resp.start_by_one_description,
               },
               {
-                id: 9,
+                id: "9",
                 type: "article",
                 title: resp.start_by_four_title,
-                input_message_content: {
-                  message_text: resp.start_by_four_message,
-                },
+                input_message_content: { message_text: resp.start_by_four_message },
                 description: resp.start_by_four_description,
               },
             ];
           }
-          let response = [];
-          cards.forEach((element, index) => {
+          const visual = group.config.visual_cards !== false;
+          const response = [];
+          for (let index = 0; index < cardsHand.length; index++) {
+            const element = cardsHand[index];
             if (index == 3) {
               response.push({
-                id: 4,
+                id: "4",
                 type: "article",
-                title: element.name || "Error en canto",
+                title: cantos.withIcon(element.name) || "Error en canto",
                 input_message_content: {
-                  message_text: "Tengo " + element.name,
+                  message_text: `Tengo ${cantos.icon(element.name)} ${element.name}`,
                 },
                 description: "Vale: " + element.value,
               });
             } else {
-              response.push({
-                id: index,
-                type: "article",
-                title: element.value || "Error en Carta",
-                input_message_content: {
-                  message_text:
-                    "Juego el " + element.value + " de " + element.type,
-                },
-                description: "De " + element.type,
-              });
+              let fileId = null;
+              if (visual && element.value && element.type) {
+                fileId = await cardsService.getFileId(element.value, element.type);
+              }
+              if (fileId) {
+                response.push({
+                  id: String(index),
+                  type: "photo",
+                  photo_file_id: fileId,
+                  title: `${element.value} de ${element.type}`,
+                  caption: `Juego el ${element.value} de ${element.type}`,
+                });
+              } else {
+                response.push({
+                  id: String(index),
+                  type: "article",
+                  title: element.value || "Error en Carta",
+                  input_message_content: {
+                    message_text: "Juego el " + element.value + " de " + element.type,
+                  },
+                  description: "De " + element.type,
+                });
+              }
             }
-          });
+          }
           return response;
         }
         return [
           {
-            id: 12,
+            id: "12",
             type: "article",
             title: resp.no_cards_title,
-            input_message_content: {
-              message_text: resp.no_cards_message,
-            },
+            input_message_content: { message_text: resp.no_cards_message },
             description: resp.no_cards_description,
           },
         ];
       }
       return [
         {
-          id: 11,
+          id: "11",
           type: "article",
           title: resp.game_no_started_title,
-          input_message_content: {
-            message_text: resp.game_no_started_message,
-          },
+          input_message_content: { message_text: resp.game_no_started_message },
           description: resp.game_no_started_description,
         },
       ];
     }
     return [
       {
-        id: 10,
+        id: "10",
         type: "article",
         title: resp.no_game_title,
-        input_message_content: {
-          message_text: resp.no_game_message,
-        },
+        input_message_content: { message_text: resp.no_game_message },
         description: resp.no_game_description,
       },
     ];

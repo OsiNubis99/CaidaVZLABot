@@ -3,6 +3,7 @@ const bot = require("./config/server");
 const game = require("./services/game");
 const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
+const cards = require("./services/cards");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
@@ -31,11 +32,8 @@ function safe(name, fn) {
 bot.on(
   "inline_query",
   safe("inline_query", async (query) => {
-    await bot.answerInlineQuery(
-      query.id,
-      game.get_user_cards(Factory_User.fromTelegram(query.from)),
-      { is_personal: true, cache_time: 1 },
-    );
+    const results = await game.get_user_cards(Factory_User.fromTelegram(query.from));
+    await bot.answerInlineQuery(query.id, results, { is_personal: true, cache_time: 1 });
   }),
 );
 
@@ -44,16 +42,27 @@ bot.on(
   safe("chosen_inline_result", async (result) => {
     let response = false;
     const user = Factory_User.fromTelegram(result.from);
-    if (0 <= result.result_id && result.result_id < 3) {
-      response = game.play_card(user, result.result_id);
-    } else if (result.result_id == 4) {
-      response = game.sing(user);
-    } else if (result.result_id == 8) {
-      response = game.handing_out_cards(user, 1);
-    } else if (result.result_id == 9) {
-      response = game.handing_out_cards(user, 4);
+    const rid = Number(result.result_id);
+    if (rid >= 0 && rid < 3) {
+      response = await game.play_card(user, rid);
+    } else if (rid === 4) {
+      response = await game.sing(user);
+    } else if (rid === 8) {
+      response = await game.handing_out_cards(user, 1);
+    } else if (rid === 9) {
+      response = await game.handing_out_cards(user, 4);
     }
-    if (response) {
+    if (!response) return;
+    if (response.photo) {
+      const caption =
+        response.message && response.message.length > 1024
+          ? response.message.slice(0, 1021) + "..."
+          : response.message || "";
+      await bot.sendPhoto(response.chat_id, response.photo, {
+        caption,
+        reply_markup: response.options && response.options.reply_markup,
+      });
+    } else {
       await bot.sendMessage(response.chat_id, response.message, response.options);
     }
   }),
@@ -242,6 +251,25 @@ bot.onText(
   safe("/stats", async (msg) => {
     const response = await admin.get_user_stats(Factory_Request.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
+
+bot.onText(
+  /\/bootstrap_cards/,
+  safe("/bootstrap_cards", async (msg) => {
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, resp.no_admin_person);
+      return;
+    }
+    await bot.sendMessage(
+      msg.chat.id,
+      "Subiendo 40 cartas a este chat para cachear los file_ids. Esto toma ~1 minuto.",
+    );
+    const result = await cards.bootstrap(bot, msg.chat.id);
+    await bot.sendMessage(
+      msg.chat.id,
+      `Bootstrap completo. Subidas: ${result.uploaded}, ya cacheadas: ${result.skipped}, fallidas: ${result.failed}.`,
+    );
   }),
 );
 
