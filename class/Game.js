@@ -173,8 +173,45 @@ class Game {
       const j = Math.floor(Math.random() * (i + 1));
       [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
     }
-    this.users[this.users.length - 1].cards = ["Start_By"];
+    this.markStartByPlayer();
     return resp.start_by;
+  }
+
+  /**
+   * Tag the dealer/guesser slot with the "Start_By" sentinel so the
+   * inline picker offers them the "Iniciar por 1/4" buttons.
+   */
+  markStartByPlayer() {
+    this.users[this.users.length - 1].cards = ["Start_By"];
+  }
+
+  /**
+   * Choose which {player, threshold} pairs apply for the took-bonus
+   * step at the end of a deck. Iteration order is fixed so that if two
+   * players cross threshold simultaneously the lower-index one wins
+   * (kill short-circuits the loop).
+   */
+  _selectTookBonusRules() {
+    if (this.users.length == 4 && this.config.type != "parejas") {
+      return [
+        { player: 0, threshold: 10 },
+        { player: 1, threshold: 10 },
+        { player: 2, threshold: 10 },
+        { player: 3, threshold: 10 },
+      ];
+    }
+    if (this.users.length == 3) {
+      return [
+        { player: 0, threshold: 14 },
+        { player: 1, threshold: 13 },
+        { player: 2, threshold: 13 },
+      ];
+    }
+    // 2 players, or 4 players in parejas mode — only two scoring slots (0 and 1).
+    return [
+      { player: 0, threshold: 20 },
+      { player: 1, threshold: 20 },
+    ];
   }
 
   handing_out_cards(start_by, added = "") {
@@ -204,28 +241,13 @@ class Game {
       if (this.table[position] != null) this.took[this.last_player_on_take]++;
       this.table[position] = null;
     }
-    // Add took points
-    if (this.users.length == 4 && this.config.type != "parejas") {
-      if (this.took[0] > 10 && this.increase_points(0, this.took[0] - 10))
-        return this.kill(0);
-      if (this.took[1] > 10 && this.increase_points(1, this.took[1] - 10))
-        return this.kill(1);
-      if (this.took[2] > 10 && this.increase_points(2, this.took[2] - 10))
-        return this.kill(2);
-      if (this.took[3] > 10 && this.increase_points(3, this.took[3] - 10))
-        return this.kill(3);
-    } else if (this.users.length == 3) {
-      if (this.took[0] > 14 && this.increase_points(0, this.took[0] - 14))
-        return this.kill(0);
-      if (this.took[1] > 13 && this.increase_points(1, this.took[1] - 13))
-        return this.kill(1);
-      if (this.took[2] > 13 && this.increase_points(2, this.took[2] - 13))
-        return this.kill(2);
-    } else {
-      if (this.took[0] > 20 && this.increase_points(0, this.took[0] - 20))
-        return this.kill(0);
-      if (this.took[1] > 20 && this.increase_points(1, this.took[1] - 20))
-        return this.kill(1);
+    // Add took points. Threshold per player depends on player count and
+    // game type. Note the 3-player asymmetry: player 0 gets threshold 14
+    // while players 1 and 2 use 13 — preserve.
+    const tookRules = this._selectTookBonusRules();
+    for (const { player, threshold } of tookRules) {
+      if (this.took[player] > threshold && this.increase_points(player, this.took[player] - threshold))
+        return this.kill(player);
     }
     // Reset table
     this.last_player_on_take = 0;
@@ -293,10 +315,9 @@ class Game {
           }
         }
         this.last_card_played = card;
-        if (this.points[0] >= this.config.points) return this.kill(0);
-        if (this.points[1] >= this.config.points) return this.kill(1);
-        if (this.points[2] >= this.config.points) return this.kill(2);
-        if (this.points[3] >= this.config.points) return this.kill(3);
+        for (let i = 0; i < this.points.length; i++) {
+          if (this.points[i] >= this.config.points) return this.kill(i);
+        }
         if (this.users[this.users.length - 1].cards.length > 0) {
           this.player = (this.player + 1) % this.users.length;
           return response + this.print();
@@ -345,8 +366,19 @@ class Game {
    * @returns Printable message with the game and teams information
    */
   print(short_status = true, no_started = true) {
+    const is_running = this.decks > 0;
+    let response = this._renderHeader(is_running, no_started);
+    if (short_status) return response;
+    return (
+      response +
+      (this.config.type == "parejas"
+        ? this._renderTeamsParejas(is_running)
+        : this._renderTeamsIndividual(is_running))
+    );
+  }
+
+  _renderHeader(is_running, no_started) {
     let response = "";
-    let is_running = this.decks > 0;
     if (is_running) {
       response += this.last_hand ? "Ultimas!\n" : "";
       response += "Mesa:";
@@ -362,64 +394,67 @@ class Game {
           this.last_card_played.type;
       }
       response += "\nSiguiente: " + this.playerName();
-    } else {
-      if (no_started)
-        response += resp.game_no_started;
+    } else if (no_started) {
+      response += resp.game_no_started;
     }
-    if (short_status) {
-      return response;
-    }
-    if (this.config.type == "parejas") {
-      response += "\nEquipo " + (this.decks % 2 == 0 ? "Rojo" : "Azul");
-      if (is_running)
-        response +=
-          "\n\t\tPuntos: " + this.points[0] || 0 + " Tomado: " + this.took[0];
-      response += this.users[0]
-        ? "\n\t" + this.users[0].print(is_running)
-        : "\n\tVacío";
-      response += this.users[2]
-        ? "\n\t" + this.users[2].print(is_running)
-        : "\n\tVacío";
-      response += "\nEquipo " + (this.decks % 2 == 1 ? "Rojo" : "Azul");
-      if (is_running)
-        response +=
-          "\n\t\tPuntos: " + this.points[1] || 0 + " Tomado: " + this.took[1];
-      response += this.users[1]
-        ? "\n\t" + this.users[1].print(is_running)
-        : "\n\tVacío";
-      response += this.users[3]
-        ? "\n\t" + this.users[3].print(is_running)
-        : "\n\tVacío";
-    } else {
-      response += this.users[0]
-        ? "\nJugador 1: " +
-        this.users[0].print(is_running) +
-        (is_running
-          ? "\n\tPuntos: " + this.points[0] || 0 + " Tomado: " + this.took[0]
-          : "")
-        : "";
-      response += this.users[1]
-        ? "\nJugador 2: " +
-        this.users[1].print(is_running) +
-        (is_running
-          ? "\n\tPuntos: " + this.points[1] || 0 + " Tomado: " + this.took[1]
-          : "")
-        : "";
-      response += this.users[2]
-        ? "\nJugador 3: " +
-        this.users[2].print(is_running) +
-        (is_running
-          ? "\n\tPuntos: " + this.points[2] || 0 + " Tomado: " + this.took[2]
-          : "")
-        : "";
-      response += this.users[3]
-        ? "\nJugador 4: " +
-        this.users[3].print(is_running) +
-        (is_running
-          ? "\n\tPuntos: " + this.points[3] || 0 + " Tomado: " + this.took[3]
-          : "")
-        : "";
-    }
+    return response;
+  }
+
+  _renderTeamsParejas(is_running) {
+    let response = "";
+    response += "\nEquipo " + (this.decks % 2 == 0 ? "Rojo" : "Azul");
+    if (is_running)
+      response +=
+        "\n\t\tPuntos: " + this.points[0] || 0 + " Tomado: " + this.took[0];
+    response += this.users[0]
+      ? "\n\t" + this.users[0].print(is_running)
+      : "\n\tVacío";
+    response += this.users[2]
+      ? "\n\t" + this.users[2].print(is_running)
+      : "\n\tVacío";
+    response += "\nEquipo " + (this.decks % 2 == 1 ? "Rojo" : "Azul");
+    if (is_running)
+      response +=
+        "\n\t\tPuntos: " + this.points[1] || 0 + " Tomado: " + this.took[1];
+    response += this.users[1]
+      ? "\n\t" + this.users[1].print(is_running)
+      : "\n\tVacío";
+    response += this.users[3]
+      ? "\n\t" + this.users[3].print(is_running)
+      : "\n\tVacío";
+    return response;
+  }
+
+  _renderTeamsIndividual(is_running) {
+    let response = "";
+    response += this.users[0]
+      ? "\nJugador 1: " +
+      this.users[0].print(is_running) +
+      (is_running
+        ? "\n\tPuntos: " + this.points[0] || 0 + " Tomado: " + this.took[0]
+        : "")
+      : "";
+    response += this.users[1]
+      ? "\nJugador 2: " +
+      this.users[1].print(is_running) +
+      (is_running
+        ? "\n\tPuntos: " + this.points[1] || 0 + " Tomado: " + this.took[1]
+        : "")
+      : "";
+    response += this.users[2]
+      ? "\nJugador 3: " +
+      this.users[2].print(is_running) +
+      (is_running
+        ? "\n\tPuntos: " + this.points[2] || 0 + " Tomado: " + this.took[2]
+        : "")
+      : "";
+    response += this.users[3]
+      ? "\nJugador 4: " +
+      this.users[3].print(is_running) +
+      (is_running
+        ? "\n\tPuntos: " + this.points[3] || 0 + " Tomado: " + this.took[3]
+        : "")
+      : "";
     return response;
   }
 
