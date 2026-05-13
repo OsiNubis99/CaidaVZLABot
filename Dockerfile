@@ -2,13 +2,18 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# wget is needed for HEALTHCHECK below; sharp needs libvips runtime libs already bundled in alpine wheels.
+# wget for HEALTHCHECK; sharp's prebuilt binaries ship with libvips bundled for alpine.
 RUN apk add --no-cache wget
 
 COPY package*.json ./
 RUN npm install --omit=dev
 
 COPY . .
+
+# Slice the Wikimedia Spanish deck PNG into 40 individual card images +
+# the reverse, so they're baked into the image and ready to upload to
+# Telegram at first run.
+RUN node scripts/slice_deck.js
 
 ENV NODE_ENV=production
 EXPOSE 3000

@@ -9,16 +9,19 @@ const client = new Client({
 
 let connected = false;
 
-client
+const ready = client
   .connect()
-  .then(() => {
+  .then(async () => {
     connected = true;
     logger.info("DB connected");
+    const migrations = require("../database/migrations");
+    await migrations.run();
   })
   .catch((err) => {
-    logger.error({ err }, "DB connection failed");
+    logger.error({ err }, "DB startup failed");
     process.exit(1);
   });
 
 module.exports = client;
 module.exports.isConnected = () => connected;
+module.exports.ready = ready;

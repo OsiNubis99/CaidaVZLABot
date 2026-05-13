@@ -21,6 +21,8 @@ class Config {
   casa_chica = Number.prototype;
   casa_grande = Number.prototype;
   trivilin = Number.prototype;
+  visual_cards = Boolean.prototype;
+  visual_table = Boolean.prototype;
 
   /**
    * Create a Config Object
@@ -28,6 +30,10 @@ class Config {
    */
   constructor(new_config) {
     this.set_game_mode(new_config);
+    // Render flags live on the group row (not on game_mode presets) so
+    // changing the mode does not toggle visuals off.
+    this.visual_cards = new_config.visual_cards !== false;
+    this.visual_table = new_config.visual_table !== false;
   }
   get_game_mode() {
     return (
@@ -115,7 +121,10 @@ class Config {
       this.get_registrico() +
       this.get_casa_chica() +
       this.get_casa_grande() +
-      this.get_trivilin()
+      this.get_trivilin() +
+      "\nVisuales" +
+      "\n\t\tCartas con imagen: " + (this.visual_cards ? "on" : "off") +
+      "\n\t\tMesa con imagen: " + (this.visual_table ? "on" : "off")
     );
   }
 
@@ -142,6 +151,13 @@ class Config {
       if (value == "on" || value == "off") {
         this[config] = value;
         this.game_mode = 0;
+        return false;
+      }
+      return resp.config_bool_invalid;
+    }
+    if (config == "visual_cards" || config == "visual_table") {
+      if (value == "on" || value == "off") {
+        this[config] = value == "on";
         return false;
       }
       return resp.config_bool_invalid;

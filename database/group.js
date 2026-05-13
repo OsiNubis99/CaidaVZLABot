@@ -82,7 +82,13 @@ module.exports = {
    */
   async update(group_id, new_config) {
     const result = await database.query(
-      "UPDATE public.group SET game_mode = $2, points = $3, type = $4, caida_continua = $5, mata_canto = $6, mata_mesa = $7, mesa = $8, caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13, registro = $14, maguaro = $15, registrico = $16, casa_chica = $17, casa_grande = $18, trivilin = $19 WHERE id_group = $1 RETURNING *;",
+      `UPDATE public.group SET game_mode = $2, points = $3, type = $4,
+          caida_continua = $5, mata_canto = $6, mata_mesa = $7, mesa = $8,
+          caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13,
+          registro = $14, maguaro = $15, registrico = $16, casa_chica = $17,
+          casa_grande = $18, trivilin = $19, visual_cards = $20,
+          visual_table = $21
+       WHERE id_group = $1 RETURNING *;`,
       [
         group_id,
         new_config.game_mode,
@@ -103,6 +109,8 @@ module.exports = {
         new_config.casa_chica,
         new_config.casa_grande,
         new_config.trivilin,
+        new_config.visual_cards !== false,
+        new_config.visual_table !== false,
       ],
     );
     return result.rows;
