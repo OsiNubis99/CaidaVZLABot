@@ -19,7 +19,11 @@ const ready = client
   })
   .catch((err) => {
     logger.error({ err }, "DB startup failed");
-    process.exit(1);
+    // Tests load modules transitively without a real DB; don't kill the
+    // process in that case.
+    if (process.env.NODE_ENV !== "test" && !process.env.VITEST) {
+      process.exit(1);
+    }
   });
 
 module.exports = client;
