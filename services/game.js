@@ -5,6 +5,8 @@ const Config = require("../class/Config");
 const cardsService = require("./cards");
 const cantos = require("./cantos");
 const mesa = require("./mesa");
+const persistence = require("./persistence");
+const db = require("../config/db");
 const logger = require("../config/logger");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
@@ -12,6 +14,19 @@ const TelegramBot = require("node-telegram-bot-api");
 const Factory_User = require("../class/Factory_User");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
+
+// Persist (or drop) the in-memory game for a given chat after a mutation.
+async function persistOrRemove(chatId, finished) {
+  try {
+    if (finished) {
+      await persistence.remove(chatId);
+    } else if (games[chatId]) {
+      await persistence.save(chatId, games[chatId]);
+    }
+  } catch (err) {
+    logger.error({ err: err.message, chat_id: chatId }, "persistence failed");
+  }
+}
 
 // Render the current table as a PNG and attach it as `photo` to the
 // response, when visual_table is enabled and the game is mid-deck.
@@ -51,6 +66,18 @@ function cleanUsers(listUsers, chatId) {
   });
 }
 
+// On startup, re-hydrate any games that were in flight when the bot
+// shut down so players don't lose their seat after a deploy.
+db.ready
+  .then(() => persistence.loadAll())
+  .then(({ games: g, users: u }) => {
+    Object.assign(games, g);
+    Object.assign(users, u);
+  })
+  .catch((err) => {
+    logger.error({ err: err.message }, "failed to load persisted games");
+  });
+
 module.exports = {
   log() {
     console.log({ users })
@@ -74,6 +101,7 @@ module.exports = {
         let configs = await GroupController.getOneById(req.group.id_group);
         if (configs) {
           games[req.group.id_group] = new Game(configs.name, new Config(configs));
+          await persistOrRemove(req.group.id_group, false);
           return message.reply(resp.game_is_restarted, req.message_id);
         }
         else
@@ -107,7 +135,9 @@ module.exports = {
         if (!users[user.id_user]) {
           if (group.users.length < 4) {
             users[user.id_user] = req.group.id_group;
-            return message.reply(group.join(user), req.message_id);
+            const joinResp = group.join(user);
+            await persistOrRemove(req.group.id_group, false);
+            return message.reply(joinResp, req.message_id);
           }
           return message.reply(resp.game_is_full, req.message_id);
         }
@@ -171,6 +201,7 @@ module.exports = {
         let config_is_not_ok = group.config.is_not_ok(config, value);
         if (!config_is_not_ok) {
           await GroupController.update(req.group.id_group, group.config);
+          await persistOrRemove(req.group.id_group, false);
           return message.keyboard(resp.config_is_ok, keyboard.group_settings());
         }
         return message.reply(config_is_not_ok, req.message_id);
@@ -188,6 +219,7 @@ module.exports = {
       group.config.type =
         group.config.type == "parejas" ? "individual" : "parejas";
       await GroupController.update(req.group.id_group, group.config);
+      await persistOrRemove(req.group.id_group, false);
       return group.print_before_game(req.group.id_group, req.message_id);
     }
     return false;
@@ -200,6 +232,7 @@ module.exports = {
     if (!group || group.decks > 0 || game_mode == group.config.game_mode) return false;
     group.config.set_game_mode(game_mode);
     await GroupController.update(req.group.id_group, group.config);
+    await persistOrRemove(req.group.id_group, false);
     return group.print_before_game(req.message_id, req.group.id_group);
   },
 
@@ -231,7 +264,7 @@ module.exports = {
    * @param {Boolean} inLine
    * @returns Telegram message and options
    */
-  shuffle(req, inLine = true) {
+  async shuffle(req, inLine = true) {
     /**
      * @type {Game}
      */
@@ -240,6 +273,7 @@ module.exports = {
       if (group.decks == 0) {
         if (group.users.length > 1) {
           let response = group.shuffle();
+          await persistOrRemove(req.group.id_group, false);
           return message.keyboard(
             response,
             keyboard.make_a_choice(
@@ -280,6 +314,7 @@ module.exports = {
         response,
         finished ? undefined : keyboard.make_a_choice(group.playerName())
       );
+      await persistOrRemove(chatId, finished);
       return await attachMesaPhoto(group, finished, msg);
     }
     return false;
@@ -296,11 +331,13 @@ module.exports = {
        * @type {Game}
        */
       var group = games[users[user.id_user]];
+      const chatId = users[user.id_user];
       const msg = message.inLine_keyboard(
-        users[user.id_user],
+        chatId,
         group.sing(user.id_user),
         keyboard.make_a_choice(group.playerName()),
       );
+      await persistOrRemove(chatId, false);
       return await attachMesaPhoto(group, false, msg);
     }
     return false;
@@ -327,6 +364,7 @@ module.exports = {
           response,
           finished ? undefined : keyboard.make_a_choice(group.playerName()),
         );
+        await persistOrRemove(chatId, finished);
         return await attachMesaPhoto(group, finished, msg);
       }
     }

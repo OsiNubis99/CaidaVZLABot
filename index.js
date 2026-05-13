@@ -140,7 +140,7 @@ bot.on(
         break;
       }
       case "start": {
-        const response = game.shuffle(Factory_Request.fromTelegram(query.message));
+        const response = await game.shuffle(Factory_Request.fromTelegram(query.message));
         if (response) {
           await bot.sendMessage(query.message.chat.id, response.message, response.options);
         }
@@ -355,8 +355,10 @@ bot.onText(
 bot.onText(
   /\/inicia_ya/,
   safe("/inicia_ya", async (msg) => {
-    const response = game.shuffle(Factory_Request.fromTelegram(msg), false);
-    await bot.sendMessage(msg.chat.id, response.message, response.options);
+    const response = await game.shuffle(Factory_Request.fromTelegram(msg), false);
+    if (response) {
+      await bot.sendMessage(msg.chat.id, response.message, response.options);
+    }
     logger.info(
       { chat_id: msg.chat.id, chat_title: msg.chat.title },
       "game started (/inicia_ya)",
