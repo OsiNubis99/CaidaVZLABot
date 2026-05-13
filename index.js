@@ -462,13 +462,26 @@ bot.onText(
 bot.onText(
   /\/admin/,
   safe("/admin", async (msg) => {
+    logger.info(
+      { user_id: msg.from.id, chat_id: msg.chat.id, is_admin: admin.is_admin(msg.from.id) },
+      "/admin invoked",
+    );
     if (await rateLimited(msg, "/admin")) return;
     if (!admin.is_admin(msg.from.id)) {
       await bot.sendMessage(msg.chat.id, resp.no_admin_person);
       return;
     }
     const view = await adminUI.listView();
-    await bot.sendMessage(msg.chat.id, view.message, view.options);
+    try {
+      await bot.sendMessage(msg.chat.id, view.message, view.options);
+    } catch (err) {
+      logger.error({ err: err.message, response: err.response && err.response.body }, "/admin sendMessage failed");
+      // fall back to plain text without markdown
+      await bot.sendMessage(
+        msg.chat.id,
+        "Lista de grupos (modo simple):\n" + view.message.replace(/[*_`]/g, ""),
+      );
+    }
   }),
 );
 

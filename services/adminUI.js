@@ -71,19 +71,19 @@ function deleteConfirmKeyboard(id) {
 }
 
 function formatGroupDetail(g) {
+  // Plain text — no markdown parsing. Telegram-safe regardless of
+  // group name content. Bold and code blocks were nice but parse_mode
+  // = MarkdownV2 is fragile: any literal . ( ) ! - in dynamic content
+  // requires escaping. Skip it.
   return (
-    `*${escapeMd(g.name || "(sin nombre)")}*\n` +
-    `\`${g.id_group}\`\n` +
+    `${g.name || "(sin nombre)"}\n` +
+    `${g.id_group}\n` +
     `\n` +
     `Público: ${g.public ? "✅ Sí" : "❌ No"}\n` +
     `Pagado hasta: ${fmtDate(g.paid_up_to)}\n` +
     `Pagos: ${g.paid_times || 0}\n` +
     `Creado: ${fmtDate(g.created_at)}`
   );
-}
-
-function escapeMd(text) {
-  return String(text).replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 }
 
 async function listView() {
@@ -94,10 +94,12 @@ async function listView() {
       options: { reply_markup: { inline_keyboard: [] } },
     };
   }
+  // Use plain text + Markdown (not MarkdownV2). MarkdownV2 requires
+  // escaping `(`, `)`, `.`, `!`, `-`, etc., which is easy to get wrong
+  // and silently fails Telegram's parser.
   return {
-    message: `Selecciona un grupo *(${groups.length})*:`,
+    message: `Selecciona un grupo (${groups.length}):`,
     options: {
-      parse_mode: "MarkdownV2",
       reply_markup: groupListKeyboard(groups),
     },
   };
@@ -107,16 +109,15 @@ async function groupDetailView(id_group) {
   const g = await GroupController.getOneByIdRaw(id_group);
   if (!g) {
     return {
-      message: "Grupo no encontrado\\.",
+      message: "Grupo no encontrado.",
       options: {
-        parse_mode: "MarkdownV2",
         reply_markup: { inline_keyboard: [[{ text: "⬅️ Volver", callback_data: "a:l" }]] },
       },
     };
   }
   return {
     message: formatGroupDetail(g),
-    options: { parse_mode: "MarkdownV2", reply_markup: groupDetailKeyboard(g) },
+    options: { reply_markup: groupDetailKeyboard(g) },
   };
 }
 
@@ -137,10 +138,9 @@ async function extendPayment(id_group, months) {
 function renamePromptView(id_group) {
   return {
     message:
-      `Envía el nuevo nombre para el grupo \`${escapeMd(id_group)}\`\\.\n` +
-      `O /cancelar para abortar\\.`,
+      `Envía el nuevo nombre para el grupo ${id_group}.\n` +
+      `O /cancelar para abortar.`,
     options: {
-      parse_mode: "MarkdownV2",
       reply_markup: {
         inline_keyboard: [[{ text: "Cancelar", callback_data: `a:g:${id_group}` }]],
       },
@@ -150,9 +150,8 @@ function renamePromptView(id_group) {
 
 function deletePromptView(id_group) {
   return {
-    message: `¿Eliminar grupo \`${escapeMd(id_group)}\`?\nEsto solo borra la fila del grupo, no las stats de usuarios\\.`,
+    message: `¿Eliminar grupo ${id_group}?\nEsto solo borra la fila del grupo, no las stats de usuarios.`,
     options: {
-      parse_mode: "MarkdownV2",
       reply_markup: deleteConfirmKeyboard(id_group),
     },
   };
@@ -163,7 +162,7 @@ async function deleteConfirm(id_group) {
   const list = await listView();
   return {
     ...list,
-    message: `Grupo \`${escapeMd(id_group)}\` eliminado\\.\n\n` + list.message,
+    message: `Grupo ${id_group} eliminado.\n\n` + list.message,
   };
 }
 
