@@ -1,0 +1,7 @@
+module.exports = {
+  test: {
+    include: ["tests/**/*.test.js"],
+    environment: "node",
+    globals: false,
+  },
+};
