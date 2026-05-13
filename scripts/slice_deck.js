@@ -19,11 +19,16 @@ const path = require("path");
 const SRC = path.join(__dirname, "..", "public", "cards", "_source_baraja_espanola_completa.png");
 const OUT_DIR = path.join(__dirname, "..", "public", "cards");
 
-const COLS = 10; // 10 values per row: 1, 2, 3, 4, 5, 6, 7, 10, 11, 12
+// Deck is a 48-card Spanish baraja (values 1-12 per palo). Caída uses
+// only 40: drops 8 and 9. Source image has 12 columns × 4 rows of
+// cards plus a 5th row with the back card on the left.
+const COLS = 12;
 const ROWS_OF_CARDS = 4;
-const ROW_SLOTS = 5; // 4 rows of cards + 1 row with back card on left
+const ROW_SLOTS = 5;
 
-const VALUES = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
+// Map source col index -> Caída value. Cols 7 and 8 (values 8 and 9)
+// are intentionally skipped.
+const COL_TO_VALUE = { 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 9: 10, 10: 11, 11: 12 };
 const TYPES = ["Oro", "Copa", "Espada", "Basto"];
 
 async function main() {
@@ -37,9 +42,11 @@ async function main() {
   const cellH = Math.floor(cellHf);
   console.log(`Cell size: ${cellW} x ${cellH} (float ${cellWf} x ${cellHf})`);
 
+  let written = 0;
   for (let row = 0; row < ROWS_OF_CARDS; row++) {
     for (let col = 0; col < COLS; col++) {
-      const value = VALUES[col];
+      const value = COL_TO_VALUE[col];
+      if (!value) continue; // skip cols 7,8 (Spanish 8 and 9, unused in Caída)
       const type = TYPES[row];
       const left = Math.floor(col * cellWf);
       const top = Math.floor(row * cellHf);
@@ -48,9 +55,10 @@ async function main() {
         .extract({ left, top, width: cellW, height: cellH })
         .png()
         .toFile(out);
+      written++;
     }
   }
-  console.log(`  wrote 40 card PNGs`);
+  console.log(`  wrote ${written} card PNGs`);
 
   // Back card at row 4, col 0
   const backOut = path.join(OUT_DIR, "back.png");
