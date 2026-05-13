@@ -12,7 +12,7 @@ const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
-const { UserController } = require("./database");
+const { UserController, GroupController } = require("./database");
 
 // TURBO mode: per-chat timer that auto-plays the current player's
 // first card if they don't move within `turn_timeout_seconds`. The
@@ -106,6 +106,7 @@ const COMMAND_LIMITS = {
   "/admin": { windowMs: 5_000, max: 10 },
   "/notify": { windowMs: 5_000, max: 5 },
   "/historial": { windowMs: 30_000, max: 3 },
+  "/addgroup": { windowMs: 10_000, max: 3 },
 };
 
 async function rateLimited(msg, command) {
@@ -349,6 +350,43 @@ bot.onText(
       admin.add_group(Factory_Request.fromTelegram(msg), match[1], match[2]),
       { reply_to_message_id: msg.message_id },
     );
+  }),
+);
+
+bot.onText(
+  /^\/addgroup(?:@\w+)?$/,
+  safe("/addgroup", async (msg) => {
+    if (await rateLimited(msg, "/addgroup")) return;
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, resp.no_admin_person, {
+        reply_to_message_id: msg.message_id,
+      });
+      return;
+    }
+    if (msg.chat.type !== "group" && msg.chat.type !== "supergroup") {
+      await bot.sendMessage(
+        msg.chat.id,
+        "Este comando solo funciona dentro de un grupo. Agregame al grupo y corré /addgroup allí.",
+        { reply_to_message_id: msg.message_id },
+      );
+      return;
+    }
+    const id_group = String(msg.chat.id);
+    const name = msg.chat.title || "(sin nombre)";
+    try {
+      await GroupController.add(id_group, name);
+      logger.info({ id_group, name, by: msg.from.id }, "/addgroup registered");
+      await bot.sendMessage(
+        msg.chat.id,
+        `Grupo registrado:\n  id: ${id_group}\n  nombre: ${name}\n\nUsa /admin para hacerlo público o extender pago.`,
+        { reply_to_message_id: msg.message_id },
+      );
+    } catch (err) {
+      logger.error({ err: err.message, id_group }, "/addgroup failed");
+      await bot.sendMessage(msg.chat.id, "Error al registrar el grupo.", {
+        reply_to_message_id: msg.message_id,
+      });
+    }
   }),
 );
 
