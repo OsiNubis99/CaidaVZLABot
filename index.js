@@ -7,6 +7,7 @@ const cards = require("./services/cards");
 const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
 const events = require("./services/events");
+const configUI = require("./services/configUI");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
@@ -182,6 +183,31 @@ bot.on(
   "callback_query",
   safe("callback_query", async (query) => {
     await bot.answerCallbackQuery(query.id);
+
+    // Group config UI callbacks (BotFather-style).
+    if (query.data.startsWith("c:")) {
+      const chatId = String(query.message.chat.id);
+      const view = await configUI.dispatch(chatId, query.data);
+      if (view && view.close) {
+        try {
+          await bot.deleteMessage(chatId, query.message.message_id);
+        } catch (_) {}
+        return;
+      }
+      if (!view) return;
+      try {
+        await bot.editMessageText(view.message, {
+          ...view.options,
+          chat_id: chatId,
+          message_id: query.message.message_id,
+        });
+      } catch (err) {
+        if (!String(err.message).includes("message is not modified")) {
+          logger.warn({ err: err.message, data: query.data }, "configUI edit failed");
+        }
+      }
+      return;
+    }
 
     // Admin UI callbacks: only allowed for admins.
     if (query.data.startsWith("a:")) {
@@ -544,8 +570,11 @@ bot.onText(
   /\/configurar/,
   safe("/configurar", async (msg) => {
     if (await rateLimited(msg, "/configurar")) return;
-    const response = await game.config(Factory_Request.fromTelegram(msg));
-    await bot.sendMessage(msg.chat.id, response.message, response.options);
+    const view = await configUI.mainView(String(msg.chat.id));
+    await bot.sendMessage(msg.chat.id, view.message, {
+      ...view.options,
+      reply_to_message_id: msg.message_id,
+    });
   }),
 );
 

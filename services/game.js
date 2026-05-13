@@ -101,6 +101,26 @@ module.exports = {
   },
 
   /**
+   * Read access to the in-memory game for a chat (read-only). Used by
+   * configUI to inspect the live config + decide whether config changes
+   * are allowed.
+   */
+  peek(chatId) {
+    return games[chatId] || null;
+  },
+
+  /**
+   * Update the in-memory Game's config (after a configUI edit) so the
+   * change is reflected in subsequent gameplay without waiting for a
+   * restart. Idempotent; no-op if no in-memory game.
+   */
+  refreshConfig(chatId, fields) {
+    const g = games[chatId];
+    if (!g) return;
+    Object.assign(g.config, fields);
+  },
+
+  /**
    * Create a new game with the request data if it isn't already there.
    * @param {Factory_Request} req - Clean request data.
    * @returns Telegram message and options.
