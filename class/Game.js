@@ -107,7 +107,7 @@ class Game {
     var user_index = this.get_user_index(id_user);
     if (user_index >= 0) {
       if (this.users[user_index].sing.value > 0) {
-        UserDatabase.set_sing(this.users[user_index].id_user, this.users[user_index].sing.dbName)
+        UserDatabase.set_sing(this.users[user_index].id_user, this.users[user_index].sing.dbName).catch(() => {})
       }
       return this.users[user_index].set_sing();
     }
@@ -332,7 +332,7 @@ class Game {
           }
         });
         if (sings[biggest] > 0) {
-          UserDatabase.set_sing(this.users[biggest].id_user, "alive_" + this.users[biggest].sing.dbName)
+          UserDatabase.set_sing(this.users[biggest].id_user, "alive_" + this.users[biggest].sing.dbName).catch(() => {})
           if (this.increase_points(biggest, sings[biggest])) return this.kill(biggest);
         }
         return this.handing_out_cards(0, response);
@@ -352,7 +352,9 @@ class Game {
       let user = this.users[i]
       let comparate = this.config.type == "parejas" ? i % 2 : i
       let user_win = player == comparate ? win : 0
-      UserDatabase.set_stats(user.id_user, user_win, user.caida, user.caido)
+      // Fire-and-forget: DB failures shouldn't block kill response, but
+      // catch the rejection so it doesn't become an unhandledRejection.
+      UserDatabase.set_stats(user.id_user, user_win, user.caida, user.caido).catch(() => {})
     }
     const L = this._lang();
     let response = L.ig_won_prefix;
