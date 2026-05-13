@@ -6,6 +6,13 @@ const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason && reason.stack || reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err && err.stack || err);
+});
+
 //**                    InLine Query                    */
 
 bot.on("inline_query", (query) => {

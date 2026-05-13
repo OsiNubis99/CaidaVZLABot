@@ -84,7 +84,11 @@ module.exports = {
 			let group = list[i]
 			reply += "\n";
 			reply += "\n\t" + group.name;
-			reply += "\nlink: " + await bot.exportChatInviteLink(group.id_group)
+			try {
+				reply += "\nlink: " + await bot.exportChatInviteLink(group.id_group);
+			} catch (err) {
+				reply += "\n(link no disponible: " + err.message + ")";
+			}
 		}
 		return reply;
 	},
