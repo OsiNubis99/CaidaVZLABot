@@ -24,18 +24,26 @@ bot.onText(/\/saluda(.*)/, (msg, match) => {
 function sayHi(msg) {
   bot.sendMessage(
     msg.chat.id,
-    `Sigue estos pasos:
-  1. Unete a algun grupo publico. Escribele a @OsiNubis99 para jugar en tu grupo privado.
-  2. Los jugadores se podrán unir usando /unirse, se podrán unir un máximo de cuatro jugadores.
-  3. Luego de que estén todos los integrantes que jugarán utilizar /iniciar para configurar la partida e iniciar o /inicia_ya para no configurar.
-  4. En el cuadro del chat, escribe @CaidaVZLABot y aparecerán sus cartas (serán completamente anónimas) y una carta de cantos.
+    `🎴 *Caída Venezolana Bot*
 
-  /reiniciar - Reinicia la partida, solo puede ser usada por los #admin del grupo.
-  /list_groups - Lista los grupos publicos.
-  /configurar
-    *Cambiar el modo de juego, si hay 4 jugadores, seleccionar si se juega individual o en parejas.
-    *Configurar los cantos a utilizar en la partida
-    *Definir el límites de puntos en una partida (1 ~ 100)`,
+*Cómo jugar:*
+1. Únanse al grupo (público o privado registrado). Para listar grupos públicos: /list\\_groups.
+2. Cada jugador escribe /unirse (mínimo 2, máximo 4 jugadores).
+3. Un admin del grupo escribe /iniciar (con configuración) o /inicia\\_ya (con la config por defecto).
+4. *En tu turno*, escribe \`@CaidaVZLABot\` en el cuadro del chat: aparecerán tus cartas y, si toca, los cantos. Tocá la carta o el canto que querés jugar.
+
+*Comandos principales*
+/unirse — sumarse a la partida actual
+/iniciar — iniciar con menú de configuración (admin)
+/inicia\\_ya — iniciar con la config actual del grupo (admin)
+/estado — ver mesa, puntos, próximo turno
+/reiniciar — reiniciar la partida actual (admin del grupo)
+/configurar — ver/editar reglas, puntos, multiplicadores, cantos
+/stats — tus estadísticas
+/list\\_groups — lista de grupos públicos
+
+¿Querés que tu grupo aparezca como público? Hablá con @OsiNubis99.`,
+    { parse_mode: "Markdown" },
   );
 }
 
