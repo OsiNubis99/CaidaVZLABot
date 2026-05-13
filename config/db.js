@@ -3,7 +3,7 @@ const env = require("./env");
 
 const client = new Client({
   connectionString: env.bd_url,
-  ssl: { rejectUnauthorized: false },
+  ssl: env.pgssl ? { rejectUnauthorized: false } : false,
 });
 
 client.connect().then(() => {
