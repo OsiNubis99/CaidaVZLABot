@@ -170,19 +170,24 @@ bot.onText(/\/admin/, async (msg) => {
 //**                    Game Commands                    */
 
 bot.onText(/\/reiniciar/, async (msg) => {
-  let admins = await bot.getChatAdministrators(msg.chat.id)
-  if (admins) {
-    let is_admin = false
-    admins.forEach(item => {
-      if (item.user.id == msg.from.id) is_admin = true
-    });
-    if (is_admin) {
-      let response = await game.create(Factory_Request.fromTelegram(msg), true);
-      bot.sendMessage(msg.chat.id, response.message, response.options);
-    } else
-      bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {
-        reply_to_message_id: msg.message_id,
+  if (msg.chat.type === "private") return;
+  try {
+    let admins = await bot.getChatAdministrators(msg.chat.id);
+    if (admins) {
+      let is_admin = false;
+      admins.forEach(item => {
+        if (item.user.id == msg.from.id) is_admin = true;
       });
+      if (is_admin) {
+        let response = await game.create(Factory_Request.fromTelegram(msg), true);
+        bot.sendMessage(msg.chat.id, response.message, response.options);
+      } else
+        bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {
+          reply_to_message_id: msg.message_id,
+        });
+    }
+  } catch (err) {
+    console.error("/reiniciar failed:", err.message);
   }
 });
 
