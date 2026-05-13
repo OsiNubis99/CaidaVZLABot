@@ -3,8 +3,6 @@ const bot = require("../config/server");
 const env = require("../config/env");
 const logger = require("../config/logger");
 const message = require("../templates/message");
-const Factory_User = require("../class/Factory_User");
-const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
 
 function is_admin(id) {

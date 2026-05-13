@@ -15,6 +15,16 @@ const Factory_User = require("../class/Factory_User");
 const Factory_Request = require("../class/Factory_Request");
 const { GroupController, UserController } = require("../database");
 
+// Attach next-turn metadata so the index handler can fire an opt-in DM
+// to the upcoming player.
+function attachNextTurn(group, finished, response) {
+  if (!group || finished) return response;
+  if (group.decks === 0) return response;
+  const next = group.users && group.users[group.player];
+  if (!next || !next.id_user) return response;
+  return { ...response, nextUserId: next.id_user, groupName: group.name };
+}
+
 // Persist (or drop) the in-memory game for a given chat after a mutation.
 async function persistOrRemove(chatId, finished) {
   try {
@@ -220,7 +230,8 @@ module.exports = {
         group.config.type == "parejas" ? "individual" : "parejas";
       await GroupController.update(req.group.id_group, group.config);
       await persistOrRemove(req.group.id_group, false);
-      return group.print_before_game(req.group.id_group, req.message_id);
+      // print_before_game(message_id, chat_id) — arguments were swapped here.
+      return group.print_before_game(req.message_id, req.group.id_group);
     }
     return false;
   },
@@ -315,7 +326,8 @@ module.exports = {
         finished ? undefined : keyboard.make_a_choice(group.playerName())
       );
       await persistOrRemove(chatId, finished);
-      return await attachMesaPhoto(group, finished, msg);
+      const withPhoto = await attachMesaPhoto(group, finished, msg);
+      return attachNextTurn(group, finished, withPhoto);
     }
     return false;
   },
@@ -365,7 +377,8 @@ module.exports = {
           finished ? undefined : keyboard.make_a_choice(group.playerName()),
         );
         await persistOrRemove(chatId, finished);
-        return await attachMesaPhoto(group, finished, msg);
+        const withPhoto = await attachMesaPhoto(group, finished, msg);
+        return attachNextTurn(group, finished, withPhoto);
       }
     }
     return false;

@@ -81,6 +81,44 @@ module.exports = {
   },
 
   /**
+   * Top players sorted by primary wins then custom wins then finished games.
+   * Only users that have finished at least one game are included.
+   * @param {Number} limit
+   */
+  async top(limit = 10) {
+    const r = await database.query(
+      `SELECT id_user, first_name, last_name, username, finished, win, win_custom, caida
+       FROM public.user
+       WHERE finished > 0 AND COALESCE(is_banned, false) = false
+       ORDER BY win DESC, win_custom DESC, finished DESC
+       LIMIT $1`,
+      [limit],
+    );
+    return r.rows;
+  },
+
+  /**
+   * Set notify_on_turn preference.
+   */
+  async setNotifyOnTurn(id_user, enabled) {
+    await database.query(
+      "UPDATE public.user SET notify_on_turn = $2 WHERE id_user = $1",
+      [id_user, !!enabled],
+    );
+  },
+
+  /**
+   * Read notify_on_turn for a single user.
+   */
+  async getNotifyOnTurn(id_user) {
+    const r = await database.query(
+      "SELECT notify_on_turn FROM public.user WHERE id_user = $1",
+      [id_user],
+    );
+    return r.rows[0] ? !!r.rows[0].notify_on_turn : false;
+  },
+
+  /**
    * Ban or unban a user.
    */
   async ban_unban(user, is_banned) {

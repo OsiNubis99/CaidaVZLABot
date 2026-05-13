@@ -4,10 +4,37 @@ const game = require("./services/game");
 const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
 const cards = require("./services/cards");
+const leaderboard = require("./services/leaderboard");
+const rateLimit = require("./services/rateLimit");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const Factory_Request = require("./class/Factory_Request");
 const Factory_User = require("./class/Factory_User");
+const { UserController } = require("./database");
+
+async function maybeDmNextTurn(response) {
+  if (!response || !response.nextUserId) return;
+  try {
+    const enabled = await UserController.getNotifyOnTurn(response.nextUserId);
+    if (!enabled) return;
+    await bot.sendMessage(
+      response.nextUserId,
+      `Es tu turno en *${response.groupName || "la partida"}*. ` +
+        `Abre @CaidaVZLABot en el grupo para escoger una carta.\n\n` +
+        `(Para silenciar estas notificaciones envía /notify off.)`,
+      { parse_mode: "Markdown" },
+    );
+  } catch (err) {
+    // 403 = user has not started bot in DM. Auto-mute to stop trying.
+    if (String(err.message).includes("blocked") || String(err.message).includes("403")) {
+      try {
+        await UserController.setNotifyOnTurn(response.nextUserId, false);
+      } catch (_) {}
+    } else {
+      logger.warn({ err: err.message, user_id: response.nextUserId }, "dm turn notify failed");
+    }
+  }
+}
 
 process.on("unhandledRejection", (reason) => {
   logger.error({ err: reason }, "unhandledRejection");
@@ -15,6 +42,39 @@ process.on("unhandledRejection", (reason) => {
 process.on("uncaughtException", (err) => {
   logger.error({ err }, "uncaughtException");
 });
+
+// Per-command rate limits. The defaults are intentionally loose so a
+// normal player never hits them; the goal is just to stop pathological
+// flooders. Game-flow commands have tighter windows than admin ones.
+const COMMAND_LIMITS = {
+  "/unirse": { windowMs: 5_000, max: 3 },
+  "/iniciar": { windowMs: 5_000, max: 3 },
+  "/inicia_ya": { windowMs: 5_000, max: 3 },
+  "/reiniciar": { windowMs: 10_000, max: 3 },
+  "/estado": { windowMs: 5_000, max: 5 },
+  "/configurar": { windowMs: 5_000, max: 5 },
+  "/configura": { windowMs: 5_000, max: 5 },
+  "/top": { windowMs: 10_000, max: 3 },
+  "/stats": { windowMs: 5_000, max: 5 },
+  "/list_groups": { windowMs: 10_000, max: 3 },
+  "/admin": { windowMs: 5_000, max: 10 },
+  "/notify": { windowMs: 5_000, max: 5 },
+};
+
+async function rateLimited(msg, command) {
+  const limits = COMMAND_LIMITS[command];
+  if (!limits) return false;
+  const r = rateLimit.check(msg.from.id, command, limits);
+  if (r.allowed) return false;
+  try {
+    await bot.sendMessage(
+      msg.chat.id,
+      `Demasiados comandos. Probá de nuevo en ${r.retryInSec}s.`,
+      { reply_to_message_id: msg.message_id },
+    );
+  } catch (_) {}
+  return true;
+}
 
 // helper: wrap async handlers so any throw is logged, not lost
 function safe(name, fn) {
@@ -65,6 +125,7 @@ bot.on(
     } else {
       await bot.sendMessage(response.chat_id, response.message, response.options);
     }
+    await maybeDmNextTurn(response);
   }),
 );
 
@@ -231,6 +292,7 @@ bot.onText(
 bot.onText(
   /\/list_groups/,
   safe("/list_groups", async (msg) => {
+    if (await rateLimited(msg, "/list_groups")) return;
     await bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
       reply_to_message_id: msg.message_id,
     });
@@ -249,8 +311,45 @@ bot.onText(
 bot.onText(
   /\/stats/,
   safe("/stats", async (msg) => {
+    if (await rateLimited(msg, "/stats")) return;
     const response = await admin.get_user_stats(Factory_Request.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
+
+bot.onText(
+  /\/top/,
+  safe("/top", async (msg) => {
+    if (await rateLimited(msg, "/top")) return;
+    const text = await leaderboard.topMessage(10);
+    await bot.sendMessage(msg.chat.id, text, {
+      parse_mode: "Markdown",
+      reply_to_message_id: msg.message_id,
+    });
+  }),
+);
+
+bot.onText(
+  /\/notify(?:\s+(on|off))?/,
+  safe("/notify", async (msg, match) => {
+    const arg = (match[1] || "").toLowerCase();
+    if (!arg) {
+      const current = await UserController.getNotifyOnTurn(String(msg.from.id));
+      await bot.sendMessage(
+        msg.chat.id,
+        `Notificación DM al ser tu turno: *${current ? "on" : "off"}*.\n` +
+          `Usa /notify on o /notify off para cambiarlo. ` +
+          `(El bot tiene que poder escribirte por DM: escríbele /start en privado primero.)`,
+        { parse_mode: "Markdown", reply_to_message_id: msg.message_id },
+      );
+      return;
+    }
+    await UserController.setNotifyOnTurn(String(msg.from.id), arg === "on");
+    await bot.sendMessage(
+      msg.chat.id,
+      `Notificación DM por turno: ${arg === "on" ? "activada ✅" : "desactivada"}`,
+      { reply_to_message_id: msg.message_id },
+    );
   }),
 );
 
@@ -276,6 +375,7 @@ bot.onText(
 bot.onText(
   /\/admin/,
   safe("/admin", async (msg) => {
+    if (await rateLimited(msg, "/admin")) return;
     if (!admin.is_admin(msg.from.id)) {
       await bot.sendMessage(msg.chat.id, resp.no_admin_person);
       return;
@@ -319,6 +419,7 @@ bot.onText(
   /\/reiniciar/,
   safe("/reiniciar", async (msg) => {
     if (msg.chat.type === "private") return;
+    if (await rateLimited(msg, "/reiniciar")) return;
     const admins = await bot.getChatAdministrators(msg.chat.id);
     const isChatAdmin = admins && admins.some((a) => a.user.id == msg.from.id);
     if (!isChatAdmin) {
@@ -335,6 +436,7 @@ bot.onText(
 bot.onText(
   /\/unirse/,
   safe("/unirse", async (msg) => {
+    if (await rateLimited(msg, "/unirse")) return;
     const response = await game.join(Factory_Request.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
@@ -343,6 +445,7 @@ bot.onText(
 bot.onText(
   /\/iniciar/,
   safe("/iniciar", async (msg) => {
+    if (await rateLimited(msg, "/iniciar")) return;
     const response = game.start(Factory_Request.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
     logger.info(
@@ -355,6 +458,7 @@ bot.onText(
 bot.onText(
   /\/inicia_ya/,
   safe("/inicia_ya", async (msg) => {
+    if (await rateLimited(msg, "/inicia_ya")) return;
     const response = await game.shuffle(Factory_Request.fromTelegram(msg), false);
     if (response) {
       await bot.sendMessage(msg.chat.id, response.message, response.options);
@@ -369,6 +473,7 @@ bot.onText(
 bot.onText(
   /\/estado/,
   safe("/estado", async (msg) => {
+    if (await rateLimited(msg, "/estado")) return;
     const response = await game.status(Factory_Request.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
@@ -377,6 +482,7 @@ bot.onText(
 bot.onText(
   /\/configurar/,
   safe("/configurar", async (msg) => {
+    if (await rateLimited(msg, "/configurar")) return;
     const response = await game.config(Factory_Request.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
@@ -385,6 +491,7 @@ bot.onText(
 bot.onText(
   /\/configura(.*) (.*) (.*)/,
   safe("/configura", async (msg, match) => {
+    if (await rateLimited(msg, "/configura")) return;
     const response = await game.set_settings(Factory_Request.fromTelegram(msg), match[2], match[3]);
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
@@ -402,5 +509,7 @@ bot.setMyCommands([
   { command: "help", description: "Muestra una ayuda de como usar el bot." },
   { command: "list_groups", description: "Muestra la lista de grupos publicos en el bot" },
   { command: "stats", description: "Muestra las estadisticas del usuario" },
+  { command: "top", description: "Top 10 jugadores globales" },
+  { command: "notify", description: "Avisar por DM cuando sea tu turno (on/off)" },
 ]);
 

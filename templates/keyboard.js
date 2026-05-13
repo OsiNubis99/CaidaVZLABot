@@ -4,6 +4,11 @@ const Config = require("../class/Config");
 
 module.exports = {
   /**
+   * Single "Volver" button used after the "Como configurar" help screen.
+   */
+  back: new kb.InlineKeyboard().addRow({ text: "Volver", callback_data: "back" }).extract(),
+
+  /**
    * @returns {TelegramBot.InlineKeyboardMarkup} Keyboard with two buttons. 'How to set up' and 'Close'
    */
   group_settings() {

@@ -28,6 +28,9 @@ const STATEMENTS = [
      state jsonb NOT NULL,
      updated_at timestamptz DEFAULT CURRENT_TIMESTAMP
    )`,
+
+  // opt-in DM-when-it-is-your-turn notification (round 2)
+  `ALTER TABLE public.user ADD COLUMN IF NOT EXISTS notify_on_turn boolean DEFAULT false`,
 ];
 
 async function run() {
