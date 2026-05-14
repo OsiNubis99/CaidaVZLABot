@@ -54,6 +54,7 @@ module.exports = {
   start_by_one_message: "Começar pelo 1",
   start_by_one_title: "Começar pelo 1",
   set_group_modes: "Escolha um novo modo de jogo",
+  mata_mesa_msg: "🔄 Mata mesa: -{n} pts ao dealer\n",
   sing_killed: "A caída derrubou o canto do jogador anterior!\n",
   sync_cards: "Pegou na mesa ",
   user_added: "Usuário adicionado.",

@@ -55,3 +55,52 @@ describe("gameSerialize round-trip", () => {
     expect(g2.users[g2.users.length - 1].cards).toEqual(["Start_By"]);
   });
 });
+
+describe("_dealerSyncCandidate persistence", () => {
+  it("serializes when set (between deck-start and first play)", () => {
+    const g = new Game("test", new Config(game_modes[1]));
+    g.users.push(makeUser(1, "A"));
+    g.users.push(makeUser(2, "B"));
+    const syncCard = new Card(20); // position 5
+    g.last_card_played = syncCard;
+    g._dealerSyncCandidate = {
+      dealerIdx: 1,
+      syncCard,
+      points: 5,
+    };
+    const data = serialize(g);
+    expect(data.dealer_sync_candidate).toEqual({
+      dealerIdx: 1,
+      syncCardNumber: 20,
+      points: 5,
+    });
+  });
+
+  it("round-trips through serialize/deserialize, reconstructing syncCard as a Card", () => {
+    const g = new Game("test", new Config(game_modes[1]));
+    g.users.push(makeUser(1, "A"));
+    g.users.push(makeUser(2, "B"));
+    const syncCard = new Card(28); // position 7
+    g.last_card_played = syncCard;
+    g._dealerSyncCandidate = {
+      dealerIdx: 1,
+      syncCard,
+      points: 3,
+    };
+    const g2 = deserialize(serialize(g));
+    expect(g2._dealerSyncCandidate).not.toBeNull();
+    expect(g2._dealerSyncCandidate.dealerIdx).toBe(1);
+    expect(g2._dealerSyncCandidate.points).toBe(3);
+    expect(g2._dealerSyncCandidate.syncCard).toBeInstanceOf(Card);
+    expect(g2._dealerSyncCandidate.syncCard.number).toBe(28);
+  });
+
+  it("serializes/deserializes as null when not set", () => {
+    const g = new Game("test", new Config(game_modes[1]));
+    expect(g._dealerSyncCandidate).toBeNull();
+    const data = serialize(g);
+    expect(data.dealer_sync_candidate).toBeNull();
+    const g2 = deserialize(data);
+    expect(g2._dealerSyncCandidate).toBeNull();
+  });
+});

@@ -39,6 +39,7 @@ class Game {
     this.table = [null, null, null, null, null, null, null, null, null, null];
     this.table_order = "";
     this.took = [0, 0, 0, 0];
+    this._dealerSyncCandidate = null;
   }
 
   /**
@@ -293,6 +294,16 @@ class Game {
         this.last_card_played = null;
       }
       let points = this.new_cards(3, start_by, start_by > 2);
+      if (start_by !== 0 && points > 0) {
+        this._dealerSyncCandidate = {
+          dealerIdx: this.dealerIdx(),
+          syncCard: this.last_card_played, // 4th dealt card with save=true
+          points: points,
+        };
+      } else if (start_by === 0) {
+        // mid-deck deal — mata_mesa does not apply (no sync points event)
+        this._dealerSyncCandidate = null;
+      }
       added += this.table_order;
       if (points > 0) {
         if (this.increase_points(this.users.length - 1, points))
@@ -377,6 +388,18 @@ class Game {
               if (this.increase_points(this.player, card.points * this.config.caida))
                 return this.kill(this.player);
               response = resp.user_get_fall;
+              if (
+                this._dealerSyncCandidate &&
+                this._dealerSyncCandidate.syncCard === this.last_card_played
+              ) {
+                if (this.config.mata_mesa === "on") {
+                  const slot = this.scoringSlot(this._dealerSyncCandidate.dealerIdx);
+                  const lost = Math.min(this.points[slot] || 0, this._dealerSyncCandidate.points);
+                  this.points[slot] = (this.points[slot] || 0) - lost;
+                  response += resp.mata_mesa_msg.replace("{n}", lost);
+                }
+                this._dealerSyncCandidate = null; // consumed even if flag off
+              }
               if (this.config.mata_canto == "on") {
                 if (this.users[this.last_player()].sing.active)
                   response += resp.sing_killed;
@@ -398,6 +421,8 @@ class Game {
           }
         }
         this.last_card_played = card;
+        // Only the first play of a deck can trigger mata_mesa.
+        this._dealerSyncCandidate = null;
         for (let i = 0; i < this.points.length; i++) {
           if (this.points[i] >= this.config.points) return this.kill(i);
         }

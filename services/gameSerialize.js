@@ -35,6 +35,13 @@ function serialize(game) {
     config: { ...game.config },
     deck: game.deck,
     last_card_played: cardToNumber(game.last_card_played),
+    dealer_sync_candidate: game._dealerSyncCandidate
+      ? {
+          dealerIdx: game._dealerSyncCandidate.dealerIdx,
+          syncCardNumber: cardToNumber(game._dealerSyncCandidate.syncCard),
+          points: game._dealerSyncCandidate.points,
+        }
+      : null,
     table: game.table.map(cardToNumber),
     users: game.users.map((u) => ({
       id_user: u.id_user,
@@ -68,6 +75,13 @@ function deserialize(data) {
   game.took = data.took || [0, 0, 0, 0];
   game.deck = data.deck || [];
   game.last_card_played = numberToCard(data.last_card_played);
+  game._dealerSyncCandidate = data.dealer_sync_candidate
+    ? {
+        dealerIdx: data.dealer_sync_candidate.dealerIdx,
+        syncCard: numberToCard(data.dealer_sync_candidate.syncCardNumber),
+        points: data.dealer_sync_candidate.points,
+      }
+    : null;
   game.table = (data.table || Array(10).fill(null)).map(numberToCard);
   game.users = (data.users || []).map((u) => {
     const user = new User({

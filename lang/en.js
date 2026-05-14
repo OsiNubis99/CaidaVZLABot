@@ -54,6 +54,7 @@ module.exports = {
   start_by_one_message: "Start by 1",
   start_by_one_title: "Start by 1",
   set_group_modes: "Choose a new Game Mode",
+  mata_mesa_msg: "🔄 Mata mesa: dealer loses {n} pts\n",
   sing_killed: "The caída killed the previous player's sing!\n",
   sync_cards: "Stuck on table ",
   user_added: "User added.",

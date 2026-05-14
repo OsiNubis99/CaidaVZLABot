@@ -34,7 +34,7 @@ module.exports = {
   no_active_game: "No hay una partida activa en este grupo. Usa /unirse para crear una.",
   group_removed: "Grupo removido de la lista de permitidos",
   how_config:
-    "\nEn esta versión de CaidaVZLABot muchas cosas son configurables!\nUsa /configurar para ver las configuraciones actuales del grupo! \n\nPuedes definir hasta cuantos puntos llegará la partida con:\n/configura points [1,100] \nPuedes definir cuantos puntos dará hacer mesa limpia con:\n/configura mesa [0,100] \nPuedes definir si quieres caída mata canto, que hace que una caída inhabilite el canto de la persona que se cayó y no se sume, con:\n/configura mata_canto on/off\nPuedes definir multiplicadores para las caídas y las rondas, y hacer que una caída valga x2 x3 o hasta x10 (x0 es inhabilitado, no cuentan)\n/configura caida [0,10]\n/configura ronda [0,10]\nPuedes definir el valor de los cantos (0 es inhabilitado, no cuentan y no será listado para ser cantado) uno por uno con:\n/configura chiguire [0,100]\n/configura patrulla [0,100]\n/configura vigia [0,100]\n/configura registro [0,100]\n/configura maguaro [0,100]\n/configura registrico [0,100]\n/configura casa_chica [0,100]\n/configura casa_grande [0,100]\n/configura trivilin [0,100]\n\n(caida_continua y mata_mesa están planeadas pero aún no implementadas)",
+    "\nEn esta versión de CaidaVZLABot muchas cosas son configurables!\nUsa /configurar para ver las configuraciones actuales del grupo! \n\nPuedes definir hasta cuantos puntos llegará la partida con:\n/configura points [1,100] \nPuedes definir cuantos puntos dará hacer mesa limpia con:\n/configura mesa [0,100] \nPuedes definir si quieres caída mata canto, que hace que una caída inhabilite el canto de la persona que se cayó y no se sume, con:\n/configura mata_canto on/off\nPuedes definir multiplicadores para las caídas y las rondas, y hacer que una caída valga x2 x3 o hasta x10 (x0 es inhabilitado, no cuentan)\n/configura caida [0,10]\n/configura ronda [0,10]\nPuedes definir el valor de los cantos (0 es inhabilitado, no cuentan y no será listado para ser cantado) uno por uno con:\n/configura chiguire [0,100]\n/configura patrulla [0,100]\n/configura vigia [0,100]\n/configura registro [0,100]\n/configura maguaro [0,100]\n/configura registrico [0,100]\n/configura casa_chica [0,100]\n/configura casa_grande [0,100]\n/configura trivilin [0,100]\n\nReglas extra (todas configurables desde /configurar):\n/configura caida_continua on/off — el primer jugador de una mano puede dar caída a la última carta del dealer.\n/configura mata_mesa on/off — si el primer jugador da caída a la última carta del dealer en la primera mano de un deck, no cuentan los puntos que el dealer hizo al pegar en mesa.",
   invalid_value: "Valor invalido, intenta con otro." + ERROR,
   is_not_a_group:
     "Este comando solo esta disponible para su uso en grupos." + ERROR,
@@ -60,6 +60,7 @@ module.exports = {
   start_by_one_message: "Iniciar por 1",
   start_by_one_title: "Iniciar por 1",
   set_group_modes: "Escoge el nuevo modo de Juego",
+  mata_mesa_msg: "🔄 Mata mesa: -{n} pts al dealer\n",
   sing_killed: "La caida mato el canto del jugador anterior!\n",
   sync_cards: "Pegado en mesa ",
   user_added: "Usuario agregado.",
