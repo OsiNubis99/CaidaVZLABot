@@ -371,13 +371,49 @@ class Game {
     let response = L.ig_won_prefix;
     response += this.users[player].print(false, L);
     response += this._renderFinalScore(player);
-    // Build the standings block BEFORE resetting decks so the team-colour
-    // logic (which keys off decks % 2) keeps matching the in-progress
-    // rendering the user saw.
-    const standings = this.print(false, false);
+    response += "\n" + this._renderFinalStandings();
     this.decks = 0;
-    response += "\n" + standings;
     return { finished: true, response };
+  }
+
+  /**
+   * Standings shown after the "🏆 Ganó X 24-22" line. Names + final
+   * points only — no mesa header, no took, no card counts, no "sin
+   * canto" placeholders. Team colours follow the current decks % 2 so
+   * they match the in-game render the user just saw.
+   */
+  _renderFinalStandings() {
+    const L = this._lang();
+    const parts = [];
+    const renderName = (u) => u.first_name + (u.username ? " (@" + u.username + ")" : "");
+    if (this.config.type === "parejas") {
+      for (let team = 0; team < 2; team++) {
+        const isRed = team === 0 ? this.decks % 2 === 0 : this.decks % 2 === 1;
+        const emoji = isRed ? L.ig_team_red_emoji : L.ig_team_blue_emoji;
+        const name = isRed ? L.ig_team_red : L.ig_team_blue;
+        parts.push(
+          "\n" + emoji + L.ig_team_label + name + L.ig_dot_sep + (this.points[team] || 0) + L.ig_pts_suffix,
+        );
+        for (const idx of [team, team + 2]) {
+          if (!this.users[idx]) continue;
+          parts.push("\n" + L.ig_player_bullet + renderName(this.users[idx]));
+        }
+        parts.push("\n");
+      }
+      return parts.join("").trim();
+    }
+    // Individual — one line per player, sorted by points desc.
+    const ranked = this.users
+      .map((u, i) => ({ u, i }))
+      .filter((x) => x.u)
+      .sort((a, b) => (this.points[b.i] || 0) - (this.points[a.i] || 0));
+    for (const { u, i } of ranked) {
+      const color = INDIVIDUAL_COLORS[i] || "•";
+      parts.push(
+        "\n" + color + " " + renderName(u) + L.ig_dot_sep + (this.points[i] || 0) + L.ig_pts_suffix,
+      );
+    }
+    return parts.join("").trim();
   }
 
   /**
