@@ -59,12 +59,26 @@ describe("Game.print i18n + clean layout", () => {
     expect(out).not.toContain("Vacío");
   });
 
-  it("individual lists numbered players with stats", () => {
+  it("individual lists players with color emoji and stats", () => {
     const g = mk("es", 1); // Clásico = individual
     const out = g.print(false);
-    expect(out).toContain("Jugadores:");
-    expect(out).toMatch(/1\. A \(@a\) · 0 cartas · sin canto · 12 pts · 4 tomadas/);
-    expect(out).toMatch(/2\. B \(@b\) · 0 cartas · sin canto · 8 pts · 2 tomadas/);
+    expect(out).toMatch(/🔴 A \(@a\) · 0 cartas · sin canto · 12 pts · 4 tomadas/);
+    expect(out).toMatch(/🔵 B \(@b\) · 0 cartas · sin canto · 8 pts · 2 tomadas/);
+  });
+
+  it("kill includes final score for parejas", () => {
+    const g = mk("es", 2); // parejas
+    g.points[0] = 24;
+    g.points[1] = 19;
+    const r = g.kill(0);
+    expect(r.response).toMatch(/^🏆 Ganó A.*24-19/);
+  });
+
+  it("kill includes breakdown for individual", () => {
+    const g = mk("es", 1);
+    g.points = [24, 18];
+    const r = g.kill(0);
+    expect(r.response).toContain("(A 24, B 18)");
   });
 
   it("localises the 'won' message in kill", () => {
@@ -76,5 +90,15 @@ describe("Game.print i18n + clean layout", () => {
     const rEN = gEN.kill(0);
     expect(rES.response).toMatch(/^🏆 Ganó A/);
     expect(rEN.response).toMatch(/^🏆 Won A/);
+  });
+
+  it("shuffle adds reduced status (between decks) for parejas", () => {
+    const g = mk("es", 2);
+    g.points = [12, 9];
+    // first shuffle (decks 0 -> 1) has no status; second (1 -> 2) does
+    g.shuffle();
+    const out2 = g.shuffle();
+    expect(out2).toMatch(/12 pts.*\|.*9 pts/);
+    expect(out2).toContain("Barajando");
   });
 });

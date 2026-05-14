@@ -8,6 +8,11 @@ const UserDatabase = require("../database/user");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 
+// Per-position color markers for 4-player individual games. Tied to
+// position index — colors swap as users rotate each deck, same as the
+// parejas Rojo/Azul alternation; that keeps the UI stable per render.
+const INDIVIDUAL_COLORS = ["🔴", "🔵", "🟢", "🟡"];
+
 /**
  * In-memory Game state. Persisted via services/gameSerialize.js — the
  * fields enumerated there (config, deck, decks, last_card_played,
@@ -164,6 +169,7 @@ class Game {
    * Shuffle and save all cards generators on the Deck and increment decks played.
    */
   shuffle() {
+    const wasInitialShuffle = this.decks === 0;
     this.decks++;
     this.deck = [
       11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
@@ -175,7 +181,12 @@ class Game {
       [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
     }
     this.markStartByPlayer();
-    return resp.start_by;
+    const L = this._lang();
+    // Only the *between-deck* shuffle gets a reduced status header; the
+    // first shuffle is from a fresh /inicia_ya where points are all 0
+    // and the line would be visual noise.
+    const status = wasInitialShuffle ? "" : this._renderReducedStatus();
+    return (status ? status + "\n\n" : "") + L.start_by;
   }
 
   /**
@@ -359,8 +370,13 @@ class Game {
     const L = this._lang();
     let response = L.ig_won_prefix;
     response += this.users[player].print(false, L);
+    response += this._renderFinalScore(player);
+    // Build the standings block BEFORE resetting decks so the team-colour
+    // logic (which keys off decks % 2) keeps matching the in-progress
+    // rendering the user saw.
+    const standings = this.print(false, false);
     this.decks = 0;
-    response += "\n" + this.print(false, false);
+    response += "\n" + standings;
     return { finished: true, response };
   }
 
@@ -431,11 +447,12 @@ class Game {
 
   _renderTeamsIndividual(is_running) {
     const L = this._lang();
-    const lines = ["\n\n" + L.ig_players_header];
+    const lines = [];
     for (let i = 0; i < this.users.length; i++) {
       const u = this.users[i];
       if (!u) continue;
-      let line = "\n" + (i + 1) + ". " + u.print(is_running, L);
+      const color = INDIVIDUAL_COLORS[i] || "•";
+      let line = "\n" + color + " " + u.print(is_running, L);
       if (is_running) {
         line +=
           L.ig_dot_sep + (this.points[i] || 0) + L.ig_pts_suffix +
@@ -443,7 +460,54 @@ class Game {
       }
       lines.push(line);
     }
-    return lines.join("");
+    if (lines.length === 0) return "";
+    return "\n" + lines.join("");
+  }
+
+  /**
+   * Compact "🔵 20 pts | 🔴 22 pts" line for end-of-deck shuffle.
+   * Hides names and took count to keep the message short.
+   */
+  _renderReducedStatus() {
+    const L = this._lang();
+    if (this.config.type === "parejas") {
+      const team0Red = this.decks % 2 === 0;
+      const colors = [
+        team0Red ? L.ig_team_red_emoji : L.ig_team_blue_emoji,
+        team0Red ? L.ig_team_blue_emoji : L.ig_team_red_emoji,
+      ];
+      return (
+        colors[0].trim() + " " + (this.points[0] || 0) + L.ig_pts_suffix +
+        "  |  " +
+        colors[1].trim() + " " + (this.points[1] || 0) + L.ig_pts_suffix
+      );
+    }
+    const parts = [];
+    for (let i = 0; i < this.users.length; i++) {
+      if (!this.users[i]) continue;
+      const color = INDIVIDUAL_COLORS[i] || "•";
+      parts.push(color + " " + (this.points[i] || 0));
+    }
+    return parts.join("  |  ");
+  }
+
+  /**
+   * Final-score breakdown shown right after "🏆 Ganó X".
+   * Parejas: "24-22". Individual: "(Andrés 24, Mafeer 22, P3 18, P4 15)".
+   */
+  _renderFinalScore(winnerPlayerIdx) {
+    if (this.config.type === "parejas") {
+      const w = winnerPlayerIdx % 2;
+      const l = w === 0 ? 1 : 0;
+      return " " + (this.points[w] || 0) + "-" + (this.points[l] || 0);
+    }
+    const sorted = this.users
+      .map((u, i) => ({ name: u && u.first_name, pts: this.points[i] || 0 }))
+      .filter((x) => x.name)
+      .sort((a, b) => b.pts - a.pts);
+    if (sorted.length === 0) return "";
+    const breakdown = sorted.map((s) => s.name + " " + s.pts).join(", ");
+    return " (" + breakdown + ")";
   }
 
   /**
