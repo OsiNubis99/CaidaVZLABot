@@ -6,7 +6,7 @@
 const ICONS = {
   Ronda: "🃏",
   Chiguire: "🐗",
-  Patrulla: "🪖",
+  Patrulla: "🚓",
   "Vigía": "👁",
   Vigia: "👁",
   Registro: "📋",
