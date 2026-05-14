@@ -487,17 +487,18 @@ bot.onText(
 );
 
 bot.onText(
-  /\/bootstrap_cards/,
-  safe("/bootstrap_cards", async (msg) => {
+  /\/bootstrap_cards(?:\s+(force))?/,
+  safe("/bootstrap_cards", async (msg, match) => {
     if (!admin.is_admin(msg.from.id)) {
       await bot.sendMessage(msg.chat.id, resp.no_admin_person);
       return;
     }
+    const force = !!(match && match[1]);
     await bot.sendMessage(
       msg.chat.id,
-      "Subiendo 40 cartas a este chat para cachear los file_ids. Esto toma ~1 minuto.",
+      `Subiendo 40 cartas como stickers${force ? " (force=reset cache)" : ""}. Esto toma ~1 min.`,
     );
-    const result = await cards.bootstrap(bot, msg.chat.id);
+    const result = await cards.bootstrap(bot, msg.chat.id, { force });
     await bot.sendMessage(
       msg.chat.id,
       `Bootstrap completo. Subidas: ${result.uploaded}, ya cacheadas: ${result.skipped}, fallidas: ${result.failed}.`,

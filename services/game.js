@@ -611,15 +611,14 @@ module.exports = {
                 fileId = await cardsService.getFileId(element.value, element.type);
               }
               if (fileId) {
-                // No caption: the card photo IS the play message. Adding
-                // "Juego el X de Y" would duplicate what the image shows.
-                // The bot's next message still says "Ultima carta: X de Y"
-                // so context is not lost.
+                // Use cached_sticker so the card stays compact in chat
+                // and renders as a grid in the inline picker. The bot's
+                // follow-up message still says "Ultima carta: X de Y"
+                // so context isn't lost.
                 response.push({
                   id: String(index),
-                  type: "photo",
-                  photo_file_id: fileId,
-                  title: `${element.value} de ${element.type}`,
+                  type: "sticker",
+                  sticker_file_id: fileId,
                 });
               } else {
                 response.push({
