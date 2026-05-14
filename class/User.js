@@ -2,12 +2,12 @@ const Card = require("./Card");
 const Sings = require("./Sings");
 const resp = require("../lang/es");
 const Config = require("./Config");
-const Factory_User = require("./Factory_User");
+const UserDTO = require("./UserDTO");
 
 class User {
   /**
    * Create a User Object
-   * @param {Factory_User} factory_user - User to be created
+   * @param {UserDTO} factory_user - User to be created
    */
   constructor(factory_user) {
     this.id_user = factory_user.id_user;

@@ -10,8 +10,8 @@ const events = require("./services/events");
 const configUI = require("./services/configUI");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
-const Factory_Request = require("./class/Factory_Request");
-const Factory_User = require("./class/Factory_User");
+const RequestDTO = require("./class/RequestDTO");
+const UserDTO = require("./class/UserDTO");
 const { UserController, GroupController } = require("./database");
 
 // TURBO mode: per-chat timer that auto-plays the current player's
@@ -140,7 +140,7 @@ function safe(name, fn) {
 bot.on(
   "inline_query",
   safe("inline_query", async (query) => {
-    const results = await game.get_user_cards(Factory_User.fromTelegram(query.from));
+    const results = await game.get_user_cards(UserDTO.fromTelegram(query.from));
     await bot.answerInlineQuery(query.id, results, { is_personal: true, cache_time: 1 });
   }),
 );
@@ -149,7 +149,7 @@ bot.on(
   "chosen_inline_result",
   safe("chosen_inline_result", async (result) => {
     let response = false;
-    const user = Factory_User.fromTelegram(result.from);
+    const user = UserDTO.fromTelegram(result.from);
     const rid = Number(result.result_id);
     if (rid >= 0 && rid < 3) {
       response = await game.play_card(user, rid);
@@ -257,7 +257,7 @@ bot.on(
     if (query.data.match(/set_(.*)/)) {
       const game_mode = parseInt(query.data.match(/set_(.*)/)[1]);
       const response = await game.set_inline_game_mode(
-        Factory_Request.fromTelegram(query.message),
+        RequestDTO.fromTelegram(query.message),
         game_mode,
       );
       if (response) await bot.editMessageText(response.message, response.options);
@@ -272,17 +272,17 @@ bot.on(
         });
         break;
       case "back": {
-        const response = await game.config(Factory_Request.fromTelegram(query.message), true);
+        const response = await game.config(RequestDTO.fromTelegram(query.message), true);
         await bot.editMessageText(response.message, response.options);
         break;
       }
       case "type": {
-        const response = await game.set_inline_type(Factory_Request.fromTelegram(query.message));
+        const response = await game.set_inline_type(RequestDTO.fromTelegram(query.message));
         await bot.editMessageText(response.message, response.options);
         break;
       }
       case "start": {
-        const response = await game.shuffle(Factory_Request.fromTelegram(query.message));
+        const response = await game.shuffle(RequestDTO.fromTelegram(query.message));
         if (response) {
           await bot.sendMessage(query.message.chat.id, response.message, response.options);
           scheduleSkip(response);
@@ -308,7 +308,7 @@ bot.onText(
       });
       return;
     }
-    const groups = await admin.all_groups(Factory_Request.fromTelegram(msg));
+    const groups = await admin.all_groups(RequestDTO.fromTelegram(msg));
     for (const group of groups) {
       try {
         const sent = await bot.sendMessage(group.id_group, match[1]);
@@ -332,7 +332,7 @@ bot.onText(
   safe("/lock", async (msg) => {
     await bot.sendMessage(
       msg.chat.id,
-      await admin.ban_unban_user(Factory_Request.fromTelegram(msg), true),
+      await admin.ban_unban_user(RequestDTO.fromTelegram(msg), true),
       { reply_to_message_id: msg.message_id },
     );
   }),
@@ -343,7 +343,7 @@ bot.onText(
   safe("/unlock", async (msg) => {
     await bot.sendMessage(
       msg.chat.id,
-      await admin.ban_unban_user(Factory_Request.fromTelegram(msg), false),
+      await admin.ban_unban_user(RequestDTO.fromTelegram(msg), false),
       { reply_to_message_id: msg.message_id },
     );
   }),
@@ -354,7 +354,7 @@ bot.onText(
   safe("/addg", async (msg, match) => {
     await bot.sendMessage(
       msg.chat.id,
-      admin.add_group(Factory_Request.fromTelegram(msg), match[1], match[2]),
+      admin.add_group(RequestDTO.fromTelegram(msg), match[1], match[2]),
       { reply_to_message_id: msg.message_id },
     );
   }),
@@ -402,7 +402,7 @@ bot.onText(
   safe("/paid", async (msg, match) => {
     await bot.sendMessage(
       msg.chat.id,
-      await admin.paid(Factory_Request.fromTelegram(msg), match[1], match[2]),
+      await admin.paid(RequestDTO.fromTelegram(msg), match[1], match[2]),
       { reply_to_message_id: msg.message_id },
     );
   }),
@@ -431,7 +431,7 @@ bot.onText(
   /\/stats/,
   safe("/stats", async (msg) => {
     if (await rateLimited(msg, "/stats")) return;
-    const response = await admin.get_user_stats(Factory_Request.fromTelegram(msg));
+    const response = await admin.get_user_stats(RequestDTO.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
 );
@@ -575,7 +575,7 @@ bot.onText(
       });
       return;
     }
-    const response = await game.create(Factory_Request.fromTelegram(msg), true);
+    const response = await game.create(RequestDTO.fromTelegram(msg), true);
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
 );
@@ -584,7 +584,7 @@ bot.onText(
   /\/unirse/,
   safe("/unirse", async (msg) => {
     if (await rateLimited(msg, "/unirse")) return;
-    const response = await game.join(Factory_Request.fromTelegram(msg));
+    const response = await game.join(RequestDTO.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
 );
@@ -593,7 +593,7 @@ bot.onText(
   /\/iniciar/,
   safe("/iniciar", async (msg) => {
     if (await rateLimited(msg, "/iniciar")) return;
-    const response = game.start(Factory_Request.fromTelegram(msg));
+    const response = game.start(RequestDTO.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
     logger.info(
       { chat_id: msg.chat.id, chat_title: msg.chat.title },
@@ -606,7 +606,7 @@ bot.onText(
   /\/inicia_ya/,
   safe("/inicia_ya", async (msg) => {
     if (await rateLimited(msg, "/inicia_ya")) return;
-    const response = await game.shuffle(Factory_Request.fromTelegram(msg), false);
+    const response = await game.shuffle(RequestDTO.fromTelegram(msg), false);
     if (response) {
       await bot.sendMessage(msg.chat.id, response.message, response.options);
       scheduleSkip(response);
@@ -622,7 +622,7 @@ bot.onText(
   /\/estado/,
   safe("/estado", async (msg) => {
     if (await rateLimited(msg, "/estado")) return;
-    const response = await game.status(Factory_Request.fromTelegram(msg));
+    const response = await game.status(RequestDTO.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
 );
@@ -643,7 +643,7 @@ bot.onText(
   /\/configura(.*) (.*) (.*)/,
   safe("/configura", async (msg, match) => {
     if (await rateLimited(msg, "/configura")) return;
-    const response = await game.set_settings(Factory_Request.fromTelegram(msg), match[2], match[3]);
+    const response = await game.set_settings(RequestDTO.fromTelegram(msg), match[2], match[3]);
     await bot.sendMessage(msg.chat.id, response.message, response.options);
   }),
 );

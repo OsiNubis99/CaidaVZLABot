@@ -1,13 +1,13 @@
 const database = require("../config/db");
 const Config = require("../class/Config");
-const Factory_Group = require("../class/Factory_Group");
+const GroupDTO = require("../class/GroupDTO");
 
 module.exports = {
   /**
    * Add a new Group to the database. If it's already there, update the group name.
    * @param {String} id_group - Group id to be pushed.
    * @param {String} name - Group name to be pushed.
-   * @returns {Promise<Factory_Group>} The full group element from database.
+   * @returns {Promise<GroupDTO>} The full group element from database.
    */
   async add(id_group, name) {
     const result = await database.query(
@@ -21,7 +21,7 @@ module.exports = {
    * Extend a group's paid_up_to by N months.
    * @param {String} id_group
    * @param {Number} times - Months to add. Must be a positive integer.
-   * @returns {Promise<Factory_Group>}
+   * @returns {Promise<GroupDTO>}
    */
   async paid(id_group, times) {
     const result = await database.query(
@@ -78,7 +78,7 @@ module.exports = {
    * Set all configs from new_config to one group.
    * @param {String} group_id - The Id of the group to be updated.
    * @param {Config} new_config - New config to be saved.
-   * @returns {Promise<Factory_Group>} The full group element from database.
+   * @returns {Promise<GroupDTO>} The full group element from database.
    */
   async update(group_id, new_config) {
     const result = await database.query(
@@ -119,7 +119,7 @@ module.exports = {
   },
 
   /**
-   * @returns {Promise<Array<Factory_Group>>} All groups in the database.
+   * @returns {Promise<Array<GroupDTO>>} All groups in the database.
    */
   async list() {
     const result = await database.query("SELECT * FROM public.group ORDER BY name;");
@@ -135,7 +135,7 @@ module.exports = {
 
   /**
    * @param {String} id_group
-   * @returns {Promise<Factory_Group>}
+   * @returns {Promise<GroupDTO>}
    */
   async remove(id_group) {
     const result = await database.query("DELETE FROM public.group WHERE id_group = $1;", [

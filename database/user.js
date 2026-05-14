@@ -1,4 +1,4 @@
-const Factory_User = require("../class/Factory_User");
+const UserDTO = require("../class/UserDTO");
 const database = require("../config/db");
 
 const SING_COLUMNS = new Set([
@@ -29,8 +29,8 @@ const SING_COLUMNS = new Set([
 module.exports = {
   /**
    * Add a new user. If exists, update names + username.
-   * @param {Factory_User} user
-   * @returns {Promise<Factory_User>}
+   * @param {UserDTO} user
+   * @returns {Promise<UserDTO>}
    */
   async add(user) {
     const result = await database.query(
@@ -41,7 +41,7 @@ module.exports = {
   },
 
   /**
-   * @returns {Promise<Array<Factory_User>>}
+   * @returns {Promise<Array<UserDTO>>}
    */
   async list() {
     const result = await database.query("SELECT * FROM public.user;");

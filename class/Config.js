@@ -1,6 +1,6 @@
 const resp = require("../lang/es");
 const game_modes = require("../lang/game_modes_es");
-const Factory_Group = require("./Factory_Group");
+const GroupDTO = require("./GroupDTO");
 
 // Stored fields (set in constructor via set_game_mode + the visual/turbo
 // extras below): game_mode, points, type, caida_continua, mata_canto,
@@ -10,7 +10,7 @@ const Factory_Group = require("./Factory_Group");
 class Config {
   /**
    * Create a Config Object
-   * @param {Factory_Group} new_config - Object with all configs.
+   * @param {GroupDTO} new_config - Object with all configs.
    */
   constructor(new_config) {
     this.set_game_mode(new_config);
@@ -192,8 +192,8 @@ class Config {
   }
 
   /**
-   * If new_mode is a number then take all configs from store else it's should be a Factory_Group object with all configs to be set.
-   * @param {Factory_Group|Number} new_mode
+   * If new_mode is a number then take all configs from store else it's should be a GroupDTO object with all configs to be set.
+   * @param {GroupDTO|Number} new_mode
    */
   set_game_mode(new_mode) {
     if (typeof new_mode === "number") new_mode = game_modes[new_mode];

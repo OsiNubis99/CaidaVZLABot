@@ -14,9 +14,9 @@ module.exports = {
 
 	/**
 	 * Ban or unban a user
-	 * @param {Factory_Request} req - Clean request data.
+	 * @param {RequestDTO} req - Clean request data.
 	 * @param {Boolean} is_banned - Value of is_banned.
-	 * @returns {Promise<Factory_User>} The full User element from database.
+	 * @returns {Promise<UserDTO>} The full User element from database.
 	 */
 	async ban_unban_user(req, is_banned) {
 		if (!is_admin(req.user.id_user)) return resp.no_admin_person;
@@ -28,7 +28,7 @@ module.exports = {
 
 	/**
 	 * Return the list of all groups in a JSON.
-	 * @param {Factory_Request} req - Clean request data.
+	 * @param {RequestDTO} req - Clean request data.
 	 */
 	async all_groups(req) {
 		if (is_admin(req.user.id_user)) {
@@ -98,7 +98,7 @@ module.exports = {
 
 	/**
 	 * Return nice user stats message.
-	 * @param {Factory_Request} req - User request.
+	 * @param {RequestDTO} req - User request.
 	 */
 	async get_user_stats(req) {
 		const user = await UserController.add(req.user);

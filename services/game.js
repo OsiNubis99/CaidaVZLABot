@@ -12,8 +12,8 @@ const logger = require("../config/logger");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 const TelegramBot = require("node-telegram-bot-api");
-const Factory_User = require("../class/Factory_User");
-const Factory_Request = require("../class/Factory_Request");
+const UserDTO = require("../class/UserDTO");
+const RequestDTO = require("../class/RequestDTO");
 const { GroupController, UserController } = require("../database");
 
 // Attach next-turn metadata so the index handler can fire an opt-in DM
@@ -94,7 +94,7 @@ var users = [];
 /**
  * Search all users on the game and delete their object.
  * @param {String} chatId - Id that will be cleaned.
- * @param {Array<Factory_User>} listUsers - Id that will be cleaned.
+ * @param {Array<UserDTO>} listUsers - Id that will be cleaned.
  */
 function cleanUsers(listUsers, chatId) {
   listUsers.forEach((element) => {
@@ -146,7 +146,7 @@ module.exports = {
 
   /**
    * Create a new game with the request data if it isn't already there.
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @returns Telegram message and options.
    */
   async create(req) {
@@ -179,7 +179,7 @@ module.exports = {
 
   /**
    * Save player data on database and try to join him to a game.
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @returns Telegram message and options
    */
   async join(req) {
@@ -223,7 +223,7 @@ module.exports = {
 
   /**
    * Return the full game status.
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @returns Telegram message and options
    */
   async status(req) {
@@ -239,7 +239,7 @@ module.exports = {
 
   /**
    * Print all configs.
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @returns Telegram message and options
    */
   async config(req) {
@@ -256,7 +256,7 @@ module.exports = {
 
   /**
    * TODO Pretty comment
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @param {String} config - Specific config to be validated and updated.
    * @param {String|Number} value - Value to tested.
    * @returns Telegram message and options
@@ -309,7 +309,7 @@ module.exports = {
 
   /**
    * TODO Pretty comment
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @returns Telegram message and options
    */
   start(req) {
@@ -331,7 +331,7 @@ module.exports = {
 
   /**
    * Start a new Game hand
-   * @param {Factory_Request} req - Clean request data.
+   * @param {RequestDTO} req - Clean request data.
    * @param {Boolean} inLine
    * @returns Telegram message and options
    */
@@ -366,7 +366,7 @@ module.exports = {
 
   /**
    * TODO Pretty comment
-   * @param {Factory_User} user - Whoever plays the card
+   * @param {UserDTO} user - Whoever plays the card
    * @param {Number} number - Index of the card to play
    * @returns
    */
@@ -426,7 +426,7 @@ module.exports = {
 
   /**
    * TODO Pretty comment
-   * @param {Factory_User} user - Whoever plays the card
+   * @param {UserDTO} user - Whoever plays the card
    * @returns
    */
   async sing(user) {
@@ -559,7 +559,7 @@ module.exports = {
    * group has visual_cards enabled and the file_id cache is populated,
    * each playable card is returned as a cached_photo so the picker
    * shows the actual card art; otherwise it falls back to text articles.
-   * @param {Factory_User} user
+   * @param {UserDTO} user
    * @returns {Promise<Array<TelegramBot.InlineQueryResult>>}
    */
   async get_user_cards(user) {

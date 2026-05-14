@@ -5,7 +5,7 @@ const TelegramBot = require("node-telegram-bot-api");
  * Caída player. Game stats (finished, win, sings, caida...) are loaded
  * separately by UserController.
  */
-class Factory_User {
+class UserDTO {
   constructor(id_user, first_name, last_name, username) {
     this.id_user = id_user;
     this.first_name = first_name;
@@ -15,7 +15,7 @@ class Factory_User {
 
   /**
    * @param {TelegramBot.User} telegramUser
-   * @returns {Factory_User|false} A User element, false when input is missing.
+   * @returns {UserDTO|false} A User element, false when input is missing.
    */
   static fromTelegram(telegramUser) {
     if (telegramUser) {
@@ -23,9 +23,9 @@ class Factory_User {
       const first_name = telegramUser.first_name;
       const last_name = telegramUser.last_name || "";
       const username = telegramUser.username || null;
-      return new Factory_User(id_user, first_name, last_name, username);
+      return new UserDTO(id_user, first_name, last_name, username);
     }
     return false;
   }
 }
-module.exports = Factory_User;
+module.exports = UserDTO;
