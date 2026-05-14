@@ -10,6 +10,13 @@ function mk(locale, modeIdx = 1, overrides = {}) {
   const g = new Game("T", cfg);
   g.join(new User({ id_user: "1", first_name: "A", username: "a", is_banned: false }));
   g.join(new User({ id_user: "2", first_name: "B", username: "b", is_banned: false }));
+  // Parejas needs exactly 4 users to render as parejas (isParejasMode
+  // gates on users.length === 4). Add two more for parejas tests so
+  // the team-block renderer kicks in.
+  if (overrides.type === "parejas") {
+    g.join(new User({ id_user: "3", first_name: "C", username: "c", is_banned: false }));
+    g.join(new User({ id_user: "4", first_name: "D", username: "d", is_banned: false }));
+  }
   g.decks = 1;
   g.last_card_played = { value: 7, type: "Copa" };
   g.table[3] = { value: 4, type: "Oro" };

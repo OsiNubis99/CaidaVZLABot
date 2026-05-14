@@ -67,6 +67,42 @@ class Game {
   }
 
   /**
+   * Whether the current game is actually being played as parejas. A
+   * group may have config.type === "parejas" saved, but parejas only
+   * makes sense with exactly 4 users — with 2 or 3 the game must fall
+   * through to individual scoring/rendering so the saved flag becomes
+   * inert until 4 players actually join.
+   * @returns {Boolean}
+   */
+  isParejasMode() {
+    return this.config.type === "parejas" && this.users.length === 4;
+  }
+
+  /**
+   * Map a user index to the slot in this.points / this.took. Parejas-4
+   * collapses partners into 2 slots ([0,2] -> 0, [1,3] -> 1); every
+   * other shape (2p, 3p, 4p-individual) is a 1:1 mapping. Centralised
+   * here so future scoring tweaks touch one place instead of every
+   * callsite that used the `type === "parejas" ? i % 2 : i` pattern.
+   * @param {Number} playerIdx - Index into this.users.
+   * @returns {Number}
+   */
+  scoringSlot(playerIdx) {
+    return this.isParejasMode() ? playerIdx % 2 : playerIdx;
+  }
+
+  /**
+   * The dealer is always the last user — they receive the Start_By
+   * sentinel and earn the table-pegar sync points. Per-deck rotation
+   * inside handing_out_cards (this.users.push(this.users.shift()))
+   * shifts the dealer every deck so this resolves at call time.
+   * @returns {Number}
+   */
+  dealerIdx() {
+    return this.users.length - 1;
+  }
+
+  /**
    * Add a new user and return the status of the game.
    * @param {User} user - User to be Added
    * @returns
@@ -77,7 +113,7 @@ class Game {
     // (see this.users.push(this.users.shift()) in handing_out_cards).
     // Parejas mode leaves user.color empty — team colors are computed
     // per render from decks % 2.
-    if (!user.color && this.config && this.config.type === "individual") {
+    if (!user.color && this.config && !this.isParejasMode()) {
       user.color = User.INDIVIDUAL_COLORS[this.users.length] || "";
     }
     this.users.push(user);
@@ -164,7 +200,7 @@ class Game {
   }
 
   increase_points(player, points) {
-    var position = this.config.type == "parejas" ? player % 2 : player;
+    var position = this.scoringSlot(player);
     if (!this.points[position])
       this.points[position] = points;
     else
@@ -219,7 +255,7 @@ class Game {
    * (kill short-circuits the loop).
    */
   _selectTookBonusRules() {
-    if (this.users.length == 4 && this.config.type != "parejas") {
+    if (this.users.length == 4 && !this.isParejasMode()) {
       return [
         { player: 0, threshold: 10 },
         { player: 1, threshold: 10 },
@@ -327,9 +363,7 @@ class Game {
         }
         if (took > 1) {
           // Took something
-          this.took[
-            this.config.type == "parejas" ? this.player % 2 : this.player
-          ] += took;
+          this.took[this.scoringSlot(this.player)] += took;
           this.last_player_on_take = this.player;
           if (
             this.last_card_played &&
@@ -398,7 +432,7 @@ class Game {
     let win = this.config.game_mode > 0 ? 1 : 2
     for (var i = 0; i < this.users.length; ++i) {
       let user = this.users[i]
-      let comparate = this.config.type == "parejas" ? i % 2 : i
+      let comparate = this.scoringSlot(i)
       let user_win = player == comparate ? win : 0
       // Fire-and-forget: DB failures shouldn't block kill response, but
       // catch the rejection so it doesn't become an unhandledRejection.
@@ -423,7 +457,7 @@ class Game {
     const L = this._lang();
     const parts = [];
     const renderName = (u) => u.first_name + (u.username ? " (@" + u.username + ")" : "");
-    if (this.config.type === "parejas") {
+    if (this.isParejasMode()) {
       for (let team = 0; team < 2; team++) {
         const isRed = team === 0 ? this.decks % 2 === 0 : this.decks % 2 === 1;
         const emoji = isRed ? L.ig_team_red_emoji : L.ig_team_blue_emoji;
@@ -463,7 +497,7 @@ class Game {
     if (short_status) return response;
     return (
       response +
-      (this.config.type == "parejas"
+      (this.isParejasMode()
         ? this._renderTeamsParejas(is_running)
         : this._renderTeamsIndividual(is_running))
     );
@@ -549,7 +583,7 @@ class Game {
   _renderReducedStatus(withTurn = false) {
     const L = this._lang();
     let line;
-    if (this.config.type === "parejas") {
+    if (this.isParejasMode()) {
       const team0Red = this.decks % 2 === 0;
       const colors = [
         team0Red ? L.ig_team_red_emoji : L.ig_team_blue_emoji,
@@ -581,7 +615,7 @@ class Game {
    * Parejas: "24-22". Individual: "(Andrés 24, Mafeer 22, P3 18, P4 15)".
    */
   _renderFinalScore(winnerPlayerIdx) {
-    if (this.config.type === "parejas") {
+    if (this.isParejasMode()) {
       const w = winnerPlayerIdx % 2;
       const l = w === 0 ? 1 : 0;
       return " " + (this.points[w] || 0) + "-" + (this.points[l] || 0);
