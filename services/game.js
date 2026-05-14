@@ -1,4 +1,3 @@
-const resp = require("../lang/es");
 const { getLang } = require("../lang");
 const Game = require("../class/Game");
 const User = require("../class/User");

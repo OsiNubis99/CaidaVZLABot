@@ -1,4 +1,3 @@
-const resp = require("../lang/es");
 const { getLang } = require("../lang");
 const bot = require("../config/server");
 const env = require("../config/env");

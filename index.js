@@ -1,4 +1,4 @@
-const resp = require("./lang/es");
+const { getLang } = require("./lang");
 const bot = require("./config/server");
 const game = require("./services/game");
 const admin = require("./services/admin");
@@ -13,6 +13,14 @@ const keyboard = require("./templates/keyboard");
 const RequestDTO = require("./class/RequestDTO");
 const UserDTO = require("./class/UserDTO");
 const { UserController, GroupController } = require("./database");
+
+// Localised strings for raw Telegram-message handlers. Falls back to es
+// when the chat has no in-memory game yet.
+function langForMsg(msg) {
+  if (!msg || !msg.chat) return getLang(null);
+  const g = game.peek(String(msg.chat.id));
+  return getLang(g && g.config && g.config.locale);
+}
 
 // TURBO mode: per-chat timer that auto-plays the current player's
 // first card if they don't move within `turn_timeout_seconds`. The
@@ -265,7 +273,7 @@ bot.on(
     }
     switch (query.data) {
       case "how_config":
-        await bot.editMessageText(resp.how_config, {
+        await bot.editMessageText(langForMsg(query.message).how_config, {
           reply_markup: keyboard.back,
           chat_id: query.message.chat.id,
           message_id: query.message.message_id,
@@ -303,7 +311,7 @@ bot.onText(
   /\/message (.*)/,
   safe("/message", async (msg, match) => {
     if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, resp.no_admin_person, {
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person, {
         reply_to_message_id: msg.message_id,
       });
       return;
@@ -365,7 +373,7 @@ bot.onText(
   safe("/addgroup", async (msg) => {
     if (await rateLimited(msg, "/addgroup")) return;
     if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, resp.no_admin_person, {
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person, {
         reply_to_message_id: msg.message_id,
       });
       return;
@@ -490,7 +498,7 @@ bot.onText(
   /\/bootstrap_cards(?:\s+(force))?/,
   safe("/bootstrap_cards", async (msg, match) => {
     if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, resp.no_admin_person);
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person);
       return;
     }
     const force = !!(match && match[1]);
@@ -515,7 +523,7 @@ bot.onText(
     );
     if (await rateLimited(msg, "/admin")) return;
     if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, resp.no_admin_person);
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person);
       return;
     }
     const view = await adminUI.listView();
@@ -570,7 +578,7 @@ bot.onText(
     const admins = await bot.getChatAdministrators(msg.chat.id);
     const isChatAdmin = admins && admins.some((a) => a.user.id == msg.from.id);
     if (!isChatAdmin) {
-      await bot.sendMessage(msg.chat.id, resp.user_is_not_admin, {
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).user_is_not_admin, {
         reply_to_message_id: msg.message_id,
       });
       return;
