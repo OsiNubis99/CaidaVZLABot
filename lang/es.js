@@ -50,6 +50,9 @@ module.exports = {
   remember_reply: "Recuerda responder al mensaje del otro jugador.",
   start_by:
     "Barajando...\nPulsa el botón para escoger si empezar mesa con 1 o 4.",
+  shuffling: "🔀 Barajando...",
+  start_by_prompt:
+    "Pulsa el botón para escoger si empezar mesa con 1 o 4.",
   start_by_four_description: "Se intentara poner la mesa como 4 -> 3 -> 2 -> 1",
   start_by_four_message: "Iniciar por 4",
   start_by_four_title: "Iniciar por 4",

@@ -621,6 +621,14 @@ module.exports = {
           }
           const visual = group.config.visual_cards !== false;
           const response = [];
+          // In sticker mode the inline grid renders left-to-right which
+          // visually reverses our default high→low array. Flip the
+          // playable-card slice so the picker shows low→high. The canto
+          // (index 3) is kept last. IDs still match cardsHand indices —
+          // play_card looks up the card by id, so the underlying order
+          // (which the canto detection relies on) is untouched.
+          const cardResults = [];
+          let cantoResult = null;
           for (let index = 0; index < cardsHand.length; index++) {
             const element = cardsHand[index];
             if (index == 3) {
@@ -631,14 +639,14 @@ module.exports = {
                 ? await cardsService.getCantoFileId(element.name)
                 : null;
               if (cantoFileId) {
-                response.push({
+                cantoResult = {
                   id: "4",
                   type: "sticker",
                   sticker_file_id: cantoFileId,
-                });
+                };
               } else {
                 const cantoThumb = cantos.thumb(element.name);
-                response.push({
+                cantoResult = {
                   id: "4",
                   type: "article",
                   title: cantos.withIcon(element.name) || "Error en canto",
@@ -651,7 +659,7 @@ module.exports = {
                     thumb_width: 72,
                     thumb_height: 72,
                   }),
-                });
+                };
               }
             } else {
               // visual_cards toggles whether to use the cached sticker
@@ -667,13 +675,13 @@ module.exports = {
                 // and renders as a grid in the inline picker. The bot's
                 // follow-up message still says "Ultima carta: X de Y"
                 // so context isn't lost.
-                response.push({
+                cardResults.push({
                   id: String(index),
                   type: "sticker",
                   sticker_file_id: fileId,
                 });
               } else {
-                response.push({
+                cardResults.push({
                   id: String(index),
                   type: "article",
                   title: element.value || "Error en Carta",
@@ -685,6 +693,13 @@ module.exports = {
               }
             }
           }
+          // Reverse the playable-card slice when in sticker mode so the
+          // grid reads low→high. IDs still encode the original cardsHand
+          // index, so play_card receives the correct card. Articles are
+          // left in source order (the user prefers high→low text list).
+          if (visual) cardResults.reverse();
+          response.push(...cardResults);
+          if (cantoResult) response.push(cantoResult);
           return response;
         }
         return [

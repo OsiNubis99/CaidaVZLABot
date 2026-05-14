@@ -8,10 +8,9 @@ const UserDatabase = require("../database/user");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 
-// Per-position color markers for 4-player individual games. Tied to
-// position index — colors swap as users rotate each deck, same as the
-// parejas Rojo/Azul alternation; that keeps the UI stable per render.
-const INDIVIDUAL_COLORS = ["🔴", "🔵", "🟢", "🟡"];
+// Color markers for individual-mode renders live on the User itself
+// (set by Game.join from User.INDIVIDUAL_COLORS) so they stay glued to
+// the player across the per-deck users[] rotation.
 
 /**
  * In-memory Game state. Persisted via services/gameSerialize.js — the
@@ -73,10 +72,14 @@ class Game {
    * @returns
    */
   join(user) {
-    // Snapshot join order into the User so the individual-mode color
-    // marker stays with this player even after per-deck rotations
+    // Stamp the individual-mode color marker onto the User at join
+    // time so it travels with them through per-deck rotations
     // (see this.users.push(this.users.shift()) in handing_out_cards).
-    if (user.color_index == null) user.color_index = this.users.length;
+    // Parejas mode leaves user.color empty — team colors are computed
+    // per render from decks % 2.
+    if (!user.color && this.config && this.config.type === "individual") {
+      user.color = User.INDIVIDUAL_COLORS[this.users.length] || "";
+    }
     this.users.push(user);
     return this.print(false);
   }
@@ -184,13 +187,21 @@ class Game {
       const j = Math.floor(Math.random() * (i + 1));
       [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
     }
-    this.markStartByPlayer();
     const L = this._lang();
-    // Only the *between-deck* shuffle gets a reduced status header; the
-    // first shuffle is from a fresh /inicia_ya where points are all 0
-    // and the line would be visual noise.
-    const status = wasInitialShuffle ? "" : this._renderReducedStatus();
-    return (status ? status + "\n\n" : "") + L.start_by;
+    // Initial shuffle (from /inicia_ya) has no previous-deck state to
+    // summarize — just mark the dealer and emit the combined banner.
+    if (wasInitialShuffle) {
+      this.markStartByPlayer();
+      return L.start_by;
+    }
+    // Between-deck shuffle: full /estado-style snapshot of the deck we
+    // just finished (points, took, etc.) sandwiched between the
+    // "Barajando..." banner and the "pick 1/4" prompt. Snapshot BEFORE
+    // markStartByPlayer mutates the dealer's cards with the "Start_By"
+    // sentinel (which would render as "1 cartas").
+    const status = this.print(false);
+    this.markStartByPlayer();
+    return L.shuffling + "\n\n" + status + "\n\n" + L.start_by_prompt;
   }
 
   /**
@@ -260,7 +271,12 @@ class Game {
       if (this.deck.length == 0) {
         this.last_hand = true;
       }
-      return added + this.print(false);
+      // start_by != 0: brand-new deck deal right after the user picked
+      // 1/4 — show full /estado-style status. start_by == 0: mid-deck
+      // mano (every player just emptied their hand and got 3 new
+      // cards) — show the compact reduced status with the next turno.
+      const renderFull = start_by !== 0;
+      return added + (renderFull ? this.print(false) : this._renderReducedStatus(true));
     }
     // Clean las tabble
     for (let position = 0; position < this.table.length; position++) {
@@ -429,8 +445,7 @@ class Game {
       .filter((x) => x.u)
       .sort((a, b) => (this.points[b.i] || 0) - (this.points[a.i] || 0));
     for (const { u, i } of ranked) {
-      const slot = u && u.color_index != null ? u.color_index : i;
-      const color = INDIVIDUAL_COLORS[slot] || "•";
+      const color = u.color || User.INDIVIDUAL_COLORS[i] || "•";
       parts.push(
         "\n" + color + " " + renderName(u) + L.ig_dot_sep + (this.points[i] || 0) + L.ig_pts_suffix,
       );
@@ -509,8 +524,7 @@ class Game {
     for (let i = 0; i < this.users.length; i++) {
       const u = this.users[i];
       if (!u) continue;
-      const slot = u.color_index != null ? u.color_index : i;
-      const color = INDIVIDUAL_COLORS[slot] || "•";
+      const color = u.color || User.INDIVIDUAL_COLORS[i] || "•";
       let line = "\n" + color + " " + u.print(is_running, L);
       if (is_running) {
         line +=
@@ -524,32 +538,42 @@ class Game {
   }
 
   /**
-   * Compact "🔵 20 pts | 🔴 22 pts" line for end-of-deck shuffle.
-   * Hides names and took count to keep the message short.
+   * Compact "🔵 20 pts | 🔴 22 pts" status line. Used between mid-deck
+   * manos (where the full status would be visual noise — only points
+   * and whose turn it is matter).
+   *
+   * @param {Boolean} withTurn - When true, append the "Turno: X" line
+   *   (and the "Última mano" warning if applicable). Off for callers
+   *   that only need the bare score line.
    */
-  _renderReducedStatus() {
+  _renderReducedStatus(withTurn = false) {
     const L = this._lang();
+    let line;
     if (this.config.type === "parejas") {
       const team0Red = this.decks % 2 === 0;
       const colors = [
         team0Red ? L.ig_team_red_emoji : L.ig_team_blue_emoji,
         team0Red ? L.ig_team_blue_emoji : L.ig_team_red_emoji,
       ];
-      return (
+      line =
         colors[0].trim() + " " + (this.points[0] || 0) + L.ig_pts_suffix +
         "  |  " +
-        colors[1].trim() + " " + (this.points[1] || 0) + L.ig_pts_suffix
-      );
+        colors[1].trim() + " " + (this.points[1] || 0) + L.ig_pts_suffix;
+    } else {
+      const parts = [];
+      for (let i = 0; i < this.users.length; i++) {
+        const u = this.users[i];
+        if (!u) continue;
+        const color = u.color || User.INDIVIDUAL_COLORS[i] || "•";
+        parts.push(color + " " + (this.points[i] || 0));
+      }
+      line = parts.join("  |  ");
     }
-    const parts = [];
-    for (let i = 0; i < this.users.length; i++) {
-      const u = this.users[i];
-      if (!u) continue;
-      const slot = u.color_index != null ? u.color_index : i;
-      const color = INDIVIDUAL_COLORS[slot] || "•";
-      parts.push(color + " " + (this.points[i] || 0));
-    }
-    return parts.join("  |  ");
+    if (!withTurn) return line;
+    let tail = "";
+    if (this.last_hand) tail += "\n" + L.ig_last_hand.trimEnd();
+    tail += "\n" + L.ig_next_label + this.playerName();
+    return line + tail;
   }
 
   /**

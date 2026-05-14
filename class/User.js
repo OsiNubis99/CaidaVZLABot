@@ -4,6 +4,10 @@ const resp = require("../lang/es");
 const Config = require("./Config");
 const UserDTO = require("./UserDTO");
 
+// Per-seat color markers used by individual-mode renders. Order matches
+// join order: 1st player 🔴, 2nd 🔵, 3rd 🟢, 4th 🟡.
+const INDIVIDUAL_COLORS = ["🔴", "🔵", "🟢", "🟡"];
+
 class User {
   /**
    * Create a User Object
@@ -19,10 +23,11 @@ class User {
     this.caida = 0;
     this.caido = 0;
     this.sing = new Sings([]);
-    // Stable color slot for individual-mode renders. Set by Game.join()
-    // from the join order so the marker (🔴/🔵/🟢/🟡) stays with the
-    // user even after the per-deck rotation shifts users[] around.
-    this.color_index = null;
+    // Color marker for individual-mode renders. Game.join() assigns the
+    // emoji at join time so it travels with the user even after the
+    // per-deck rotation in handing_out_cards shifts users[] around.
+    // Empty in parejas mode (team colors are computed from decks % 2).
+    this.color = "";
   }
 
   /**
@@ -76,4 +81,6 @@ class User {
     }
   }
 }
+
+User.INDIVIDUAL_COLORS = INDIVIDUAL_COLORS;
 module.exports = User;

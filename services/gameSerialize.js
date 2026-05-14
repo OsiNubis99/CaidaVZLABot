@@ -44,7 +44,7 @@ function serialize(game) {
       is_banned: u.is_banned,
       caida: u.caida,
       caido: u.caido,
-      color_index: u.color_index,
+      color: u.color,
       cards: (u.cards || []).map(cardToNumber),
       sing: {
         active: u.sing && u.sing.active,
@@ -79,7 +79,7 @@ function deserialize(data) {
     });
     user.caida = u.caida || 0;
     user.caido = u.caido || 0;
-    user.color_index = u.color_index != null ? u.color_index : null;
+    user.color = u.color || "";
     user.cards = (u.cards || []).map(numberToCard);
     const sing = new Sings([]);
     if (u.sing) {

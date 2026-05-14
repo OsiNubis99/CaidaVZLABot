@@ -116,13 +116,35 @@ describe("Game.print i18n + clean layout", () => {
     expect(out).toMatch(/🟡 D \(@d\)/);
   });
 
-  it("shuffle adds reduced status (between decks) for parejas", () => {
+  it("between-deck shuffle shows the full /estado-style status", () => {
     const g = mk("es", 2, { type: "parejas" });
     g.points = [12, 9];
-    // first shuffle (decks 0 -> 1) has no status; second (1 -> 2) does
+    // first shuffle (decks 0 -> 1) has no status — just the legacy
+    // combined banner ("Barajando...\nPulsa..."). second (1 -> 2) is
+    // the real between-deck moment and uses the new layout: banner +
+    // full status block + 1/4 prompt.
     g.shuffle();
     const out2 = g.shuffle();
-    expect(out2).toMatch(/12 pts.*\|.*9 pts/);
-    expect(out2).toContain("Barajando");
+    expect(out2).toContain("Barajando...");
+    // Full status block: team points appear inside the team lines,
+    // not as a "X pts | Y pts" one-liner.
+    expect(out2).toMatch(/Equipo (Rojo|Azul) · 12 pts/);
+    expect(out2).toMatch(/Equipo (Rojo|Azul) · 9 pts/);
+    expect(out2).toMatch(/Pulsa el botón para escoger si empezar mesa con 1 o 4/);
+  });
+
+  it("mid-deck mano shows the reduced status with turno line", () => {
+    const g = mk("es", 1); // individual
+    g.points = [12, 9];
+    // Seed enough deck so handing_out_cards takes the deck > 0 branch
+    // and reaches the renderFull = false path (start_by == 0).
+    g.deck = Array(20).fill(0).map((_, i) => i);
+    g.users.forEach((u) => (u.cards = []));
+    g.decks = 1;
+    const out = g.handing_out_cards(0);
+    expect(out).toMatch(/🔴 12.*\|.*🔵 9/);
+    expect(out).toContain("Turno:");
+    // Should NOT include the full status player blocks
+    expect(out).not.toContain("cartas · sin canto");
   });
 });

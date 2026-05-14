@@ -44,6 +44,9 @@ module.exports = {
   remember_reply: "Remember to reply to the other player's message.",
   start_by:
     "Shuffling...\nTap a button to choose whether to start with 1 or 4.",
+  shuffling: "🔀 Shuffling...",
+  start_by_prompt:
+    "Tap a button to choose whether to start the table with 1 or 4.",
   start_by_four_description: "Try to set the table as 4 -> 3 -> 2 -> 1",
   start_by_four_message: "Start by 4",
   start_by_four_title: "Start by 4",
