@@ -55,10 +55,10 @@ async function persistOrRemove(chatId, finished) {
 // Render the current table as a PNG and attach it as `photo` to the
 // response, when visual_table is enabled and the game is mid-deck.
 //
-// When a photo is attached we ALSO strip the textual "Mesa: ..." block
-// from response.message so the photo isn't duplicated by an ASCII
-// rendering in the caption. Anything before the mesa block (caída,
-// "Mesa Limpia!", sing-killed notification) is kept as caption.
+// Only the single line `Mesa: <slot contents>` is stripped from the
+// caption — everything else (Ultimas!, Ultima carta, Siguiente, Caidó,
+// Mesa Limpia, Barajando, team listing) stays as caption so action and
+// status notifications still reach the user.
 // Errors are swallowed and the response falls back to the text-only mesa.
 async function attachMesaPhoto(group, finished, response) {
   if (!group || !group.config || !group.config.visual_table) return response;
@@ -67,11 +67,15 @@ async function attachMesaPhoto(group, finished, response) {
   try {
     const photo = await mesa.render(group.table);
     const L = group._lang ? group._lang() : require("../lang/es");
-    const mesaLabel = (L.ig_mesa_label || "Mesa:").replace(/\s+$/, "");
+    const mesaLabel = (L.ig_mesa_label || "Mesa:").trim();
     const raw = String(response.message || "");
-    const idx = raw.indexOf(mesaLabel);
-    const preMesa = idx > 0 ? raw.slice(0, idx).trim() : "";
-    return { ...response, photo, message: preMesa };
+    const caption = raw
+      .split("\n")
+      .filter((line) => !line.startsWith(mesaLabel))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    return { ...response, photo, message: caption };
   } catch (err) {
     logger.warn({ err: err.message }, "mesa render failed; falling back to text");
     return response;
