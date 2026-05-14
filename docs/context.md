@@ -15,8 +15,10 @@ exact state of the world.
   to host** (only via the compose network).
 - **prodrigestivill/postgres-backup-local** sidecar for daily backups
   (14d/4w/3m retention, dedicated volume).
-- `node-telegram-bot-api` 0.50 (old; **upgrading is pending** — see
-  Tech debt).
+- `node-telegram-bot-api` 0.66 (bumped from 0.50 in round 12 — closes
+  the 11 Dependabot warnings against transitive deps in 0.50, also
+  drops the `bluebird cancellation deprecated` and `punycode`
+  warnings).
 - `express` for `/health` + `/stats`.
 - `sharp` for slicing the deck and rendering the table.
 - `pino` for structured JSON logs.
@@ -93,10 +95,12 @@ push to main/develop.
   - `Card.js` — derives `value`, `type`, `position`, `points` from a
     seed number (0..39).
   - `Sings.js` — canto detection from 3 sorted cards + config values.
-  - `Config.js` — game config validation/state. `is_not_ok(key, val)`
-    handles `caida_continua` and `mata_mesa` by rejecting with
-    `config_not_implemented` (still ignored by Game).
-  - `Factory_*.js` — DTOs wrapping Telegram chat/user/message.
+  - `Config.js` — game config validation/state. `caida_continua` is
+    implemented (`Game.handing_out_cards` resets `last_card_played`
+    between manos when `caida_continua !== "on"`). `mata_mesa` is
+    still a settable boolean but a no-op in `Game.play_card`.
+  - `UserDTO.js`, `GroupDTO.js`, `RequestDTO.js` — DTOs wrapping
+    Telegram chat/user/message. (Were `Factory_*.js` until round 12.)
 - `database/`
   - `index.js` — exports `UserController` + `GroupController`.
   - `user.js` — `add`, `list`, `set_stats`, `set_sing` (column-name
@@ -325,17 +329,14 @@ names (no took, no card counts, no "sin canto").
 ## Tech debt + pending features
 
 ### Tech debt
-- `node-telegram-bot-api` is still `^0.50.0` (2020). Github
-  Dependabot reports 11 vulnerabilities, most via transitive deps.
-  Bump to `^0.66` requires testing several APIs that have changed.
-- `mata_mesa` and `caida_continua` are configurable in the schema
-  but never read by `Game.js`. They're hidden from `/configurar`
-  and rejected in `Config.is_not_ok` with `config_not_implemented`.
+- `mata_mesa` is configurable + persisted but **NOT implemented** in
+  `Game.play_card`. Caída-kills-mesa-clearing behavior would need to
+  be wired through. Setting the toggle has no in-game effect yet.
 - DB password is in `.env` plain (600 perms). Not in a secret
-  manager.
-- `Factory_*` classes are misnamed (they're DTOs, not factories).
-- i18n callsite migration is partial: `Game.js` + `User.js` are
-  localized; `services/*.js` still imports `lang/es` directly.
+  manager. User said skip — local server, low risk.
+- i18n migration is mostly done: `Game.js`, `User.js`, and
+  `services/game.js` localise via `getLang(config.locale)`. Still
+  pending: `services/admin.js` (admin-only paths, default es).
 
 ### Pending features
 - **Modo torneo / brackets** — fresh design, not started.
@@ -345,14 +346,18 @@ names (no took, no card counts, no "sin canto").
 - **Auto-bootstrap cards on startup** — would need a
   `CARD_CACHE_CHAT_ID` env pointing at a channel where the bot is
   admin, so the manual `/bootstrap_cards` step goes away.
-- **CAIDA event detection** is currently a string match on
-  `resp.user_get_fall`. Becomes fragile once `services/*.js` is
-  localized. Refactor `Game.play_card` to return a structural
-  signal instead.
-- **TURBO re-arm on persistence reload** is done for the player but
-  not for the guesser in Start_By state.
+- **TURBO re-arm on persistence reload** for the guesser in Start_By
+  state — handled via `attachNextTurn`'s Start_By detection +
+  `pendingTimerArmList`, but real-world testing on a deployed
+  Start_By restart still pending.
 
-### UX preferences captured this session
+### UX preferences captured
+- The Grupish preset defaults to `type: "individual"` (todos vs todos),
+  not parejas. Cantos still on by default.
+- `/configurar` hides game-rule sections (Modo, Puntos & ×, Reglas,
+  Cantos) when a deck is in play; only Visuales + Sistema show.
+- Mid-game rule rejections show as a popup `answerCallbackQuery` with
+  show_alert, never a silent no-op.
 - Played-card photo in chat: **sticker, no caption**. The bot's
   next message conveys "Última carta: X de Y" so context isn't
   lost.
@@ -381,6 +386,14 @@ names (no took, no card counts, no "sin canto").
 ## Recent commits (most → least recent)
 
 ```
+54ade75 chore: bump node-telegram-bot-api 0.50 -> 0.66
+37c77f0 12d: emit CAIDA event from structural flag, not text match
+ff107ed 12c: i18n callsite migration in services/game.js
+c7b1cc8 12b: rename Factory_* DTOs (UserDTO, GroupDTO, RequestDTO)
+0d45ae9 test: align tests with Grupish=individual default
+d9c14d9 12a: implement caida_continua, expose game-rule toggles
+64f78e6 fix: hide game-rule sections from /configurar mid-game
+9c624bc docs: add docs/context.md
 10896d4 revert: visual_cards gates the inline picker again
 bd33ace feat: inline picker always shows card stickers when cached (reverted next)
 1eddac8 feat: cache cards as stickers, not photos
