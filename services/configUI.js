@@ -103,11 +103,19 @@ async function loadConfig(chatId) {
 /**
  * Apply an in-memory mutation to the chat's config and persist.
  * Returns { ok, msg }.
+ *
+ * @param {Object} opts
+ * @param {Boolean} [opts.allowMidGame=false] - When true, the change
+ *   is allowed even if a deck is currently in play. Used for rendering
+ *   preferences (visual_cards, visual_table, locale) that don't affect
+ *   game rules.
  */
-async function applyChange(chatId, mutator) {
+async function applyChange(chatId, mutator, opts = {}) {
   const state = await loadConfig(chatId);
   if (!state) return { ok: false, msg: "Grupo no registrado o no público." };
-  if (state.decksRunning) return { ok: false, msg: "Partida en curso, no se puede cambiar la config." };
+  if (state.decksRunning && !opts.allowMidGame) {
+    return { ok: false, msg: "Partida en curso, esa config no se puede cambiar mid-game." };
+  }
   const before = { ...state.config };
   const err = mutator(state.config);
   if (err) return { ok: false, msg: err };
@@ -369,53 +377,69 @@ async function dispatch(chatId, data) {
     const delta = parseInt(parts[3], 10);
     const cfg = NUMERIC_FIELDS[key];
     if (!cfg) return mainView(chatId);
-    const result = await applyChange(chatId, (config) => {
-      const newVal = Math.max(cfg.min, Math.min(cfg.max, (config[key] || 0) + delta));
-      config[key] = newVal;
-      // also normalize via is_not_ok so derived fields (e.g. game_mode reset
-      // on non-mode changes) follow the existing rules.
-      const validateKey = key === "turn_timeout_seconds" ? "turn_timeout" : key;
-      const e = config.is_not_ok(validateKey, newVal);
-      if (e) return e;
-      return null;
-    });
-    return numericEditView(chatId, parts[2], result);
+    // turn_timeout is render-only; everything else is a game rule.
+    const allowMidGame = key === "turn_timeout_seconds";
+    const result = await applyChange(
+      chatId,
+      (config) => {
+        const newVal = Math.max(cfg.min, Math.min(cfg.max, (config[key] || 0) + delta));
+        config[key] = newVal;
+        const validateKey = key === "turn_timeout_seconds" ? "turn_timeout" : key;
+        const e = config.is_not_ok(validateKey, newVal);
+        if (e) return e;
+        return null;
+      },
+      { allowMidGame },
+    );
+    const view = await numericEditView(chatId, parts[2]);
+    if (!result.ok) view.alert = result.msg;
+    return view;
   }
   if (action === "set") {
     const shortKey = parts[2];
     const value = parts[3];
     const key = alias(shortKey);
     let returnView;
+    let result;
     if (key === "game_mode") {
       returnView = modeView;
-      await applyChange(chatId, (config) => {
+      result = await applyChange(chatId, (config) => {
         config.set_game_mode(parseInt(value, 10));
         return null;
       });
     } else if (key === "type") {
       returnView = modeView;
       const expanded = value === "p" ? "parejas" : "individual";
-      await applyChange(chatId, (config) => config.is_not_ok("type", expanded));
+      result = await applyChange(chatId, (config) => config.is_not_ok("type", expanded));
     } else if (key === "locale") {
       returnView = systemView;
-      await applyChange(chatId, (config) => config.is_not_ok("locale", value));
+      // Locale is a rendering preference; safe to change mid-game.
+      result = await applyChange(chatId, (config) => config.is_not_ok("locale", value), {
+        allowMidGame: true,
+      });
     } else {
       return mainView(chatId);
     }
-    return returnView(chatId);
+    const view = await returnView(chatId);
+    if (result && !result.ok) view.alert = result.msg;
+    return view;
   }
   if (action === "tog") {
     const shortKey = parts[2];
     const key = alias(shortKey);
-    let returnView = visualesView;
-    await applyChange(chatId, (config) => {
+    // visual_cards/visual_table are render-only and safe mid-game.
+    // mata_canto changes scoring so it requires decks==0.
+    const allowMidGame = key === "visual_cards" || key === "visual_table";
+    const result = await applyChange(chatId, (config) => {
       if (key === "visual_cards") config.visual_cards = !config.visual_cards;
       else if (key === "visual_table") config.visual_table = !config.visual_table;
       else if (key === "mata_canto") config.mata_canto = config.mata_canto === "on" ? "off" : "on";
       else return "Toggle no soportado";
       return null;
-    });
-    return returnView(chatId);
+    }, { allowMidGame });
+    const view = await visualesView(chatId);
+    if (!result.ok) view.alert = result.msg;
+    return view;
   }
   return mainView(chatId);
 }

@@ -183,12 +183,15 @@ bot.on(
 bot.on(
   "callback_query",
   safe("callback_query", async (query) => {
-    await bot.answerCallbackQuery(query.id);
-
     // Group config UI callbacks (BotFather-style).
     if (query.data.startsWith("c:")) {
       const chatId = String(query.message.chat.id);
       const view = await configUI.dispatch(chatId, query.data);
+      if (view && view.alert) {
+        await bot.answerCallbackQuery(query.id, { text: view.alert, show_alert: true });
+      } else {
+        await bot.answerCallbackQuery(query.id);
+      }
       if (view && view.close) {
         try {
           await bot.deleteMessage(chatId, query.message.message_id);
@@ -209,6 +212,8 @@ bot.on(
       }
       return;
     }
+
+    await bot.answerCallbackQuery(query.id);
 
     // Admin UI callbacks: only allowed for admins.
     if (query.data.startsWith("a:")) {
