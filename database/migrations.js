@@ -46,6 +46,14 @@ const STATEMENTS = [
   // round 3: per-group locale and turn-timeout (TURBO).
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS locale text DEFAULT 'es'`,
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS turn_timeout_seconds int DEFAULT 0`,
+
+  // canto sticker file_id cache. Generated alongside the card sticker
+  // pack and uploaded by the same bootstrap flow.
+  `CREATE TABLE IF NOT EXISTS public.canto_stickers (
+     name text PRIMARY KEY,
+     file_id text NOT NULL,
+     uploaded_at timestamptz DEFAULT CURRENT_TIMESTAMP
+   )`,
 ];
 
 async function run() {

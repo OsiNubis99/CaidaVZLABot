@@ -21,6 +21,26 @@ const CARDS_DIR = path.join(__dirname, "..", "public", "cards");
 const TYPES = ["Oro", "Copa", "Espada", "Basto"];
 const VALUES = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 
+// Canto stickers — one per logical canto name. Display variants
+// (e.g. "Vigia" vs "Vigía") share the same sticker because the
+// Sings class uses the diacritic-bearing spelling.
+const CANTO_NAMES = [
+  "Ronda",
+  "Chiguire",
+  "Patrulla",
+  "Vigía",
+  "Registro",
+  "Maguaro",
+  "Registrico",
+  "Casa Chica",
+  "Casa Grande",
+  "Trivilin",
+];
+
+function cantoLocalPath(name) {
+  return path.join(CARDS_DIR, `canto-${name.replace(/\s+/g, "_")}.png`);
+}
+
 function localPath(value, type) {
   return path.join(CARDS_DIR, `${value}-${type}.png`);
 }
@@ -51,6 +71,27 @@ async function isBootstrapped() {
   return r.rows[0].c >= 40;
 }
 
+async function getCantoFileId(name) {
+  const r = await db.query(
+    "SELECT file_id FROM public.canto_stickers WHERE name = $1",
+    [name],
+  );
+  return r.rows[0] ? r.rows[0].file_id : null;
+}
+
+async function setCantoFileId(name, fileId) {
+  await db.query(
+    `INSERT INTO public.canto_stickers (name, file_id)
+     VALUES ($1, $2)
+     ON CONFLICT (name) DO UPDATE SET file_id = EXCLUDED.file_id, uploaded_at = CURRENT_TIMESTAMP`,
+    [name, fileId],
+  );
+}
+
+async function clearAllCantos() {
+  await db.query("DELETE FROM public.canto_stickers");
+}
+
 async function clearAll() {
   await db.query("DELETE FROM public.cards");
 }
@@ -79,7 +120,10 @@ async function pngToStickerWebp(pngPath) {
  * older photo-based cache rebuilds cleanly.
  */
 async function bootstrap(bot, chatId, { force = false } = {}) {
-  if (force) await clearAll();
+  if (force) {
+    await clearAll();
+    await clearAllCantos();
+  }
   let uploaded = 0,
     skipped = 0,
     failed = 0;
@@ -106,17 +150,52 @@ async function bootstrap(bot, chatId, { force = false } = {}) {
       }
     }
   }
+
+  // Cantos use the same WEBP-from-PNG transformation as the cards.
+  for (const name of CANTO_NAMES) {
+    const localPng = cantoLocalPath(name);
+    if (!fs.existsSync(localPng)) {
+      logger.warn({ name, localPng }, "canto png missing; was generate_canto_stickers.js run?");
+      failed++;
+      continue;
+    }
+    if (!force) {
+      const existing = await getCantoFileId(name);
+      if (existing) {
+        skipped++;
+        continue;
+      }
+    }
+    try {
+      const webp = await pngToStickerWebp(localPng);
+      const sent = await bot.sendSticker(chatId, webp);
+      const fileId = sent && sent.sticker && sent.sticker.file_id;
+      if (!fileId) throw new Error("no sticker file_id in response");
+      await setCantoFileId(name, fileId);
+      uploaded++;
+      logger.info({ name, file_id: fileId }, "canto cached as sticker");
+    } catch (err) {
+      failed++;
+      logger.error({ err: err.message, name }, "canto sticker upload failed");
+    }
+  }
+
   return { uploaded, skipped, failed };
 }
 
 module.exports = {
   TYPES,
   VALUES,
+  CANTO_NAMES,
   localPath,
   backLocalPath,
+  cantoLocalPath,
   getFileId,
   setFileId,
+  getCantoFileId,
+  setCantoFileId,
   isBootstrapped,
   bootstrap,
   clearAll,
+  clearAllCantos,
 };

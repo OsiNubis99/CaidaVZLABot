@@ -624,21 +624,35 @@ module.exports = {
           for (let index = 0; index < cardsHand.length; index++) {
             const element = cardsHand[index];
             if (index == 3) {
-              const cantoThumb = cantos.thumb(element.name);
-              response.push({
-                id: "4",
-                type: "article",
-                title: cantos.withIcon(element.name) || "Error en canto",
-                input_message_content: {
-                  message_text: `Tengo ${cantos.icon(element.name)} ${element.name}`,
-                },
-                description: "Vale: " + element.value,
-                ...(cantoThumb && {
-                  thumb_url: cantoThumb,
-                  thumb_width: 72,
-                  thumb_height: 72,
-                }),
-              });
+              // Prefer a cached canto sticker when visual_cards is on
+              // and bootstrap has uploaded one; fall back to the text
+              // article (with a Twemoji thumb) otherwise.
+              const cantoFileId = visual
+                ? await cardsService.getCantoFileId(element.name)
+                : null;
+              if (cantoFileId) {
+                response.push({
+                  id: "4",
+                  type: "sticker",
+                  sticker_file_id: cantoFileId,
+                });
+              } else {
+                const cantoThumb = cantos.thumb(element.name);
+                response.push({
+                  id: "4",
+                  type: "article",
+                  title: cantos.withIcon(element.name) || "Error en canto",
+                  input_message_content: {
+                    message_text: `Tengo ${cantos.icon(element.name)} ${element.name}`,
+                  },
+                  description: "Vale: " + element.value,
+                  ...(cantoThumb && {
+                    thumb_url: cantoThumb,
+                    thumb_width: 72,
+                    thumb_height: 72,
+                  }),
+                });
+              }
             } else {
               // visual_cards toggles whether to use the cached sticker
               // or render as a text article. Tapping a result IS the
