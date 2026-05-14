@@ -624,6 +624,7 @@ module.exports = {
           for (let index = 0; index < cardsHand.length; index++) {
             const element = cardsHand[index];
             if (index == 3) {
+              const cantoThumb = cantos.thumb(element.name);
               response.push({
                 id: "4",
                 type: "article",
@@ -632,6 +633,11 @@ module.exports = {
                   message_text: `Tengo ${cantos.icon(element.name)} ${element.name}`,
                 },
                 description: "Vale: " + element.value,
+                ...(cantoThumb && {
+                  thumb_url: cantoThumb,
+                  thumb_width: 72,
+                  thumb_height: 72,
+                }),
               });
             } else {
               // visual_cards toggles whether to use the cached sticker
