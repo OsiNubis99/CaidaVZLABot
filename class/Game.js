@@ -73,6 +73,10 @@ class Game {
    * @returns
    */
   join(user) {
+    // Snapshot join order into the User so the individual-mode color
+    // marker stays with this player even after per-deck rotations
+    // (see this.users.push(this.users.shift()) in handing_out_cards).
+    if (user.color_index == null) user.color_index = this.users.length;
     this.users.push(user);
     return this.print(false);
   }
@@ -425,7 +429,8 @@ class Game {
       .filter((x) => x.u)
       .sort((a, b) => (this.points[b.i] || 0) - (this.points[a.i] || 0));
     for (const { u, i } of ranked) {
-      const color = INDIVIDUAL_COLORS[i] || "•";
+      const slot = u && u.color_index != null ? u.color_index : i;
+      const color = INDIVIDUAL_COLORS[slot] || "•";
       parts.push(
         "\n" + color + " " + renderName(u) + L.ig_dot_sep + (this.points[i] || 0) + L.ig_pts_suffix,
       );
@@ -504,7 +509,8 @@ class Game {
     for (let i = 0; i < this.users.length; i++) {
       const u = this.users[i];
       if (!u) continue;
-      const color = INDIVIDUAL_COLORS[i] || "•";
+      const slot = u.color_index != null ? u.color_index : i;
+      const color = INDIVIDUAL_COLORS[slot] || "•";
       let line = "\n" + color + " " + u.print(is_running, L);
       if (is_running) {
         line +=
@@ -537,8 +543,10 @@ class Game {
     }
     const parts = [];
     for (let i = 0; i < this.users.length; i++) {
-      if (!this.users[i]) continue;
-      const color = INDIVIDUAL_COLORS[i] || "•";
+      const u = this.users[i];
+      if (!u) continue;
+      const slot = u.color_index != null ? u.color_index : i;
+      const color = INDIVIDUAL_COLORS[slot] || "•";
       parts.push(color + " " + (this.points[i] || 0));
     }
     return parts.join("  |  ");

@@ -19,6 +19,10 @@ class User {
     this.caida = 0;
     this.caido = 0;
     this.sing = new Sings([]);
+    // Stable color slot for individual-mode renders. Set by Game.join()
+    // from the join order so the marker (🔴/🔵/🟢/🟡) stays with the
+    // user even after the per-deck rotation shifts users[] around.
+    this.color_index = null;
   }
 
   /**

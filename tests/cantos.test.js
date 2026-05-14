@@ -4,7 +4,7 @@ describe("cantos icons", () => {
   it("returns the configured emoji for each known canto", () => {
     expect(cantos.icon("Trivilin")).toBe("🎺");
     expect(cantos.icon("Chiguire")).toBe("🐗");
-    expect(cantos.icon("Patrulla")).toBe("🪖");
+    expect(cantos.icon("Patrulla")).toBe("🚓");
   });
 
   it("falls back to a default for unknown names", () => {

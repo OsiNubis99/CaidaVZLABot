@@ -92,6 +92,30 @@ describe("Game.print i18n + clean layout", () => {
     expect(rEN.response).toMatch(/^🏆 Won A/);
   });
 
+  it("individual color marker follows the player across deck rotations", () => {
+    // 4 players individual: A=🔴, B=🔵, C=🟢, D=🟡. After a deck-end
+    // rotation (users.push(users.shift())) the array becomes [B,C,D,A]
+    // but each player must keep their join-order color.
+    const cfg = new Config({ ...game_modes[1], locale: "es" }); // Clásico = individual
+    const g = new Game("T", cfg);
+    g.join(new User({ id_user: "1", first_name: "A", username: "a", is_banned: false }));
+    g.join(new User({ id_user: "2", first_name: "B", username: "b", is_banned: false }));
+    g.join(new User({ id_user: "3", first_name: "C", username: "c", is_banned: false }));
+    g.join(new User({ id_user: "4", first_name: "D", username: "d", is_banned: false }));
+    g.decks = 1;
+    g.points = [0, 0, 0, 0];
+    g.took = [0, 0, 0, 0];
+    // Simulate the rotation that handing_out_cards does at end-of-deck.
+    g.users.push(g.users.shift());
+    g.points.push(g.points.shift());
+    const out = g.print(false);
+    // A (originally index 0) keeps 🔴 even though it now sits at index 3.
+    expect(out).toMatch(/🔴 A \(@a\)/);
+    expect(out).toMatch(/🔵 B \(@b\)/);
+    expect(out).toMatch(/🟢 C \(@c\)/);
+    expect(out).toMatch(/🟡 D \(@d\)/);
+  });
+
   it("shuffle adds reduced status (between decks) for parejas", () => {
     const g = mk("es", 2, { type: "parejas" });
     g.points = [12, 9];
