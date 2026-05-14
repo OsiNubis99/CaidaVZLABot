@@ -162,14 +162,16 @@ bot.on(
     }
     if (!response) return;
     if (response.photo) {
-      const caption =
-        response.message && response.message.length > 1024
-          ? response.message.slice(0, 1021) + "..."
-          : response.message || "";
-      await bot.sendPhoto(response.chat_id, response.photo, {
-        caption,
+      const opts = {
         reply_markup: response.options && response.options.reply_markup,
-      });
+      };
+      if (response.message && response.message.trim()) {
+        opts.caption =
+          response.message.length > 1024
+            ? response.message.slice(0, 1021) + "..."
+            : response.message;
+      }
+      await bot.sendPhoto(response.chat_id, response.photo, opts);
     } else {
       await bot.sendMessage(response.chat_id, response.message, response.options);
     }
