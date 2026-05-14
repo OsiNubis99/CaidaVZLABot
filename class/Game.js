@@ -282,6 +282,11 @@ class Game {
   }
 
   play_card(id_user, number) {
+    // Transient per-call flags read by services/game.js to emit
+    // structural events without parsing the response string. Reset on
+    // every entry — these are derived from this call only.
+    this._lastCaida = false;
+    this._lastCleanTable = false;
     /**
      * @type {User}
      */
@@ -314,6 +319,7 @@ class Game {
             if (this.config.caida > 0) {
               this.users[this.last_player()].caido += 1;
               this.users[this.player].caida += 1;
+              this._lastCaida = true;
               if (this.increase_points(this.player, card.points * this.config.caida))
                 return this.kill(this.player);
               response = resp.user_get_fall;
@@ -330,6 +336,7 @@ class Game {
               if (card != null) clean = false;
             });
             if (clean) {
+              this._lastCleanTable = true;
               if (this.increase_points(this.player, 1 * this.config.mesa))
                 return this.kill(this.player);
               response += resp.clean_table;

@@ -415,7 +415,9 @@ module.exports = {
           value: playedCard.value,
           type: playedCard.type,
         });
-        if (response.indexOf(L.user_get_fall) >= 0) {
+        // Game.play_card sets _lastCaida structurally so the emit isn't
+        // tied to the localised user_get_fall text.
+        if (group._lastCaida) {
           events.record(chatId, events.EVENT_TYPES.CAIDA, {
             user_id: user.id_user,
             first_name: user.first_name,
