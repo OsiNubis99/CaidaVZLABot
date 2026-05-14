@@ -382,63 +382,68 @@ class Game {
 
   _renderHeader(is_running, no_started) {
     const L = this._lang();
+    if (!is_running) return no_started ? L.game_no_started : "";
     let response = "";
-    if (is_running) {
-      response += this.last_hand ? L.ig_last_hand : "";
-      response += L.ig_mesa_label;
-      this.table.forEach((item) => {
-        if (item != null) response += " " + item.value;
-        else response += L.ig_empty_slot;
-      });
-      if (this.last_card_played) {
-        response +=
-          L.ig_last_card_label +
-          this.last_card_played.value +
-          L.ig_card_of +
-          this.last_card_played.type;
-      }
-      response += L.ig_next_label + this.playerName();
-    } else if (no_started) {
-      response += L.game_no_started;
+    if (this.last_hand) response += L.ig_last_hand;
+    response += L.ig_mesa_label;
+    this.table.forEach((item) => {
+      if (item != null) response += " " + item.value;
+      else response += L.ig_empty_slot;
+    });
+    if (this.last_card_played) {
+      response +=
+        "\n" +
+        L.ig_last_card_label +
+        this.last_card_played.value +
+        L.ig_card_of +
+        this.last_card_played.type;
     }
+    response += "\n" + L.ig_next_label + this.playerName();
     return response;
   }
 
   _renderTeamsParejas(is_running) {
     const L = this._lang();
-    let response = "";
-    response += L.ig_team_prefix + (this.decks % 2 == 0 ? L.ig_team_red : L.ig_team_blue);
-    if (is_running)
-      response += L.ig_points_label + (this.points[0] || 0) + L.ig_taken_label + this.took[0];
-    response += this.users[0]
-      ? L.ig_team_player_prefix + this.users[0].print(is_running, L)
-      : L.ig_empty_team_slot;
-    response += this.users[2]
-      ? L.ig_team_player_prefix + this.users[2].print(is_running, L)
-      : L.ig_empty_team_slot;
-    response += L.ig_team_prefix + (this.decks % 2 == 1 ? L.ig_team_red : L.ig_team_blue);
-    if (is_running)
-      response += L.ig_points_label + (this.points[1] || 0) + L.ig_taken_label + this.took[1];
-    response += this.users[1]
-      ? L.ig_team_player_prefix + this.users[1].print(is_running, L)
-      : L.ig_empty_team_slot;
-    response += this.users[3]
-      ? L.ig_team_player_prefix + this.users[3].print(is_running, L)
-      : L.ig_empty_team_slot;
-    return response;
+    const out = [];
+    // Each pass renders one team. The first listed team is "Rojo" when
+    // decks % 2 == 0 and "Azul" otherwise, alternating each deck — same
+    // rule as the legacy renderer.
+    for (let team = 0; team < 2; team++) {
+      const isRed = team === 0 ? this.decks % 2 === 0 : this.decks % 2 === 1;
+      const emoji = isRed ? L.ig_team_red_emoji : L.ig_team_blue_emoji;
+      const name = isRed ? L.ig_team_red : L.ig_team_blue;
+      let header = "\n\n" + emoji + L.ig_team_label + name;
+      if (is_running) {
+        header +=
+          L.ig_dot_sep + (this.points[team] || 0) + L.ig_pts_suffix +
+          L.ig_dot_sep + this.took[team] + L.ig_took_suffix;
+      }
+      out.push(header);
+      // Players on this team are at indices [team, team + 2] (0,2 or 1,3).
+      for (const idx of [team, team + 2]) {
+        const u = this.users[idx];
+        if (!u) continue;
+        out.push("\n" + L.ig_player_bullet + u.print(is_running, L));
+      }
+    }
+    return out.join("");
   }
 
   _renderTeamsIndividual(is_running) {
     const L = this._lang();
-    const renderPlayer = (idx) => {
-      if (!this.users[idx]) return "";
-      const base = L.ig_player_prefix + (idx + 1) + ": " + this.users[idx].print(is_running, L);
-      const pts = is_running
-        ? L.ig_player_points + (this.points[idx] || 0) + L.ig_taken_label + this.took[idx]
-        : "";
-      return base + pts;
-    };
-    return renderPlayer(0) + renderPlayer(1) + renderPlayer(2) + renderPlayer(3);
+    const lines = ["\n\n" + L.ig_players_header];
+    for (let i = 0; i < this.users.length; i++) {
+      const u = this.users[i];
+      if (!u) continue;
+      let line = "\n" + (i + 1) + ". " + u.print(is_running, L);
+      if (is_running) {
+        line +=
+          L.ig_dot_sep + (this.points[i] || 0) + L.ig_pts_suffix +
+          L.ig_dot_sep + this.took[i] + L.ig_took_suffix;
+      }
+      lines.push(line);
+    }
+    return lines.join("");
   }
 
   /**

@@ -26,17 +26,17 @@ class User {
    * @param {Object} [lang] - Localized strings table. Falls back to the
    *   global es table when omitted (callers from Game.js pass through
    *   the active group's lang).
-   * @returns Printable User Information
+   * @returns Printable User Information (one line, no newlines).
    */
   print(started, lang) {
     const L = lang || resp;
-    let out = this.first_name + L.ig_user_handle_open + this.username + L.ig_user_handle_close;
+    const handle = this.username ? " (@" + this.username + ")" : "";
+    let out = this.first_name + handle;
     if (!started) return out;
-    const sang =
-      this.sing && this.sing.active && this.sing.name && this.sing.name !== "No cantó"
-        ? this.sing.name
-        : L.ig_user_no_sang;
-    out += L.ig_user_cards_label + this.cards.length + L.ig_user_sang_label + sang;
+    const hasActiveSing =
+      this.sing && this.sing.active && this.sing.name && this.sing.name !== "No cantó";
+    const sang = hasActiveSing ? L.ig_sang_prefix + this.sing.name : L.ig_no_sang;
+    out += L.ig_dot_sep + this.cards.length + L.ig_cards_suffix + L.ig_dot_sep + sang;
     return out;
   }
 
