@@ -572,36 +572,23 @@ module.exports = {
         let cardsHand = group.get_player_cards(user.id_user);
         if (cardsHand.length > 0) {
           if (cardsHand[0] == "Start_By") {
-            // Use the As (1) and the 4 of Oros as visual icons when the
-            // card cache is populated; fall back to plain articles.
-            const visual = group.config.visual_cards !== false;
-            const fid1 = visual ? await cardsService.getFileId(1, "Oro") : null;
-            const fid4 = visual ? await cardsService.getFileId(4, "Oro") : null;
-            const buildStartBy = (id, title, message, description, fid) =>
-              fid
-                ? { id, type: "photo", photo_file_id: fid, title, caption: message }
-                : {
-                    id,
-                    type: "article",
-                    title,
-                    input_message_content: { message_text: message },
-                    description,
-                  };
+            // The "Iniciar por 1 / 4" picker stays as text articles by
+            // explicit user preference — card-photo variants felt off.
             return [
-              buildStartBy(
-                "8",
-                resp.start_by_one_title,
-                resp.start_by_one_message,
-                resp.start_by_one_description,
-                fid1,
-              ),
-              buildStartBy(
-                "9",
-                resp.start_by_four_title,
-                resp.start_by_four_message,
-                resp.start_by_four_description,
-                fid4,
-              ),
+              {
+                id: "8",
+                type: "article",
+                title: resp.start_by_one_title,
+                input_message_content: { message_text: resp.start_by_one_message },
+                description: resp.start_by_one_description,
+              },
+              {
+                id: "9",
+                type: "article",
+                title: resp.start_by_four_title,
+                input_message_content: { message_text: resp.start_by_four_message },
+                description: resp.start_by_four_description,
+              },
             ];
           }
           const visual = group.config.visual_cards !== false;
@@ -624,12 +611,15 @@ module.exports = {
                 fileId = await cardsService.getFileId(element.value, element.type);
               }
               if (fileId) {
+                // No caption: the card photo IS the play message. Adding
+                // "Juego el X de Y" would duplicate what the image shows.
+                // The bot's next message still says "Ultima carta: X de Y"
+                // so context is not lost.
                 response.push({
                   id: String(index),
                   type: "photo",
                   photo_file_id: fileId,
                   title: `${element.value} de ${element.type}`,
-                  caption: `Juego el ${element.value} de ${element.type}`,
                 });
               } else {
                 response.push({
