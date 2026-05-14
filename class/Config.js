@@ -85,16 +85,17 @@ class Config {
    * @returns Full info about the Game configs
    */
   print() {
-    // caida_continua and mata_mesa are stored but not implemented in Game.js;
-    // they are hidden here so users do not toggle non-functional features.
-    // When implemented, re-add get_caida_continua() and get_mata_mesa() below
-    // and remove the rejection in is_not_ok().
+    // caida_continua: implemented in Game.handing_out_cards.
+    // mata_mesa: still a no-op; shown for completeness, will work once
+    // wired through Game.play_card.
     return (
       "Configuración actual del Chat" +
       this.get_points() +
       this.get_mesa() +
       this.get_type() +
+      this.get_caida_continua() +
       this.get_mata_canto() +
+      this.get_mata_mesa() +
       "\nMultiplicadores" +
       this.get_caida() +
       this.get_ronda() +
@@ -124,9 +125,18 @@ class Config {
    * @returns true if the value is ok. Else return the specific error message.
    */
   is_not_ok(config, value) {
-    // Not-yet-implemented features (see TODO at top of class).
+    // caida_continua is now implemented (see Game.handing_out_cards).
+    // mata_mesa is still a no-op in the game logic — keeping it as a
+    // settable boolean so presets can carry it for forward-compat, but
+    // changing the value mid-game does nothing until somebody wires it
+    // through Game.play_card. Once implemented, drop this comment.
     if (config == "caida_continua" || config == "mata_mesa") {
-      return resp.config_not_implemented;
+      if (value == "on" || value == "off") {
+        this[config] = value;
+        this.game_mode = 0;
+        return false;
+      }
+      return resp.config_bool_invalid;
     }
     if (config == "type") {
       if (value == "parejas" || value == "individual") {

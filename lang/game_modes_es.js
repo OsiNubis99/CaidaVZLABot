@@ -35,7 +35,7 @@ module.exports = [
       "Modo de juego Creado por The Grupish y la motivación para crear este bot.",
     points: 24,
     mesa: 4,
-    type: "parejas",
+    type: "individual",
     caida_continua: "on",
     mata_canto: "on",
     mata_mesa: "on",

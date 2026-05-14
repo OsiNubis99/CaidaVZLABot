@@ -231,6 +231,16 @@ class Game {
       this.player = 0;
       this.users[this.users.length - 1].cards = [];
       this.table_order = "";
+      // caida_continua = "on" means caída can still happen on the last
+      // card of the *previous* mano. With "off" (the Clásico default),
+      // we reset last_card_played at the start of every new mano so the
+      // first play of the new mano cannot trigger caída.
+      // start_by != 0 means this is the start of a brand-new deck, in
+      // which case new_cards / push_cards will set last_card_played
+      // itself from the dealt mesa card, so we leave it alone.
+      if (start_by === 0 && this.config.caida_continua !== "on") {
+        this.last_card_played = null;
+      }
       let points = this.new_cards(3, start_by, start_by > 2);
       added += this.table_order;
       if (points > 0) {

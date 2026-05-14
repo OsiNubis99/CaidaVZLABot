@@ -36,6 +36,8 @@ const KEY_ALIAS = {
   vc: "visual_cards",
   vt: "visual_table",
   mc: "mata_canto",
+  cc: "caida_continua",
+  mm: "mata_mesa",
   gm: "game_mode",
   tp: "type",
   lc: "locale",
@@ -157,8 +159,8 @@ async function mainView(chatId) {
   if (running) {
     lines.push("\n_⚠️ Partida en curso — solo se pueden cambiar render + idioma_");
   }
-  // Mid-game we hide the game-rule sections (Modo, Puntos & ×, Cantos)
-  // because their values can't change while a deck is being played.
+  // Mid-game we hide the game-rule sections (Modo, Puntos & ×, Reglas,
+  // Cantos) because their values can't change while a deck is in play.
   const buttons = [];
   if (!running) {
     buttons.push([
@@ -166,16 +168,21 @@ async function mainView(chatId) {
       { text: "🔢 Puntos & ×", callback_data: "c:s:points" },
     ]);
     buttons.push([
+      { text: "📜 Reglas", callback_data: "c:s:reglas" },
       { text: "🎵 Cantos", callback_data: "c:s:cantos" },
-      { text: "🎴 Visuales", callback_data: "c:s:visuales" },
     ]);
+    buttons.push([
+      { text: "🎴 Visuales", callback_data: "c:s:visuales" },
+      { text: "⚙️ Sistema", callback_data: "c:s:system" },
+    ]);
+    buttons.push([{ text: "Cerrar", callback_data: "c:close" }]);
   } else {
     buttons.push([{ text: "🎴 Visuales", callback_data: "c:s:visuales" }]);
+    buttons.push([
+      { text: "⚙️ Sistema", callback_data: "c:s:system" },
+      { text: "Cerrar", callback_data: "c:close" },
+    ]);
   }
-  buttons.push([
-    { text: "⚙️ Sistema", callback_data: "c:s:system" },
-    { text: "Cerrar", callback_data: "c:close" },
-  ]);
   return {
     message: lines.join("\n"),
     options: {
@@ -279,34 +286,64 @@ async function visualesView(chatId) {
   const state = await loadConfig(chatId);
   if (!state) return notRegisteredView();
   const c = state.config;
-  const running = state.decksRunning;
-  const lines = [
-    "🎴 *Visuales*",
-    "",
-    `Cartas con imagen: ${fmtBool(c.visual_cards)}`,
-    `Mesa con imagen: ${fmtBool(c.visual_table)}`,
-  ];
-  if (!running) {
-    lines.push(`Mata canto: ${fmtBool(c.mata_canto === "on")}`);
-  }
-  const rows = [
-    [{ text: `Cartas: ${fmtBool(c.visual_cards)} (toggle)`, callback_data: "c:tog:vc" }],
-    [{ text: `Mesa: ${fmtBool(c.visual_table)} (toggle)`, callback_data: "c:tog:vt" }],
-  ];
-  // mata_canto is a game rule (affects scoring), so it can only be
-  // toggled when no deck is in play. Hide the row mid-game.
-  if (!running) {
-    rows.push([
-      {
-        text: `Mata canto: ${fmtBool(c.mata_canto === "on")} (toggle)`,
-        callback_data: "c:tog:mc",
-      },
-    ]);
-  }
-  rows.push([{ text: "⬅️ Volver", callback_data: "c:m" }]);
   return {
-    message: lines.join("\n"),
-    options: { parse_mode: "Markdown", reply_markup: { inline_keyboard: rows } },
+    message:
+      "🎴 *Visuales*\n\n" +
+      `Cartas con imagen: ${fmtBool(c.visual_cards)}\n` +
+      `Mesa con imagen: ${fmtBool(c.visual_table)}\n\n` +
+      `_Render-only. Para reglas de juego (mata canto, caída continua, mata mesa) usá Reglas._`,
+    options: {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: `Cartas: ${fmtBool(c.visual_cards)} (toggle)`, callback_data: "c:tog:vc" }],
+          [{ text: `Mesa: ${fmtBool(c.visual_table)} (toggle)`, callback_data: "c:tog:vt" }],
+          [{ text: "⬅️ Volver", callback_data: "c:m" }],
+        ],
+      },
+    },
+  };
+}
+
+async function reglasView(chatId) {
+  const state = await loadConfig(chatId);
+  if (!state) return notRegisteredView();
+  const c = state.config;
+  return {
+    message:
+      "📜 *Reglas extra*\n\n" +
+      `Mata canto: ${fmtBool(c.mata_canto === "on")}\n` +
+      `Caída continua: ${fmtBool(c.caida_continua === "on")}\n` +
+      `Mata mesa: ${fmtBool(c.mata_mesa === "on")}\n\n` +
+      `_Mata canto: una caída inhabilita el canto del jugador anterior._\n` +
+      `_Caída continua: se puede dar caída sobre la última carta de la mano anterior._\n` +
+      `_Mata mesa: aún en desarrollo._`,
+    options: {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: `Mata canto: ${fmtBool(c.mata_canto === "on")}`,
+              callback_data: "c:tog:mc",
+            },
+          ],
+          [
+            {
+              text: `Caída continua: ${fmtBool(c.caida_continua === "on")}`,
+              callback_data: "c:tog:cc",
+            },
+          ],
+          [
+            {
+              text: `Mata mesa: ${fmtBool(c.mata_mesa === "on")}`,
+              callback_data: "c:tog:mm",
+            },
+          ],
+          [{ text: "⬅️ Volver", callback_data: "c:m" }],
+        ],
+      },
+    },
   };
 }
 
@@ -385,6 +422,7 @@ async function dispatch(chatId, data) {
       case "points": return pointsView(chatId);
       case "cantos": return cantosView(chatId);
       case "visuales": return visualesView(chatId);
+      case "reglas": return reglasView(chatId);
       case "system": return systemView(chatId);
     }
     return mainView(chatId);
@@ -445,17 +483,27 @@ async function dispatch(chatId, data) {
   if (action === "tog") {
     const shortKey = parts[2];
     const key = alias(shortKey);
-    // visual_cards/visual_table are render-only and safe mid-game.
-    // mata_canto changes scoring so it requires decks==0.
+    // visual_cards / visual_table are render-only and safe mid-game.
+    // mata_canto / caida_continua / mata_mesa are game rules — require decks == 0.
     const allowMidGame = key === "visual_cards" || key === "visual_table";
-    const result = await applyChange(chatId, (config) => {
-      if (key === "visual_cards") config.visual_cards = !config.visual_cards;
-      else if (key === "visual_table") config.visual_table = !config.visual_table;
-      else if (key === "mata_canto") config.mata_canto = config.mata_canto === "on" ? "off" : "on";
-      else return "Toggle no soportado";
-      return null;
-    }, { allowMidGame });
-    const view = await visualesView(chatId);
+    const isReglaToggle = ["mata_canto", "caida_continua", "mata_mesa"].includes(key);
+    const result = await applyChange(
+      chatId,
+      (config) => {
+        if (key === "visual_cards") config.visual_cards = !config.visual_cards;
+        else if (key === "visual_table") config.visual_table = !config.visual_table;
+        else if (key === "mata_canto")
+          config.mata_canto = config.mata_canto === "on" ? "off" : "on";
+        else if (key === "caida_continua")
+          config.caida_continua = config.caida_continua === "on" ? "off" : "on";
+        else if (key === "mata_mesa")
+          config.mata_mesa = config.mata_mesa === "on" ? "off" : "on";
+        else return "Toggle no soportado";
+        return null;
+      },
+      { allowMidGame },
+    );
+    const view = isReglaToggle ? await reglasView(chatId) : await visualesView(chatId);
     if (!result.ok) view.alert = result.msg;
     return view;
   }
