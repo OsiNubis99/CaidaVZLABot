@@ -591,6 +591,7 @@ module.exports = {
               },
             ];
           }
+          const visual = group.config.visual_cards !== false;
           const response = [];
           for (let index = 0; index < cardsHand.length; index++) {
             const element = cardsHand[index];
@@ -605,13 +606,12 @@ module.exports = {
                 description: "Vale: " + element.value,
               });
             } else {
-              // Inline picker is private to the player, so we always
-              // serve the card sticker when cached — independent of the
-              // group's visual_cards toggle. (The toggle now only acts
-              // as a fallback knob: if the cache is empty, we use text
-              // articles regardless of the toggle's value.)
+              // visual_cards toggles whether to use the cached sticker
+              // or render as a text article. Tapping a result IS the
+              // chat message, so the picker and chat-side display are
+              // necessarily tied.
               let fileId = null;
-              if (element.value && element.type) {
+              if (visual && element.value && element.type) {
                 fileId = await cardsService.getFileId(element.value, element.type);
               }
               if (fileId) {
