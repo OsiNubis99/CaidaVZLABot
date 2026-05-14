@@ -1,4 +1,5 @@
 const resp = require("../lang/es");
+const { getLang } = require("../lang");
 const bot = require("../config/server");
 const env = require("../config/env");
 const logger = require("../config/logger");
@@ -7,6 +8,25 @@ const { GroupController, UserController } = require("../database");
 
 function is_admin(id) {
 	return env.admin_ids.includes(String(id));
+}
+
+/**
+ * Resolve the user-facing language for the given request or raw msg.
+ * Reads the in-memory Game (via the game service) so we don't add a
+ * DB round-trip per admin command. Falls back to es when no group
+ * context is available.
+ */
+function langOf(reqOrMsg) {
+	let chatId;
+	if (reqOrMsg && reqOrMsg.group && reqOrMsg.group.id_group) {
+		chatId = reqOrMsg.group.id_group;
+	} else if (reqOrMsg && reqOrMsg.chat && reqOrMsg.chat.id) {
+		chatId = String(reqOrMsg.chat.id);
+	}
+	if (!chatId) return getLang(null);
+	// Late require avoids a load-order cycle with services/game.
+	const g = require("./game").peek(chatId);
+	return getLang(g && g.config && g.config.locale);
 }
 
 module.exports = {
@@ -19,11 +39,12 @@ module.exports = {
 	 * @returns {Promise<UserDTO>} The full User element from database.
 	 */
 	async ban_unban_user(req, is_banned) {
-		if (!is_admin(req.user.id_user)) return resp.no_admin_person;
-		if (!req.reply_to) return resp.remember_reply;
+		const L = langOf(req);
+		if (!is_admin(req.user.id_user)) return L.no_admin_person;
+		if (!req.reply_to) return L.remember_reply;
 		if (await UserController.ban_unban(req.reply_to.user, is_banned))
-			return resp.user_banned;
-		return resp.user_unbanned;
+			return L.user_banned;
+		return L.user_unbanned;
 	},
 
 	/**
@@ -41,27 +62,30 @@ module.exports = {
 	 * Add a permited group to database. Admin-only.
 	 */
 	add_group(req, chatId, name) {
-		if (!is_admin(req.user.id_user)) return resp.no_admin_person;
+		const L = langOf(req);
+		if (!is_admin(req.user.id_user)) return L.no_admin_person;
 		GroupController.add("-" + chatId, name);
-		return resp.group_added;
+		return L.group_added;
 	},
 
 	/**
 	 * Extend a group's paid_up_to by N months. Admin-only.
 	 */
 	async paid(req, chatId, times) {
-		if (!is_admin(req.user.id_user)) return resp.no_admin_person;
+		const L = langOf(req);
+		if (!is_admin(req.user.id_user)) return L.no_admin_person;
 		const months = parseInt(times, 10);
 		if (!Number.isInteger(months) || months <= 0 || months > 120) {
-			return resp.invalid_value;
+			return L.invalid_value;
 		}
 		const group = await GroupController.paid("-" + chatId, months);
-		if (!group) return resp.group_invalid;
+		if (!group) return L.group_invalid;
 		return `El grupo ${group.name} sera valido hasta ${group.paid_up_to}`;
 	},
 
 	async list_user(msg) {
-		if (!is_admin(String(msg.from.id))) return resp.no_admin_person;
+		const L = langOf(msg);
+		if (!is_admin(String(msg.from.id))) return L.no_admin_person;
 		const list = await UserController.list();
 		return `La lista de usuarios registrados es: (${list.length})`;
 	},
