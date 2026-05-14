@@ -154,4 +154,26 @@ describe("Game.print i18n + clean layout", () => {
     // Should NOT include the full status player blocks
     expect(out).not.toContain("cartas · sin canto");
   });
+
+  it("3p individual render shows 3 colored lines, no 🟡", () => {
+    // Clásico = individual; 3 players means colors 🔴🔵🟢 only.
+    const cfg = new Config({ ...game_modes[1], locale: "es" });
+    const g = new Game("T", cfg);
+    g.join(new User({ id_user: "1", first_name: "A", username: "a", is_banned: false }));
+    g.join(new User({ id_user: "2", first_name: "B", username: "b", is_banned: false }));
+    g.join(new User({ id_user: "3", first_name: "C", username: "c", is_banned: false }));
+    g.decks = 1;
+    g.last_card_played = { value: 7, type: "Copa" };
+    g.table[3] = { value: 4, type: "Oro" };
+    g.points = [12, 8, 5];
+    g.took = [4, 2, 1];
+    const out = g.print(false);
+    // Each player gets a colored line.
+    expect(out).toContain("🔴 A");
+    expect(out).toContain("🔵 B");
+    expect(out).toContain("🟢 C");
+    // 4-player color and parejas-only label must not appear.
+    expect(out).not.toContain("🟡");
+    expect(out).not.toContain("Equipo");
+  });
 });

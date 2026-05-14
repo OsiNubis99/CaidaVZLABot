@@ -185,4 +185,63 @@ describe("Game", () => {
       expect(g.dealerIdx()).toBe(2);
     });
   });
+
+  describe("3-player support", () => {
+    it("3p threshold rule: dealer (idx 2) gets 14, others get 13", () => {
+      const g = new Game("test", new Config(game_modes[1]));
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.join(makeUser(3, "C"));
+      const rules = g._selectTookBonusRules();
+      expect(rules).toEqual([
+        { player: 0, threshold: 13 },
+        { player: 1, threshold: 13 },
+        { player: 2, threshold: 14 },
+      ]);
+      // Dealer is the last user (idx 2).
+      expect(g.dealerIdx()).toBe(2);
+    });
+
+    it("3p individual: scoringSlot maps 1:1 (not collapsed) even with config.type=parejas", () => {
+      // With 3 users, isParejasMode() returns false regardless of
+      // config.type, so scoringSlot is a 1:1 identity map — the parejas
+      // flag is inert.
+      const cfg = new Config({ ...game_modes[1], type: "parejas" });
+      const g = new Game("test", cfg);
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.join(makeUser(3, "C"));
+      expect(g.isParejasMode()).toBe(false);
+      expect(g.scoringSlot(0)).toBe(0);
+      expect(g.scoringSlot(1)).toBe(1);
+      expect(g.scoringSlot(2)).toBe(2);
+    });
+
+    it("3p color stamping: each player gets a unique color from 🔴🔵🟢", () => {
+      const g = new Game("test", new Config(game_modes[1])); // Clásico = individual
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.join(makeUser(3, "C"));
+      expect(g.users[0].color).toBe("🔴");
+      expect(g.users[1].color).toBe("🔵");
+      expect(g.users[2].color).toBe("🟢");
+      // 🟡 (the 4-player color) must not appear with only 3 users.
+      for (const u of g.users) {
+        expect(u.color).not.toBe("🟡");
+      }
+    });
+
+    it("3p with type=parejas: colors still get stamped (because !isParejasMode for 3 users)", () => {
+      // The parejas flag is inert with 3 players: isParejasMode() returns
+      // false, so join() must still stamp the individual color marker.
+      const cfg = new Config({ ...game_modes[1], type: "parejas" });
+      const g = new Game("test", cfg);
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.join(makeUser(3, "C"));
+      expect(g.users[0].color).toBe("🔴");
+      expect(g.users[1].color).toBe("🔵");
+      expect(g.users[2].color).toBe("🟢");
+    });
+  });
 });
