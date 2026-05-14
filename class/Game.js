@@ -266,9 +266,9 @@ class Game {
     }
     if (this.users.length == 3) {
       return [
-        { player: 0, threshold: 14 },
+        { player: 0, threshold: 13 },
         { player: 1, threshold: 13 },
-        { player: 2, threshold: 13 },
+        { player: 2, threshold: 14 }, // dealer (users[length-1]) reaches 14
       ];
     }
     // 2 players, or 4 players in parejas mode — only two scoring slots (0 and 1).
@@ -331,8 +331,8 @@ class Game {
       this.table[position] = null;
     }
     // Add took points. Threshold per player depends on player count and
-    // game type. Note the 3-player asymmetry: player 0 gets threshold 14
-    // while players 1 and 2 use 13 — preserve.
+    // game type. Note the 3-player asymmetry: player 2 (the dealer) gets
+    // threshold 14 while players 0 and 1 use 13 — preserve.
     const tookRules = this._selectTookBonusRules();
     for (const { player, threshold } of tookRules) {
       if (this.took[player] > threshold && this.increase_points(player, this.took[player] - threshold))
