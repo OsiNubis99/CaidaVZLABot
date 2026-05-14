@@ -144,6 +144,7 @@ async function mainView(chatId) {
   const state = await loadConfig(chatId);
   if (!state) return notRegisteredView();
   const c = state.config;
+  const running = state.decksRunning;
   const lines = [
     "⚙️ *Configuración*",
     "",
@@ -153,27 +154,33 @@ async function mainView(chatId) {
     `Visuales: cartas ${c.visual_cards ? "✅" : "❌"} · mesa ${c.visual_table ? "✅" : "❌"}`,
     `Turno: ${c.turn_timeout_seconds > 0 ? c.turn_timeout_seconds + "s" : "off"} · Idioma: ${c.locale}`,
   ];
-  if (state.decksRunning) lines.push("\n_⚠️ Partida en curso — cambios bloqueados_");
+  if (running) {
+    lines.push("\n_⚠️ Partida en curso — solo se pueden cambiar render + idioma_");
+  }
+  // Mid-game we hide the game-rule sections (Modo, Puntos & ×, Cantos)
+  // because their values can't change while a deck is being played.
+  const buttons = [];
+  if (!running) {
+    buttons.push([
+      { text: "🎯 Modo", callback_data: "c:s:mode" },
+      { text: "🔢 Puntos & ×", callback_data: "c:s:points" },
+    ]);
+    buttons.push([
+      { text: "🎵 Cantos", callback_data: "c:s:cantos" },
+      { text: "🎴 Visuales", callback_data: "c:s:visuales" },
+    ]);
+  } else {
+    buttons.push([{ text: "🎴 Visuales", callback_data: "c:s:visuales" }]);
+  }
+  buttons.push([
+    { text: "⚙️ Sistema", callback_data: "c:s:system" },
+    { text: "Cerrar", callback_data: "c:close" },
+  ]);
   return {
     message: lines.join("\n"),
     options: {
       parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "🎯 Modo", callback_data: "c:s:mode" },
-            { text: "🔢 Puntos & ×", callback_data: "c:s:points" },
-          ],
-          [
-            { text: "🎵 Cantos", callback_data: "c:s:cantos" },
-            { text: "🎴 Visuales", callback_data: "c:s:visuales" },
-          ],
-          [
-            { text: "⚙️ Sistema", callback_data: "c:s:system" },
-            { text: "Cerrar", callback_data: "c:close" },
-          ],
-        ],
-      },
+      reply_markup: { inline_keyboard: buttons },
     },
   };
 }
@@ -272,23 +279,34 @@ async function visualesView(chatId) {
   const state = await loadConfig(chatId);
   if (!state) return notRegisteredView();
   const c = state.config;
-  return {
-    message:
-      "🎴 *Visuales*\n\n" +
-      `Cartas con imagen: ${fmtBool(c.visual_cards)}\n` +
-      `Mesa con imagen: ${fmtBool(c.visual_table)}\n` +
-      `Mata canto: ${fmtBool(c.mata_canto === "on")}`,
-    options: {
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: `Cartas: ${fmtBool(c.visual_cards)} (toggle)`, callback_data: "c:tog:vc" }],
-          [{ text: `Mesa: ${fmtBool(c.visual_table)} (toggle)`, callback_data: "c:tog:vt" }],
-          [{ text: `Mata canto: ${fmtBool(c.mata_canto === "on")} (toggle)`, callback_data: "c:tog:mc" }],
-          [{ text: "⬅️ Volver", callback_data: "c:m" }],
-        ],
+  const running = state.decksRunning;
+  const lines = [
+    "🎴 *Visuales*",
+    "",
+    `Cartas con imagen: ${fmtBool(c.visual_cards)}`,
+    `Mesa con imagen: ${fmtBool(c.visual_table)}`,
+  ];
+  if (!running) {
+    lines.push(`Mata canto: ${fmtBool(c.mata_canto === "on")}`);
+  }
+  const rows = [
+    [{ text: `Cartas: ${fmtBool(c.visual_cards)} (toggle)`, callback_data: "c:tog:vc" }],
+    [{ text: `Mesa: ${fmtBool(c.visual_table)} (toggle)`, callback_data: "c:tog:vt" }],
+  ];
+  // mata_canto is a game rule (affects scoring), so it can only be
+  // toggled when no deck is in play. Hide the row mid-game.
+  if (!running) {
+    rows.push([
+      {
+        text: `Mata canto: ${fmtBool(c.mata_canto === "on")} (toggle)`,
+        callback_data: "c:tog:mc",
       },
-    },
+    ]);
+  }
+  rows.push([{ text: "⬅️ Volver", callback_data: "c:m" }]);
+  return {
+    message: lines.join("\n"),
+    options: { parse_mode: "Markdown", reply_markup: { inline_keyboard: rows } },
   };
 }
 
