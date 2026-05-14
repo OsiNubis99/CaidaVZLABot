@@ -12,8 +12,9 @@ describe("Config", () => {
 
   it("loads The Grupish mode (game_mode=2)", () => {
     const c = new Config(game_modes[2]);
-    expect(c.type).toBe("parejas");
+    expect(c.type).toBe("individual");
     expect(c.mata_canto).toBe("on");
+    expect(c.caida_continua).toBe("on");
     expect(c.chiguire).toBe(5);
   });
 
@@ -28,10 +29,13 @@ describe("Config", () => {
     expect(c.visual_cards).toBe(false);
   });
 
-  it("rejects caida_continua and mata_mesa as not implemented", () => {
+  it("accepts caida_continua and mata_mesa as on/off", () => {
     const c = new Config(game_modes[1]);
-    expect(c.is_not_ok("caida_continua", "on")).toBe(resp.config_not_implemented);
-    expect(c.is_not_ok("mata_mesa", "on")).toBe(resp.config_not_implemented);
+    expect(c.is_not_ok("caida_continua", "on")).toBe(false);
+    expect(c.caida_continua).toBe("on");
+    expect(c.is_not_ok("mata_mesa", "off")).toBe(false);
+    expect(c.mata_mesa).toBe("off");
+    expect(c.is_not_ok("caida_continua", "bad")).toBe(resp.config_bool_invalid);
   });
 
   it("accepts visual_cards on/off", () => {

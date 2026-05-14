@@ -52,7 +52,8 @@ describe("Game", () => {
   });
 
   it("increase_points groups by team in parejas mode", () => {
-    const cfg = new Config(game_modes[2]); // parejas mode
+    // The Grupish preset defaults to individual now; force parejas here.
+    const cfg = new Config({ ...game_modes[2], type: "parejas" });
     cfg.points = 100;
     const g = new Game("test", cfg);
     for (let i = 0; i < 4; i++) g.join(makeUser(i + 1, "U" + i));

@@ -5,8 +5,8 @@ const User = require("../class/User");
 const Config = require("../class/Config");
 const game_modes = require("../lang/game_modes_es");
 
-function mk(locale, modeIdx = 1) {
-  const cfg = new Config({ ...game_modes[modeIdx], locale });
+function mk(locale, modeIdx = 1, overrides = {}) {
+  const cfg = new Config({ ...game_modes[modeIdx], locale, ...overrides });
   const g = new Game("T", cfg);
   g.join(new User({ id_user: "1", first_name: "A", username: "a", is_banned: false }));
   g.join(new User({ id_user: "2", first_name: "B", username: "b", is_banned: false }));
@@ -47,7 +47,7 @@ describe("Game.print i18n + clean layout", () => {
   });
 
   it("parejas team blocks include points, taken, and player on one line", () => {
-    const g = mk("es", 2); // The Grupish = parejas
+    const g = mk("es", 2, { type: "parejas" }); // force parejas (Grupish now defaults to individual)
     const out = g.print(false);
     // One block per team with emoji + label + Equipo
     expect(out).toMatch(/[🔴🔵] Equipo (Rojo|Azul) · 12 pts · 4 tomadas/);
@@ -67,7 +67,7 @@ describe("Game.print i18n + clean layout", () => {
   });
 
   it("kill includes final score for parejas", () => {
-    const g = mk("es", 2); // parejas
+    const g = mk("es", 2, { type: "parejas" });
     g.points[0] = 24;
     g.points[1] = 19;
     const r = g.kill(0);
@@ -93,7 +93,7 @@ describe("Game.print i18n + clean layout", () => {
   });
 
   it("shuffle adds reduced status (between decks) for parejas", () => {
-    const g = mk("es", 2);
+    const g = mk("es", 2, { type: "parejas" });
     g.points = [12, 9];
     // first shuffle (decks 0 -> 1) has no status; second (1 -> 2) does
     g.shuffle();
