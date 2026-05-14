@@ -334,9 +334,12 @@ names (no took, no card counts, no "sin canto").
   be wired through. Setting the toggle has no in-game effect yet.
 - DB password is in `.env` plain (600 perms). Not in a secret
   manager. User said skip — local server, low risk.
-- i18n migration is mostly done: `Game.js`, `User.js`, and
-  `services/game.js` localise via `getLang(config.locale)`. Still
-  pending: `services/admin.js` (admin-only paths, default es).
+- i18n migration is complete across `services/*.js`, `index.js`,
+  `class/Game.js`, `class/User.js`. Each handler resolves the
+  locale via `langOf` / `langForMsg` / `_lang()` that walks back to
+  the in-memory `Game.config.locale`. Direct `lang/es` imports
+  remain only in `class/Config.js` (for `is_not_ok` error strings)
+  and `tests/Config.test.js` (pins canonical Spanish strings).
 
 ### Pending features
 - **Modo torneo / brackets** — fresh design, not started.
@@ -386,6 +389,9 @@ names (no took, no card counts, no "sin canto").
 ## Recent commits (most → least recent)
 
 ```
+ff41e01 12c++: finish i18n migration (index.js + drop resp imports)
+dfea3c3 12c+: i18n migration in services/admin.js
+a12a9cf docs: update context.md for round 12
 54ade75 chore: bump node-telegram-bot-api 0.50 -> 0.66
 37c77f0 12d: emit CAIDA event from structural flag, not text match
 ff107ed 12c: i18n callsite migration in services/game.js
