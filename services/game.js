@@ -58,6 +58,26 @@ function attachNextTurn(group, finished, response, chatIdHint) {
   return out;
 }
 
+/**
+ * Build the "Pulsa para escoger X" inline button for whoever is up
+ * next. Returns undefined when the next actor is a CPU — the bot's
+ * scheduler will autoplay so a human-facing "click here" button is
+ * noise.
+ *
+ * Handles the Start_By state: when the dealer holds the Start_By
+ * sentinel, THEY are the next actor (choosing 1/4), not group.player.
+ */
+function keyboardForActor(group) {
+  if (!group) return undefined;
+  const lastUser = group.users && group.users[group.users.length - 1];
+  const isStartBy =
+    lastUser && Array.isArray(lastUser.cards) && lastUser.cards[0] === "Start_By";
+  const next = isStartBy ? lastUser : group.users && group.users[group.player];
+  if (!next || !next.first_name) return undefined;
+  if (next.cpu_difficulty) return undefined;
+  return keyboard.make_a_choice(next.first_name);
+}
+
 // Persist (or drop) the in-memory game for a given chat after a mutation.
 async function persistOrRemove(chatId, finished) {
   try {
@@ -659,12 +679,7 @@ module.exports = {
             decks: group.decks,
             player_count: group.users.length,
           });
-          const baseMsg = message.keyboard(
-            response,
-            keyboard.make_a_choice(
-              group.users[group.users.length - 1].first_name
-            )
-          );
+          const baseMsg = message.keyboard(response, keyboardForActor(group));
           return attachNextTurn(group, false, baseMsg, req.group.id_group);
         }
         return inLine ? false : message.reply(L.game_is_empty, req.message_id);
@@ -728,7 +743,7 @@ module.exports = {
       const msg = message.inLine_keyboard(
         chatId,
         response,
-        finished ? undefined : keyboard.make_a_choice(group.playerName())
+        finished ? undefined : keyboardForActor(group),
       );
       // Audio effect on caída — only signal here; the handler in
       // index.js sends the voice clip after the text/photo message
@@ -761,7 +776,7 @@ module.exports = {
       const msg = message.inLine_keyboard(
         chatId,
         group.sing(user.id_user),
-        keyboard.make_a_choice(group.playerName()),
+        keyboardForActor(group),
       );
       if (singName && singName !== "No cantó") {
         events.record(chatId, events.EVENT_TYPES.SING, {
@@ -807,7 +822,7 @@ module.exports = {
         const msg = message.inLine_keyboard(
           chatId,
           response,
-          finished ? undefined : keyboard.make_a_choice(group.playerName()),
+          finished ? undefined : keyboardForActor(group),
         );
         await persistOrRemove(chatId, finished);
         const withPhoto = await attachMesaPhoto(group, finished, msg);
