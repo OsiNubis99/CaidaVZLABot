@@ -324,8 +324,25 @@ module.exports = {
       var group = games[req.group.id_group];
       if (!group) {
         let configs = await GroupController.getOneById(req.group.id_group);
-        if (!configs)
-          return message.reply(L.group_invalid, req.message_id);
+        if (!configs) {
+          // Auto-register: the bot is now open to all groups. Reject
+          // banned groups and refuse DMs (you can only play in a chat).
+          if (req.group.type !== "group" && req.group.type !== "supergroup") {
+            return message.reply(L.is_not_a_group, req.message_id);
+          }
+          const raw = await GroupController.getOneByIdRaw(req.group.id_group);
+          if (raw && raw.is_banned) {
+            return message.reply(L.group_invalid, req.message_id);
+          }
+          configs = await GroupController.add(
+            req.group.id_group,
+            req.group.name || "Grupo",
+          );
+          logger.info(
+            { id_group: req.group.id_group, name: configs.name, by: req.user.id_user },
+            "auto-registered group on first /unirse",
+          );
+        }
         games[req.group.id_group] = new Game(configs.name, new Config(configs));
         group = games[req.group.id_group];
       }
@@ -822,6 +839,12 @@ module.exports = {
           points: group.points,
           decks: group.decks,
         });
+        // Bump the denormalized games_played counter on the group row
+        // so the admin list can sort by "most active". Fire and forget —
+        // a DB hiccup here mustn't block the finish response.
+        GroupController.incrementGamesPlayed(chatId).catch((err) =>
+          logger.warn({ err: err.message, chatId }, "games_played bump failed"),
+        );
         games[chatId] = new Game(group.name, new Config(group.config));
         cleanUsers(group.users, chatId);
         response = response.response

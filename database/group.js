@@ -56,14 +56,31 @@ module.exports = {
   },
 
   /**
-   * Return one group if currently valid (paid_up_to >= today OR public).
+   * Return one group if it's eligible to play. The bot is open to all
+   * groups now (auto-registered on first /unirse), so the only filter
+   * is the explicit ban switch the admin can flip.
    */
   async getOneById(id) {
     const result = await database.query(
-      "SELECT * FROM public.group WHERE (paid_up_to >= CURRENT_DATE OR public = true) AND id_group = $1;",
+      "SELECT * FROM public.group WHERE COALESCE(is_banned, false) = false AND id_group = $1;",
       [id],
     );
     return result.rows[0];
+  },
+
+  async setBanned(id_group, banned) {
+    const result = await database.query(
+      "UPDATE public.group SET is_banned = $2 WHERE id_group = $1 RETURNING * ;",
+      [id_group, !!banned],
+    );
+    return result.rows[0];
+  },
+
+  async incrementGamesPlayed(id_group) {
+    await database.query(
+      "UPDATE public.group SET games_played = COALESCE(games_played, 0) + 1 WHERE id_group = $1",
+      [id_group],
+    );
   },
 
   /**
@@ -127,6 +144,48 @@ module.exports = {
   async list() {
     const result = await database.query("SELECT * FROM public.group ORDER BY name;");
     return result.rows;
+  },
+
+  /**
+   * Paginated + sortable group list for the admin UI.
+   *
+   * @param {Object} opts
+   * @param {number} opts.page       1-indexed
+   * @param {number} opts.pageSize   default 10
+   * @param {"name"|"active"|"public"} opts.sort
+   * @returns {Promise<{rows:Array, total:number, page:number, pageSize:number, totalPages:number, sort:string}>}
+   */
+  async listPaged({ page = 1, pageSize = 10, sort = "name" } = {}) {
+    let orderBy;
+    switch (sort) {
+      case "active":
+        orderBy = "COALESCE(games_played, 0) DESC, name ASC";
+        break;
+      case "public":
+        orderBy = "public DESC, name ASC";
+        break;
+      case "name":
+      default:
+        orderBy = "name ASC";
+        break;
+    }
+    const offset = Math.max(0, (page - 1) * pageSize);
+    const countResult = await database.query(
+      "SELECT COUNT(*)::int AS c FROM public.group",
+    );
+    const total = countResult.rows[0].c;
+    const rowsResult = await database.query(
+      `SELECT * FROM public.group ORDER BY ${orderBy} LIMIT $1 OFFSET $2`,
+      [pageSize, offset],
+    );
+    return {
+      rows: rowsResult.rows,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      sort,
+    };
   },
 
   async listPublic() {

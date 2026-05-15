@@ -2,9 +2,11 @@
  * BotFather-style admin UI for managing groups via inline keyboards.
  *
  * Callback data scheme (capped at 64 bytes by Telegram):
- *   a:l                  list groups
+ *   a:l                  list groups (legacy alias for a:l:1:n)
+ *   a:l:<pg>:<sort>      paginated list — sort ∈ {n=name,a=active,p=public}
  *   a:g:<id_group>       group detail
  *   a:tp:<id>            toggle public
+ *   a:tb:<id>            toggle banned
  *   a:p:<id>:<m>         extend payment by <m> months
  *   a:rn:<id>            start rename flow
  *   a:dq:<id>            ask delete confirmation
@@ -16,6 +18,10 @@
  */
 const { GroupController } = require("../database");
 
+const PAGE_SIZE = 10;
+const SORT_LABELS = { n: "📛 Nombre", a: "🔥 Activo", p: "🌐 Público" };
+const SORT_KEY_FROM_SHORT = { n: "name", a: "active", p: "public" };
+
 // userId -> { id_group } : users in the middle of a rename flow.
 const pendingRenames = new Map();
 
@@ -26,13 +32,45 @@ function fmtDate(d) {
   return date.toISOString().slice(0, 10);
 }
 
-function groupListKeyboard(groups) {
+function groupRowLabel(g) {
+  const flag = g.is_banned
+    ? "🚫"
+    : g.public
+      ? "🌐"
+      : g.paid_up_to
+        ? "💰"
+        : "🔒";
+  const played = g.games_played > 0 ? ` (${g.games_played})` : "";
+  return `${flag} ${g.name || g.id_group}${played}`;
+}
+
+function groupListKeyboard(groups, page, totalPages, sortShort) {
   const rows = groups.map((g) => [
-    {
-      text: `${g.public ? "🌐" : g.paid_up_to ? "💰" : "🔒"} ${g.name || g.id_group}`,
-      callback_data: `a:g:${g.id_group}`,
-    },
+    { text: groupRowLabel(g), callback_data: `a:g:${g.id_group}` },
   ]);
+  // Sort selector row — current sort highlighted with a ✓.
+  rows.push(
+    ["n", "a", "p"].map((s) => ({
+      text: (sortShort === s ? "✓ " : "") + SORT_LABELS[s],
+      callback_data: `a:l:1:${s}`,
+    })),
+  );
+  // Pagination row only if more than one page.
+  if (totalPages > 1) {
+    const prev = Math.max(1, page - 1);
+    const next = Math.min(totalPages, page + 1);
+    rows.push([
+      {
+        text: page > 1 ? "◀️" : "·",
+        callback_data: page > 1 ? `a:l:${prev}:${sortShort}` : "a:noop",
+      },
+      { text: `${page} / ${totalPages}`, callback_data: "a:noop" },
+      {
+        text: page < totalPages ? "▶️" : "·",
+        callback_data: page < totalPages ? `a:l:${next}:${sortShort}` : "a:noop",
+      },
+    ]);
+  }
   return { inline_keyboard: rows };
 }
 
@@ -44,6 +82,10 @@ function groupDetailKeyboard(g) {
         {
           text: g.public ? "🔒 Quitar público" : "🌐 Hacer público",
           callback_data: `a:tp:${id}`,
+        },
+        {
+          text: g.is_banned ? "✅ Desbanear" : "🚫 Banear",
+          callback_data: `a:tb:${id}`,
         },
       ],
       [
@@ -71,36 +113,36 @@ function deleteConfirmKeyboard(id) {
 }
 
 function formatGroupDetail(g) {
-  // Plain text — no markdown parsing. Telegram-safe regardless of
-  // group name content. Bold and code blocks were nice but parse_mode
-  // = MarkdownV2 is fragile: any literal . ( ) ! - in dynamic content
-  // requires escaping. Skip it.
   return (
     `${g.name || "(sin nombre)"}\n` +
     `${g.id_group}\n` +
     `\n` +
     `Público: ${g.public ? "✅ Sí" : "❌ No"}\n` +
+    `Baneado: ${g.is_banned ? "🚫 Sí" : "❌ No"}\n` +
     `Pagado hasta: ${fmtDate(g.paid_up_to)}\n` +
     `Pagos: ${g.paid_times || 0}\n` +
+    `Partidas jugadas: ${g.games_played || 0}\n` +
     `Creado: ${fmtDate(g.created_at)}`
   );
 }
 
-async function listView() {
-  const groups = await GroupController.list();
-  if (groups.length === 0) {
+async function listView({ page = 1, sortShort = "n" } = {}) {
+  const sort = SORT_KEY_FROM_SHORT[sortShort] || "name";
+  const result = await GroupController.listPaged({ page, pageSize: PAGE_SIZE, sort });
+  if (result.total === 0) {
     return {
       message: "No hay grupos registrados.",
       options: { reply_markup: { inline_keyboard: [] } },
     };
   }
-  // Use plain text + Markdown (not MarkdownV2). MarkdownV2 requires
-  // escaping `(`, `)`, `.`, `!`, `-`, etc., which is easy to get wrong
-  // and silently fails Telegram's parser.
+  const sortLabel = SORT_LABELS[sortShort] || SORT_LABELS.n;
   return {
-    message: `Selecciona un grupo (${groups.length}):`,
+    message:
+      `${result.total} grupo${result.total === 1 ? "" : "s"}` +
+      ` · orden: ${sortLabel}` +
+      ` · página ${result.page}/${result.totalPages}`,
     options: {
-      reply_markup: groupListKeyboard(groups),
+      reply_markup: groupListKeyboard(result.rows, result.page, result.totalPages, sortShort),
     },
   };
 }
@@ -125,6 +167,13 @@ async function togglePublic(id_group) {
   const current = await GroupController.getOneByIdRaw(id_group);
   if (!current) return groupDetailView(id_group);
   await GroupController.setPublic(id_group, !current.public);
+  return groupDetailView(id_group);
+}
+
+async function toggleBanned(id_group) {
+  const current = await GroupController.getOneByIdRaw(id_group);
+  if (!current) return groupDetailView(id_group);
+  await GroupController.setBanned(id_group, !current.is_banned);
   return groupDetailView(id_group);
 }
 
@@ -187,6 +236,7 @@ module.exports = {
   listView,
   groupDetailView,
   togglePublic,
+  toggleBanned,
   extendPayment,
   renamePromptView,
   deletePromptView,

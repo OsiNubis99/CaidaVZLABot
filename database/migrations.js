@@ -91,6 +91,12 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_user_leaderboard
      ON public.user (win DESC, win_custom DESC, finished DESC)
      WHERE finished > 0 AND COALESCE(is_banned, false) = false`,
+
+  // Liberation: groups auto-register on first /unirse. Admin retains
+  // a ban switch so we can boot bad actors. games_played feeds the
+  // "sort by most active" option in /admin list.
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS is_banned boolean DEFAULT false`,
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS games_played int DEFAULT 0`,
 ];
 
 async function run() {

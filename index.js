@@ -392,15 +392,21 @@ bot.on(
       const parts = query.data.split(":");
       const action = parts[1];
       let view;
-      if (action === "l") view = await adminUI.listView();
-      else if (action === "g") view = await adminUI.groupDetailView(parts[2]);
+      if (action === "l") {
+        // a:l (legacy) or a:l:<page>:<sortShort>
+        const page = parts[2] ? parseInt(parts[2], 10) || 1 : 1;
+        const sortShort = parts[3] || "n";
+        view = await adminUI.listView({ page, sortShort });
+      } else if (action === "g") view = await adminUI.groupDetailView(parts[2]);
       else if (action === "tp") view = await adminUI.togglePublic(parts[2]);
+      else if (action === "tb") view = await adminUI.toggleBanned(parts[2]);
       else if (action === "p") view = await adminUI.extendPayment(parts[2], parts[3]);
       else if (action === "rn") {
         adminUI.startRename(query.from.id, parts[2]);
         view = adminUI.renamePromptView(parts[2]);
       } else if (action === "dq") view = adminUI.deletePromptView(parts[2]);
       else if (action === "dc") view = await adminUI.deleteConfirm(parts[2]);
+      else if (action === "noop") return;
       else return;
       try {
         await bot.editMessageText(view.message, editOpts(view));
