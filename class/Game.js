@@ -655,7 +655,7 @@ class Game {
   _renderReducedPointsLine() {
     const L = this._lang();
     const fmt = (color, pts, took) =>
-      color + " " + (pts || 0) + "⭐ " + (took || 0) + "🃏";
+      color + " " + (pts || 0) + "pts  " + (took || 0) + "🃏";
     if (this.isParejasMode()) {
       const team0Red = this.decks % 2 === 0;
       const colors = [
