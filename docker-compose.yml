@@ -32,6 +32,9 @@ services:
       ADMIN_USER_IDS: ${ADMIN_USER_IDS}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       STATS_TOKEN: ${STATS_TOKEN:-}
+      # Opt-in verbose decision trace for the pro CPU. Set in .env when
+      # debugging a reported bad pick; leave off in steady state.
+      DEBUG_CPU_DECISIONS: ${DEBUG_CPU_DECISIONS:-}
 
   # Daily pg_dump retained on its own volume. Retention: 14 daily / 4 weekly / 3 monthly.
   # Image is maintained and pinned to the postgres major version we use.
