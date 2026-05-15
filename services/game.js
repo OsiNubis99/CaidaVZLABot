@@ -3,7 +3,8 @@ const Game = require("../class/Game");
 const User = require("../class/User");
 const Config = require("../class/Config");
 const CpuPlayer = require("../class/CpuPlayer");
-const emojisService = require("./emojis");
+const cardsService = require("./cards");
+const emojisService = require("./emojis"); // dormant — custom emoji set still exists for possible future use
 const cantos = require("./cantos");
 const mesa = require("./mesa");
 const persistence = require("./persistence");
@@ -890,49 +891,28 @@ module.exports = {
               },
             ];
           }
-          // Build inline-article results for each playable card + the
-          // optional canto. Each article carries an input_message_content
-          // whose `entities` array points to our custom emoji cache; if
-          // the cache doesn't have the id for that card, we fall through
-          // to plain text ("4 de Oro") — no generic emoji prefix.
-          //
-          // visual_cards toggles message shape:
-          //   on  → "🃏" (placeholder replaced by custom emoji, renders jumbo)
-          //   off → "🃏 4 de Oro" (custom emoji inline + text)
-          // Both share the same picker article preview so the player
-          // sees a readable list of cards by name in the search dropdown.
+          // visual_cards=on uses cached stickers (image preview in the
+          // picker grid + sticker bubble in chat). off uses plain text
+          // articles. The custom-emoji bootstrap stays in place but
+          // dormant: it ended up being the same display size as a
+          // sticker but with worse resolution (100×100 source vs
+          // 512×512 sticker), so for now we stick with stickers.
           const visual = group.config.visual_cards !== false;
-          const names = [];
-          for (let i = 0; i < cardsHand.length; i++) {
-            const el = cardsHand[i];
-            if (i == 3) names.push(emojisService.cantoName(el.name));
-            else if (el && el.value && el.type) names.push(emojisService.cardName(el.value, el.type));
-          }
-          const emojiIds = await emojisService.lookupMany(names);
-
           const cardResults = [];
           let cantoResult = null;
           for (let index = 0; index < cardsHand.length; index++) {
             const element = cardsHand[index];
             if (index == 3) {
-              const emojiId = emojiIds.get(emojisService.cantoName(element.name));
-              const placeholder = "🃏"; // 2 utf-16 code units; gets replaced by the custom emoji
-              const labelText = `${placeholder} ${element.name}`;
-              if (emojiId) {
+              const cantoFileId = visual
+                ? await cardsService.getCantoFileId(element.name)
+                : null;
+              if (cantoFileId) {
                 cantoResult = {
                   id: "4",
-                  type: "article",
-                  title: element.name,
-                  description: "Valor: " + element.value,
-                  input_message_content: {
-                    message_text: visual ? placeholder : labelText,
-                    entities: [
-                      { type: "custom_emoji", offset: 0, length: 2, custom_emoji_id: emojiId },
-                    ],
-                  },
+                  type: "sticker",
+                  sticker_file_id: cantoFileId,
                 };
               } else {
-                // No emoji cached → plain text fallback (text mode).
                 cantoResult = {
                   id: "4",
                   type: "article",
@@ -943,23 +923,15 @@ module.exports = {
               }
             } else {
               const cardLabel = `${element.value} de ${element.type}`;
-              const emojiId =
-                element && element.value && element.type
-                  ? emojiIds.get(emojisService.cardName(element.value, element.type))
+              const fileId =
+                visual && element && element.value && element.type
+                  ? await cardsService.getFileId(element.value, element.type)
                   : null;
-              const placeholder = "🃏";
-              if (emojiId) {
+              if (fileId) {
                 cardResults.push({
                   id: String(index),
-                  type: "article",
-                  title: cardLabel,
-                  description: "De " + element.type,
-                  input_message_content: {
-                    message_text: visual ? placeholder : `${placeholder} ${cardLabel}`,
-                    entities: [
-                      { type: "custom_emoji", offset: 0, length: 2, custom_emoji_id: emojiId },
-                    ],
-                  },
+                  type: "sticker",
+                  sticker_file_id: fileId,
                 });
               } else {
                 cardResults.push({

@@ -81,11 +81,25 @@ describe("Game.print i18n + clean layout", () => {
     expect(r.response).toMatch(/^🏆 Ganó A.*24-19/);
   });
 
-  it("kill includes breakdown for individual", () => {
+  it("kill drops the redundant breakdown for individual (final standings already show points)", () => {
     const g = mk("es", 1);
     g.points = [24, 18];
     const r = g.kill(0);
-    expect(r.response).toContain("(A 24, B 18)");
+    // The parenthesized "(A 24, B 18)" tail used to duplicate the
+    // standings block below — removed for individual. Parejas still
+    // gets the compact "24-18" tail (tested separately).
+    expect(r.response).not.toContain("(A 24, B 18)");
+    expect(r.response).toMatch(/🏆 Ganó A/);
+    expect(r.response).toContain("24 pts");
+    expect(r.response).toContain("18 pts");
+  });
+
+  it("kill prepends the `pre` argument so the chat sees what led to the win", () => {
+    const g = mk("es", 1);
+    g.points[0] = g.config.points;
+    const r = g.kill(0, "Caída\nMesa Limpia!");
+    expect(r.response.startsWith("Caída\nMesa Limpia!")).toBe(true);
+    expect(r.response).toMatch(/🏆 Ganó A/);
   });
 
   it("localises the 'won' message in kill", () => {

@@ -407,8 +407,11 @@ class Game {
               this.users[this.last_player()].caido += 1;
               this.users[this.player].caida += 1;
               this._lastCaida = true;
-              if (this.increase_points(this.player, card.points * this.config.caida))
-                return this.kill(this.player);
+              // Do NOT short-circuit on a winning caída — we want the
+              // chat to see the caída announcement + final state, then
+              // the victory message. The win check runs at the end of
+              // play_card and passes `response` as `pre` to kill().
+              this.increase_points(this.player, card.points * this.config.caida);
               response = resp.user_get_fall;
               if (
                 this._dealerSyncCandidate &&
@@ -436,8 +439,9 @@ class Game {
             });
             if (clean) {
               this._lastCleanTable = true;
-              if (this.increase_points(this.player, 1 * this.config.mesa))
-                return this.kill(this.player);
+              // Same idea — don't early-kill on mesa-limpia. End-of-fn
+              // win check handles it.
+              this.increase_points(this.player, 1 * this.config.mesa);
               response += resp.clean_table;
             }
           }
@@ -450,8 +454,13 @@ class Game {
         }
         // Only the first play of a deck can trigger mata_mesa.
         this._dealerSyncCandidate = null;
+        // Single win-check point for the play_card path. We pass the
+        // current response + the short-status snapshot to kill() so the
+        // victory message is preceded by what just happened.
         for (let i = 0; i < this.points.length; i++) {
-          if (this.points[i] >= this.config.points) return this.kill(i);
+          if (this.points[i] >= this.config.points) {
+            return this.kill(i, response + this.renderShortStatus());
+          }
         }
         if (this.users[this.users.length - 1].cards.length > 0) {
           this.player = (this.player + 1) % this.users.length;
@@ -467,7 +476,9 @@ class Game {
         });
         if (sings[biggest] > 0) {
           UserDatabase.set_sing(this.users[biggest].id_user, "alive_" + this.users[biggest].sing.dbName).catch(() => {})
-          if (this.increase_points(biggest, sings[biggest])) return this.kill(biggest);
+          if (this.increase_points(biggest, sings[biggest])) {
+            return this.kill(biggest, response + this.renderShortStatus());
+          }
         }
         return this.handing_out_cards(0, response);
       }
@@ -477,10 +488,17 @@ class Game {
   }
 
   /**
+   * Finalize the game. The optional `pre` is text built before the
+   * win condition crossed (caída announcement, mesa-limpia, mata-mesa
+   * note, etc. + the regular state line). It gets prepended so the
+   * chat sees the play that won AND then the victory header in a
+   * single coherent message instead of jumping straight to "🏆 Won X"
+   * with no context.
    *
-   * @returns Printable message with the game information
+   * @param {Number} player - The winning player's scoring slot.
+   * @param {String} pre - Optional state text that led to this kill.
    */
-  kill(player) {
+  kill(player, pre = "") {
     let win = this.config.game_mode > 0 ? 1 : 2
     for (var i = 0; i < this.users.length; ++i) {
       let user = this.users[i]
@@ -491,9 +509,13 @@ class Game {
       UserDatabase.set_stats(user.id_user, user_win, user.caida, user.caido).catch(() => {})
     }
     const L = this._lang();
-    let response = L.ig_won_prefix;
+    let response = pre ? pre + "\n\n" : "";
+    response += L.ig_won_prefix;
     response += this.users[player].print(false, L);
-    response += this._renderFinalScore(player);
+    // For parejas the compact "24-22" tail is useful at a glance. For
+    // individual the per-player breakdown duplicates _renderFinalStandings
+    // below, so we skip it.
+    if (this.isParejasMode()) response += this._renderFinalScore(player);
     response += "\n" + this._renderFinalStandings();
     this.decks = 0;
     return { finished: true, response };
