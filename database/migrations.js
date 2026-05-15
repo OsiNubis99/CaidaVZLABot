@@ -84,6 +84,13 @@ const STATEMENTS = [
   // minutes ago. Default 120 (2h). Configurable in 30-min steps via
   // /configurar → Sistema.
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS max_game_duration_minutes int DEFAULT 120`,
+
+  // Supporting index for the /top leaderboard query. Without it the
+  // hot path is a seq-scan + sort on public.user every call. Filter
+  // matches the WHERE clause shape so the index covers it.
+  `CREATE INDEX IF NOT EXISTS idx_user_leaderboard
+     ON public.user (win DESC, win_custom DESC, finished DESC)
+     WHERE finished > 0 AND COALESCE(is_banned, false) = false`,
 ];
 
 async function run() {

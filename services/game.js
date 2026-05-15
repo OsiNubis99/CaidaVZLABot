@@ -78,17 +78,59 @@ function keyboardForActor(group) {
   return keyboard.make_a_choice(next.first_name);
 }
 
+// Per-chat debounce handles for in-flight saves. A rapid burst of moves
+// (CPU autoplay, picker spam, multi-step canto-then-play) used to trigger
+// a separate UPSERT of the whole game state per Telegram event. We coalesce
+// them through a short debounce so only the latest state hits Postgres.
+// `finished` and explicit flushes still go through synchronously — that
+// path also runs `persistence.remove`, which we never want to coalesce.
+const PERSIST_DEBOUNCE_MS = 250;
+const persistTimers = new Map(); // chatId -> setTimeout handle
+
+function flushPersist(chatId) {
+  const handle = persistTimers.get(chatId);
+  if (handle) {
+    clearTimeout(handle);
+    persistTimers.delete(chatId);
+  }
+  if (!games[chatId]) return Promise.resolve();
+  return persistence
+    .save(chatId, games[chatId])
+    .catch((err) =>
+      logger.error({ err: err.message, chat_id: chatId }, "persistence save failed"),
+    );
+}
+
 // Persist (or drop) the in-memory game for a given chat after a mutation.
 async function persistOrRemove(chatId, finished) {
-  try {
-    if (finished) {
-      await persistence.remove(chatId);
-    } else if (games[chatId]) {
-      await persistence.save(chatId, games[chatId]);
+  if (finished) {
+    // Cancel any pending debounced save — the row is going away.
+    const handle = persistTimers.get(chatId);
+    if (handle) {
+      clearTimeout(handle);
+      persistTimers.delete(chatId);
     }
-  } catch (err) {
-    logger.error({ err: err.message, chat_id: chatId }, "persistence failed");
+    try {
+      await persistence.remove(chatId);
+    } catch (err) {
+      logger.error({ err: err.message, chat_id: chatId }, "persistence remove failed");
+    }
+    return;
   }
+  if (!games[chatId]) return;
+  // Coalesce: if a debounce is already scheduled we let it stand (it
+  // will pick up the latest games[chatId] state when it fires). Otherwise
+  // schedule one.
+  if (persistTimers.has(chatId)) return;
+  const handle = setTimeout(() => flushPersist(chatId), PERSIST_DEBOUNCE_MS);
+  persistTimers.set(chatId, handle);
+}
+
+// On process shutdown we want all pending saves flushed so a deploy
+// during active play doesn't lose the latest move. Best-effort.
+async function flushAllPersistTimers() {
+  const ids = [...persistTimers.keys()];
+  await Promise.all(ids.map(flushPersist));
 }
 
 // Render the current table as a PNG and attach it as `photo` to the
@@ -171,6 +213,10 @@ const loadedPromise = db.ready
 
 module.exports = {
   loadedPromise,
+  // Flush any debounced game-state saves immediately. Bound to process
+  // shutdown in index.js so a deploy / SIGTERM doesn't drop the latest
+  // move. Best-effort; errors logged inside.
+  flushPendingSaves: flushAllPersistTimers,
   log() {
     console.log({ users })
   },
@@ -453,10 +499,10 @@ module.exports = {
     const actor = group.users[actorIdx];
     if (!actor || !actor.cpu_difficulty) return null;
     const decision = CpuPlayer.decide(group, actorIdx, actor.cpu_difficulty);
-    // Diagnostic trace for "the bot made a dumb move" reports — captures
-    // the exact game state the bot saw and how it ranked its options.
-    // Volume is bounded (1 line per CPU turn) so it's fine in production.
-    if (decision._scoreBreakdown) {
+    // Verbose decision trace — only emitted when DEBUG_CPU_DECISIONS=true
+    // in the env. Each line is a few hundred bytes; off by default to
+    // keep log volume sane in normal play.
+    if (process.env.DEBUG_CPU_DECISIONS === "true" && decision._scoreBreakdown) {
       logger.info(
         {
           chatId,

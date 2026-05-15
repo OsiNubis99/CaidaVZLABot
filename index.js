@@ -100,6 +100,20 @@ process.on("uncaughtException", (err) => {
   logger.error({ err }, "uncaughtException");
 });
 
+// Flush any debounced game-state saves on shutdown so a deploy / SIGTERM
+// in the middle of an active game doesn't drop the latest move.
+async function gracefulShutdown(signal) {
+  logger.info({ signal }, "shutdown: flushing pending saves");
+  try {
+    await game.flushPendingSaves();
+  } catch (err) {
+    logger.warn({ err: err.message }, "shutdown flush failed");
+  }
+  process.exit(0);
+}
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
 // Per-command rate limits. The defaults are intentionally loose so a
 // normal player never hits them; the goal is just to stop pathological
 // flooders. Game-flow commands have tighter windows than admin ones.

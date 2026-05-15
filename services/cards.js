@@ -49,12 +49,37 @@ function backLocalPath() {
   return path.join(CARDS_DIR, "back.png");
 }
 
+// In-memory cache for the 40 card + 10 canto file_ids. Telegram fires
+// inline_query on every keystroke while the picker is open; hitting
+// the DB per card per keystroke was unbounded write-amplification for
+// static data (file_ids never change after bootstrap).
+// Lazy-loaded on first read, refreshed on writes.
+const _cardFileIds = new Map(); // key: "value-type" → file_id
+const _cantoFileIds = new Map(); // key: name → file_id
+let _cardCacheLoaded = false;
+let _cantoCacheLoaded = false;
+
+function _cardKey(value, type) {
+  return value + "-" + type;
+}
+
+async function _loadCardCache() {
+  const r = await db.query("SELECT value, type, file_id FROM public.cards");
+  _cardFileIds.clear();
+  for (const row of r.rows) _cardFileIds.set(_cardKey(row.value, row.type), row.file_id);
+  _cardCacheLoaded = true;
+}
+
+async function _loadCantoCache() {
+  const r = await db.query("SELECT name, file_id FROM public.canto_stickers");
+  _cantoFileIds.clear();
+  for (const row of r.rows) _cantoFileIds.set(row.name, row.file_id);
+  _cantoCacheLoaded = true;
+}
+
 async function getFileId(value, type) {
-  const r = await db.query(
-    "SELECT file_id FROM public.cards WHERE value = $1 AND type = $2",
-    [value, type],
-  );
-  return r.rows[0] ? r.rows[0].file_id : null;
+  if (!_cardCacheLoaded) await _loadCardCache();
+  return _cardFileIds.get(_cardKey(value, type)) || null;
 }
 
 async function setFileId(value, type, fileId) {
@@ -64,6 +89,7 @@ async function setFileId(value, type, fileId) {
      ON CONFLICT (value, type) DO UPDATE SET file_id = EXCLUDED.file_id, uploaded_at = CURRENT_TIMESTAMP`,
     [value, type, fileId],
   );
+  _cardFileIds.set(_cardKey(value, type), fileId);
 }
 
 async function isBootstrapped() {
@@ -72,11 +98,8 @@ async function isBootstrapped() {
 }
 
 async function getCantoFileId(name) {
-  const r = await db.query(
-    "SELECT file_id FROM public.canto_stickers WHERE name = $1",
-    [name],
-  );
-  return r.rows[0] ? r.rows[0].file_id : null;
+  if (!_cantoCacheLoaded) await _loadCantoCache();
+  return _cantoFileIds.get(name) || null;
 }
 
 async function setCantoFileId(name, fileId) {
@@ -86,14 +109,17 @@ async function setCantoFileId(name, fileId) {
      ON CONFLICT (name) DO UPDATE SET file_id = EXCLUDED.file_id, uploaded_at = CURRENT_TIMESTAMP`,
     [name, fileId],
   );
+  _cantoFileIds.set(name, fileId);
 }
 
 async function clearAllCantos() {
   await db.query("DELETE FROM public.canto_stickers");
+  _cantoFileIds.clear();
 }
 
 async function clearAll() {
   await db.query("DELETE FROM public.cards");
+  _cardFileIds.clear();
 }
 
 /**

@@ -61,12 +61,17 @@ function slotXY(position) {
   return { x, y };
 }
 
+// Static asset — the empty slot PNG never changes. Build it once lazily
+// instead of re-encoding via sharp on every render call.
+let _emptySlotCache = null;
 async function emptySlotBuffer() {
-  return await sharp({
+  if (_emptySlotCache) return _emptySlotCache;
+  _emptySlotCache = await sharp({
     create: { width: SLOT_W, height: SLOT_H, channels: 4, background: SLOT_BG },
   })
     .png()
     .toBuffer();
+  return _emptySlotCache;
 }
 
 /**
