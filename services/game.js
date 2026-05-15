@@ -441,6 +441,34 @@ module.exports = {
     const actor = group.users[actorIdx];
     if (!actor || !actor.cpu_difficulty) return null;
     const decision = CpuPlayer.decide(group, actorIdx, actor.cpu_difficulty);
+    // Diagnostic trace for "the bot made a dumb move" reports — captures
+    // the exact game state the bot saw and how it ranked its options.
+    // Volume is bounded (1 line per CPU turn) so it's fine in production.
+    if (decision._scoreBreakdown) {
+      logger.info(
+        {
+          chatId,
+          actor: actor.first_name,
+          difficulty: actor.cpu_difficulty,
+          last_card: group.last_card_played
+            ? `${group.last_card_played.value}-${group.last_card_played.type}`
+            : null,
+          table: group.table.map((c) => (c ? `${c.value}-${c.type}` : null)),
+          opp_hands: group.users
+            .map((u, i) =>
+              i === actorIdx
+                ? null
+                : (u.cards || [])
+                    .filter((c) => c && c.value)
+                    .map((c) => `${c.value}-${c.type}`),
+            )
+            .filter(Boolean),
+          breakdown: decision._scoreBreakdown,
+          chose: decision.cardIdx,
+        },
+        "cpu decision",
+      );
+    }
     if (decision.action === "start_by") {
       const resp = await module.exports.handing_out_cards(actor, decision.value);
       return resp ? { ...resp, again: false } : null;

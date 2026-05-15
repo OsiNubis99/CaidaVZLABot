@@ -256,17 +256,22 @@ function pickBestPlay(game, botIdx, difficulty) {
   }
   let bestIdx = 0;
   let bestScore = -Infinity;
+  // Capture per-card scores so the decision can be inspected later
+  // (the cpuAutoStep caller forwards this to the logger). Without
+  // this any "the bot made a dumb move" complaint is a black box.
+  const breakdown = [];
   for (let i = 0; i < cards.length; i++) {
     const c = cards[i];
     // Skip the Start_By sentinel and the canto pseudo-card if present.
     if (!c || c === "Start_By" || typeof c.position !== "number") continue;
     const s = scorePlay(game, botIdx, i, difficulty);
+    breakdown.push({ idx: i, value: c.value, type: c.type, score: s });
     if (s > bestScore) {
       bestScore = s;
       bestIdx = i;
     }
   }
-  return { action: "play", cardIdx: bestIdx };
+  return { action: "play", cardIdx: bestIdx, _scoreBreakdown: breakdown };
 }
 
 /**

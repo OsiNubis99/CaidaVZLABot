@@ -181,6 +181,43 @@ describe("CpuPlayer.decide", () => {
     }
   });
 
+  it("pro: 3-card hand variant of the same 10/11 caída scenario", () => {
+    // Same shape but bot has 3 cards instead of 2 (more realistic mid-
+    // mano). The third card shouldn't change the decision — caída +
+    // mesa limpia from the 10 dominates everything else.
+    const g = buildGame({ users: 2 });
+    setTable(g, { 7: c(10, "Oro") });
+    setHand(g, 0, [
+      c(11, "Copa"),
+      c(10, "Basto"),
+      c(3, "Espada"), // irrelevant 3rd card
+    ]);
+    g.users[1].cards = [c(11, "Espada"), c(6, "Copa")];
+    g.player = 0;
+    g.last_card_played = c(10, "Oro");
+    g.last_hand = false;
+    const out = cpu.decide(g, 0, "pro");
+    expect(out.action).toBe("play");
+    expect(g.users[0].cards[out.cardIdx].value).toBe(10);
+  });
+
+  it("pro: with 10+11 in hand, mesa with opponent's 10, takes the caída", () => {
+    // Repro of a production case: mesa was clean. Opponent played their
+    // 10 (now on table at position 7). Bot pro had 10 and 11; opp has 11.
+    // Playing 10 caídas the opp + cleans mesa (massive points). Playing
+    // 11 places it on table and hands opp a guaranteed caída.
+    const g = buildGame({ users: 2 });
+    setTable(g, { 7: c(10, "Oro") });
+    setHand(g, 0, [c(11, "Copa"), c(10, "Basto")]); // bot's hand
+    g.users[1].cards = [c(11, "Espada")]; // opp has just the 11
+    g.player = 0;
+    g.last_card_played = c(10, "Oro"); // opp's 10 is what's on table
+    g.last_hand = false;
+    const out = cpu.decide(g, 0, "pro");
+    expect(out.action).toBe("play");
+    expect(g.users[0].cards[out.cardIdx].value).toBe(10);
+  });
+
   it("Start_By dealer auto-picks 4", () => {
     const g = buildGame();
     // Mark a user as the dealer with the Start_By sentinel.
