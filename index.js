@@ -175,6 +175,13 @@ bot.on(
       response = await game.handing_out_cards(user, 4);
     }
     if (!response) return;
+    // Caída sound effect comes FIRST so the audio "punctuates" the
+    // moment, then the state message lands right after. Awaited so
+    // ordering is guaranteed; audio errors are swallowed by the
+    // service itself.
+    if (response.audio) {
+      await audio.play(bot, response.chat_id, response.audio);
+    }
     if (response.photo) {
       const opts = {
         reply_markup: response.options && response.options.reply_markup,
@@ -188,10 +195,6 @@ bot.on(
       await bot.sendPhoto(response.chat_id, response.photo, opts);
     } else {
       await bot.sendMessage(response.chat_id, response.message, response.options);
-    }
-    if (response.audio) {
-      // Fire-and-forget — audio is best-effort, errors are logged inside.
-      audio.play(bot, response.chat_id, response.audio).catch(() => {});
     }
     await maybeDmNextTurn(response);
     scheduleSkip(response);
@@ -239,8 +242,12 @@ async function cpuStep(chatId) {
     return;
   }
   if (!result) return;
-  // Send the message (mirror the send logic from chosen_inline_result).
+  // Mirror the send logic from chosen_inline_result — audio first so
+  // the caída "thump" lands before the state message.
   try {
+    if (result.audio) {
+      await audio.play(bot, result.chat_id, result.audio);
+    }
     if (result.photo) {
       const opts = {
         reply_markup: result.options && result.options.reply_markup,
@@ -254,9 +261,6 @@ async function cpuStep(chatId) {
       await bot.sendPhoto(result.chat_id, result.photo, opts);
     } else {
       await bot.sendMessage(result.chat_id, result.message, result.options);
-    }
-    if (result.audio) {
-      audio.play(bot, result.chat_id, result.audio).catch(() => {});
     }
   } catch (err) {
     logger.warn({ err: err.message, chatId }, "CPU autoplay send failed");
