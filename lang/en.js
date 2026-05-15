@@ -75,7 +75,7 @@ module.exports = {
     "Pick difficulty:\n" +
     "• *Easy*: random plays (always cantos).\n" +
     "• *Medium*: prioritizes caídas, clean mesa and max card take. Sees the table.\n" +
-    "• *Pro*: sees everyone's cards + counts cards + avoids gifting caídas.",
+    "• *Pro*: a real challenge.",
   unir_bot_full: "Game is full (4/4). Can't add another bot.",
   unir_bot_running: "Game already started. Can't add bots now.",
   salir_bot_empty: "No bots in this game.",

@@ -75,7 +75,7 @@ module.exports = {
     "Escolha a dificuldade:\n" +
     "• *Fácil*: cartas ao acaso (sempre canta).\n" +
     "• *Médio*: prioriza caídas, mesa limpa e pegar mais cartas. Vê a mesa.\n" +
-    "• *Pro*: vê as cartas de todos + conta cartas + evita dar caídas.",
+    "• *Pro*: um verdadeiro desafio.",
   unir_bot_full: "A partida está cheia (4/4). Não dá pra adicionar outro bot.",
   unir_bot_running: "A partida já começou. Não dá pra adicionar bots agora.",
   salir_bot_empty: "Não há bots na partida.",

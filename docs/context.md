@@ -6,6 +6,16 @@ private server through ~12 work sessions in May 2026. Read this file
 before touching the repo — it captures non-obvious decisions and the
 exact state of the world.
 
+## People / handles
+
+- **Owner / sole superadmin**: Andrés — Telegram `@OsiNubis99`. He's
+  the only human who should be able to start all-CPU games (see
+  the "Allow only @OsiNubis99 to run bot-only games" task). His
+  Telegram user_id is in `.env` as `ADMIN_USER_IDS`.
+- **Official group**: `@CaidaVZLA` — public Telegram group for
+  reporting bugs, suggesting features, finding partidas with the
+  community. Linked from announcements.
+
 ## Stack
 
 - **Node 22** (alpine) inside Docker. The Dockerfile slices the
