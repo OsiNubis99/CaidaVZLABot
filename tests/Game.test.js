@@ -16,6 +16,35 @@ describe("Game", () => {
     expect(g.users).toEqual([]);
   });
 
+  it("rotates points correctly when some players have zero points (sparse-array regression)", () => {
+    // Reproduces a production bug: with 3 players where only players 0
+    // and 1 earned points, this.points was [9, 1] (length 2, slot 2
+    // never set) and handing_out_cards' push(shift()) misaligned — the
+    // new tail index read `undefined` and the player whose 9 pts
+    // should follow them across the rotation appeared with 0.
+    // The fix normalizes this.points to slotCount entries before
+    // rotation. We invoke the rotation via handing_out_cards' empty-
+    // deck branch directly.
+    const cfg = new Config(game_modes[1]);
+    const g = new Game("test", cfg);
+    g.join(makeUser(1, "A"));
+    g.join(makeUser(2, "B"));
+    g.join(makeUser(3, "C"));
+    g.increase_points(0, 9); // A earns 9
+    g.increase_points(1, 1); // B earns 1
+    // C (slot 2) never earns anything — slot 2 stays missing/sparse.
+    // Trigger the empty-deck rotation path (deck.length === 0).
+    g.decks = 1;
+    g.deck = [];
+    g.handing_out_cards(0);
+    // Users rotated by 1: A → end, B → first.
+    expect(g.users.map((u) => u.first_name)).toEqual(["B", "C", "A"]);
+    // Points rotated with users so each player keeps their score.
+    expect(g.points[0]).toBe(1); // B kept 1
+    expect(g.points[1]).toBe(0); // C kept 0
+    expect(g.points[2]).toBe(9); // A's 9 followed them to the new tail index
+  });
+
   it("joins players and increments decks on shuffle", () => {
     const g = new Game("test", new Config(game_modes[1]));
     g.join(makeUser(1, "A"));

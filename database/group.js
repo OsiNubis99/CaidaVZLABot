@@ -87,7 +87,8 @@ module.exports = {
           caida = $9, ronda = $10, chiguire = $11, patrulla = $12, vigia = $13,
           registro = $14, maguaro = $15, registrico = $16, casa_chica = $17,
           casa_grande = $18, trivilin = $19, visual_cards = $20,
-          visual_table = $21, turn_timeout_seconds = $22, locale = $23
+          visual_table = $21, turn_timeout_seconds = $22, locale = $23,
+          audio_effects = $24
        WHERE id_group = $1 RETURNING *;`,
       [
         group_id,
@@ -113,6 +114,7 @@ module.exports = {
         new_config.visual_table !== false,
         Number(new_config.turn_timeout_seconds) || 0,
         new_config.locale || "es",
+        new_config.audio_effects !== false,
       ],
     );
     return result.rows;

@@ -54,6 +54,19 @@ const STATEMENTS = [
      file_id text NOT NULL,
      uploaded_at timestamptz DEFAULT CURRENT_TIMESTAMP
    )`,
+
+  // per-group toggle: send a sound clip to the chat every time a
+  // caída is detected. Default on so existing groups get the new
+  // effect without manual reconfig.
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS audio_effects boolean DEFAULT true`,
+
+  // cache of the caída sound file_id so we send-by-id instead of
+  // re-uploading the OGG every time. Single row keyed by 'caida'.
+  `CREATE TABLE IF NOT EXISTS public.audio_clips (
+     name text PRIMARY KEY,
+     file_id text NOT NULL,
+     uploaded_at timestamptz DEFAULT CURRENT_TIMESTAMP
+   )`,
 ];
 
 async function run() {

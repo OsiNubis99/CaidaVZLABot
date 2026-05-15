@@ -97,17 +97,40 @@ async function clearAll() {
 }
 
 /**
- * Convert a card PNG to a WEBP buffer sized for Telegram's sticker
- * rules: longest side exactly 512 px, transparent padding preserved.
+ * Convert a PNG to a WEBP buffer sized for Telegram's sticker rules:
+ * longest side exactly 512 px, transparent padding preserved.
+ *
+ * `scale` (0-1) shrinks the input inside a 512×512 transparent canvas.
+ * scale=1 (default) fills the canvas — used for cantos. scale<1 leaves
+ * transparent padding around the art, which Telegram preserves in the
+ * displayed bubble; cards use scale=0.65 so they appear ~35% smaller
+ * in chat without losing portrait orientation.
  */
-async function pngToStickerWebp(pngPath) {
-  return await sharp(pngPath)
+async function pngToStickerWebp(pngPath, { scale = 1 } = {}) {
+  const target = Math.round(512 * scale);
+  const inner = await sharp(pngPath)
     .resize({
-      width: 512,
-      height: 512,
+      width: target,
+      height: target,
       fit: "inside",
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
+    .toBuffer();
+  if (scale >= 1) {
+    return await sharp(inner).webp().toBuffer();
+  }
+  // Pad the resized art onto a transparent 512×512 canvas so the final
+  // sticker still meets Telegram's "longest side = 512" requirement
+  // while the visible card content is smaller.
+  return await sharp({
+    create: {
+      width: 512,
+      height: 512,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([{ input: inner, gravity: "center" }])
     .webp()
     .toBuffer();
 }
@@ -137,7 +160,7 @@ async function bootstrap(bot, chatId, { force = false } = {}) {
         }
       }
       try {
-        const webp = await pngToStickerWebp(localPath(value, type));
+        const webp = await pngToStickerWebp(localPath(value, type), { landscape: true });
         const sent = await bot.sendSticker(chatId, webp);
         const fileId = sent && sent.sticker && sent.sticker.file_id;
         if (!fileId) throw new Error("no sticker file_id in response");

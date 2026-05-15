@@ -18,6 +18,7 @@ class Config {
     // changing the mode does not toggle visuals off.
     this.visual_cards = new_config.visual_cards !== false;
     this.visual_table = new_config.visual_table !== false;
+    this.audio_effects = new_config.audio_effects !== false;
     this.turn_timeout_seconds = Number(new_config.turn_timeout_seconds) || 0;
     this.locale = new_config.locale || "es";
   }
@@ -154,7 +155,7 @@ class Config {
       }
       return resp.config_bool_invalid;
     }
-    if (config == "visual_cards" || config == "visual_table") {
+    if (config == "visual_cards" || config == "visual_table" || config == "audio_effects") {
       if (value == "on" || value == "off") {
         this[config] = value == "on";
         return false;

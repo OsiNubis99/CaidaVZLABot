@@ -35,6 +35,7 @@ const KEY_ALIAS = {
   tt: "turn_timeout_seconds",
   vc: "visual_cards",
   vt: "visual_table",
+  ae: "audio_effects",
   mc: "mata_canto",
   cc: "caida_continua",
   mm: "mata_mesa",
@@ -290,14 +291,17 @@ async function visualesView(chatId) {
     message:
       "🎴 *Visuales*\n\n" +
       `Cartas con imagen: ${fmtBool(c.visual_cards)}\n` +
-      `Mesa con imagen: ${fmtBool(c.visual_table)}\n\n` +
-      `_Render-only. Para reglas de juego (mata canto, caída continua, mata mesa) usá Reglas._`,
+      `Mesa con imagen: ${fmtBool(c.visual_table)}\n` +
+      `Efectos de audio: ${fmtBool(c.audio_effects)}\n\n` +
+      `_Render-only. Para reglas de juego (mata canto, caída continua, mata mesa) usá Reglas._\n` +
+      `_Efectos de audio: manda un sonido cada vez que ocurre una caída._`,
     options: {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [{ text: `Cartas: ${fmtBool(c.visual_cards)} (toggle)`, callback_data: "c:tog:vc" }],
           [{ text: `Mesa: ${fmtBool(c.visual_table)} (toggle)`, callback_data: "c:tog:vt" }],
+          [{ text: `Audio: ${fmtBool(c.audio_effects)} (toggle)`, callback_data: "c:tog:ae" }],
           [{ text: "⬅️ Volver", callback_data: "c:m" }],
         ],
       },
@@ -317,7 +321,7 @@ async function reglasView(chatId) {
       `Mata mesa: ${fmtBool(c.mata_mesa === "on")}\n\n` +
       `_Mata canto: una caída inhabilita el canto del jugador anterior._\n` +
       `_Caída continua: se puede dar caída sobre la última carta de la mano anterior._\n` +
-      `_Mata mesa: aún en desarrollo._`,
+      `_Mata mesa: si el primer jugador del deck nuevo le da caída al dealer, los puntos que el dealer pegó en mesa se pierden._`,
     options: {
       parse_mode: "Markdown",
       reply_markup: {
@@ -483,15 +487,18 @@ async function dispatch(chatId, data) {
   if (action === "tog") {
     const shortKey = parts[2];
     const key = alias(shortKey);
-    // visual_cards / visual_table are render-only and safe mid-game.
-    // mata_canto / caida_continua / mata_mesa are game rules — require decks == 0.
-    const allowMidGame = key === "visual_cards" || key === "visual_table";
+    // visual_cards / visual_table / audio_effects are render-only and
+    // safe mid-game. mata_canto / caida_continua / mata_mesa are game
+    // rules — require decks == 0.
+    const allowMidGame =
+      key === "visual_cards" || key === "visual_table" || key === "audio_effects";
     const isReglaToggle = ["mata_canto", "caida_continua", "mata_mesa"].includes(key);
     const result = await applyChange(
       chatId,
       (config) => {
         if (key === "visual_cards") config.visual_cards = !config.visual_cards;
         else if (key === "visual_table") config.visual_table = !config.visual_table;
+        else if (key === "audio_effects") config.audio_effects = !config.audio_effects;
         else if (key === "mata_canto")
           config.mata_canto = config.mata_canto === "on" ? "off" : "on";
         else if (key === "caida_continua")

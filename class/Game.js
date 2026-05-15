@@ -341,6 +341,16 @@ class Game {
     // Reset table
     this.last_player_on_take = 0;
     this.took = [0, 0, 0, 0];
+    // Normalize this.points so its length matches the number of
+    // distinct scoring slots BEFORE the rotation. The slot count is
+    // users.length for individual modes (2/3/4) or 2 for parejas-4.
+    // Without this, a sparse points array (e.g. [9, 1] in a 3-player
+    // game where player 2 never earned anything) would misalign on
+    // push(shift()): the player at the new tail index would read
+    // `undefined` and visually swap scores with another player.
+    const slotCount = this.isParejasMode() ? 2 : this.users.length;
+    while (this.points.length < slotCount) this.points.push(0);
+    if (this.points.length > slotCount) this.points.length = slotCount;
     this.users.push(this.users.shift());
     this.points.push(this.points.shift());
     this.last_hand = false;

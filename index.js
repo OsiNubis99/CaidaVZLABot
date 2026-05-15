@@ -4,6 +4,7 @@ const game = require("./services/game");
 const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
 const cards = require("./services/cards");
+const audio = require("./services/audio");
 const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
 const events = require("./services/events");
@@ -182,6 +183,10 @@ bot.on(
       await bot.sendPhoto(response.chat_id, response.photo, opts);
     } else {
       await bot.sendMessage(response.chat_id, response.message, response.options);
+    }
+    if (response.audio) {
+      // Fire-and-forget — audio is best-effort, errors are logged inside.
+      audio.play(bot, response.chat_id, response.audio).catch(() => {});
     }
     await maybeDmNextTurn(response);
     scheduleSkip(response);
@@ -631,7 +636,18 @@ bot.onText(
   safe("/estado", async (msg) => {
     if (await rateLimited(msg, "/estado")) return;
     const response = await game.status(RequestDTO.fromTelegram(msg));
-    await bot.sendMessage(msg.chat.id, response.message, response.options);
+    if (response.photo) {
+      const opts = { reply_markup: response.options && response.options.reply_markup };
+      if (response.message && response.message.trim()) {
+        opts.caption =
+          response.message.length > 1024
+            ? response.message.slice(0, 1021) + "..."
+            : response.message;
+      }
+      await bot.sendPhoto(msg.chat.id, response.photo, opts);
+    } else {
+      await bot.sendMessage(msg.chat.id, response.message, response.options);
+    }
   }),
 );
 

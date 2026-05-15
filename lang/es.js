@@ -65,7 +65,7 @@ module.exports = {
   sync_cards: "Pegado en mesa ",
   user_added: "Usuario agregado.",
   user_banned: "Usuario Bloqueado.",
-  user_get_fall: "Caidó\n",
+  user_get_fall: "Caída\n",
   user_is_banned:
     "Usted fue bloqueado temporal o permanentemente para el uso de este Bot." +
     ERROR,

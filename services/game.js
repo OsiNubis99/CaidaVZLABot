@@ -252,7 +252,10 @@ module.exports = {
      */
     var group = games[req.group.id_group];
     if (group) {
-      return message.reply(group.print(false), req.message_id);
+      const msg = message.reply(group.print(false), req.message_id);
+      // Same mesa-as-photo pass that play_card uses, so /estado honors
+      // visual_table=on instead of always falling back to the text grid.
+      return await attachMesaPhoto(group, false, msg);
     }
     return message.reply(L.no_active_game, req.message_id);
   },
@@ -444,6 +447,12 @@ module.exports = {
         response,
         finished ? undefined : keyboard.make_a_choice(group.playerName())
       );
+      // Audio effect on caída — only signal here; the handler in
+      // index.js sends the voice clip after the text/photo message
+      // so the bubble order is "play description → sound effect".
+      if (group._lastCaida && group.config && group.config.audio_effects !== false) {
+        msg.audio = "caida";
+      }
       await persistOrRemove(chatId, finished);
       const withPhoto = await attachMesaPhoto(group, finished, msg);
       return attachNextTurn(group, finished, withPhoto);
