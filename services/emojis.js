@@ -178,20 +178,42 @@ async function bootstrap(bot, adminUserId, { force = false } = {}) {
   const manifest = packManifest();
 
   if (force) {
-    // Wipe the local cache so we re-cache from the Telegram source of
-    // truth as we go. Also delete the Telegram set itself so we start
-    // from a clean slate — without this, a previous partial-failure
-    // upload would leave junk stickers in the set that we'd then have
-    // to skip over.
+    // Wipe the local cache. We deliberately DO NOT call
+    // deleteStickerSet — Telegram tombstones the name for several
+    // minutes after delete, so an immediate createNewStickerSet
+    // returns ok but every subsequent addStickerToSet fails with
+    // STICKERSET_INVALID. Instead we re-claim from the existing set
+    // when possible: if Telegram already holds N stickers in the
+    // expected order, just re-cache their custom_emoji_ids under the
+    // manifest names. Falls through to incremental upload when the
+    // set is missing or shorter than the manifest.
     await clearAll();
     try {
-      await rawApi(bot, "deleteStickerSet", { qs: { name: SET_NAME } });
-      logger.info({ name: SET_NAME }, "deleted prior emoji set for force-rebootstrap");
-    } catch (err) {
-      // 400 STICKERSET_INVALID just means it didn't exist; ignore.
-      if (!/STICKERSET_INVALID|not found/i.test(err.message || "")) {
-        logger.warn({ err: err.message }, "deleteStickerSet failed (continuing)");
+      const set = await rawApi(bot, "getStickerSet", { qs: { name: SET_NAME } });
+      const stickers = (set && set.stickers) || [];
+      if (stickers.length === manifest.length) {
+        for (let i = 0; i < manifest.length; i++) {
+          if (stickers[i] && stickers[i].custom_emoji_id) {
+            await setCustomEmojiId(manifest[i].name, stickers[i].custom_emoji_id, SET_NAME);
+          }
+        }
+        logger.info(
+          { count: stickers.length },
+          "force: re-claimed existing emoji set positions",
+        );
+        return { uploaded: 0, skipped: manifest.length, failed: 0 };
       }
+      logger.info(
+        { existing: stickers.length, expected: manifest.length },
+        "force: existing set length mismatch, falling through to incremental upload",
+      );
+    } catch (err) {
+      // Set doesn't exist or another error — fall through to normal
+      // creation path. STICKERSET_INVALID is the common case.
+      logger.info(
+        { err: err.message },
+        "force: no existing set, will create from scratch",
+      );
     }
   }
 
