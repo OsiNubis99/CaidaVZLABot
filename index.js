@@ -562,6 +562,28 @@ bot.onText(
 );
 
 bot.onText(
+  /\/test_emoji/,
+  safe("/test_emoji", async (msg) => {
+    if (!admin.is_admin(msg.from.id)) return;
+    // Direct bot → chat with custom_emoji entity. If this shows the
+    // actual card image inline (~24px) → bots CAN send custom emojis,
+    // so the inline-result path is the broken piece. If this shows
+    // just the fallback 🃏 → Telegram's Fragment paywall is real and
+    // we have to switch strategy.
+    const id = await emojis.getCustomEmojiId("card-1-Oro");
+    if (!id) {
+      await bot.sendMessage(msg.chat.id, "No hay emoji cacheado para card-1-Oro");
+      return;
+    }
+    await bot.sendMessage(msg.chat.id, "Test custom emoji: 🃏 (debería verse como 1-Oro)", {
+      entities: [
+        { type: "custom_emoji", offset: 21, length: 2, custom_emoji_id: id },
+      ],
+    });
+  }),
+);
+
+bot.onText(
   /\/top/,
   safe("/top", async (msg) => {
     if (await rateLimited(msg, "/top")) return;
