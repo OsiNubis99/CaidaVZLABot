@@ -575,11 +575,14 @@ bot.onText(
       await bot.sendMessage(msg.chat.id, "No hay emoji cacheado para card-1-Oro");
       return;
     }
-    await bot.sendMessage(msg.chat.id, "Test custom emoji: 🃏 (debería verse como 1-Oro)", {
-      entities: [
-        { type: "custom_emoji", offset: 21, length: 2, custom_emoji_id: id },
-      ],
+    // Simplest possible test: just the placeholder, entity at offset 0.
+    // If this renders the custom emoji, bots CAN send them and we know
+    // the inline-result path is the broken piece. If it shows the
+    // fallback 🃏, there's a deeper restriction.
+    await bot.sendMessage(msg.chat.id, "🃏", {
+      entities: [{ type: "custom_emoji", offset: 0, length: 2, custom_emoji_id: id }],
     });
+    await bot.sendMessage(msg.chat.id, "↑ Si ves la carta 1-Oro mini, los custom emojis sí funcionan vía sendMessage.\nID usado: " + id);
   }),
 );
 
