@@ -172,13 +172,30 @@ function rawApi(bot, method, opts) {
  * @returns {Promise<{uploaded:number, skipped:number, failed:number}>}
  */
 async function bootstrap(bot, adminUserId, { force = false } = {}) {
-  if (force) await clearAll();
   let uploaded = 0;
   let skipped = 0;
   let failed = 0;
   const manifest = packManifest();
 
-  // If not forcing and all entries are already cached, fast-exit.
+  if (force) {
+    // Wipe the local cache so we re-cache from the Telegram source of
+    // truth as we go. Also delete the Telegram set itself so we start
+    // from a clean slate — without this, a previous partial-failure
+    // upload would leave junk stickers in the set that we'd then have
+    // to skip over.
+    await clearAll();
+    try {
+      await rawApi(bot, "deleteStickerSet", { qs: { name: SET_NAME } });
+      logger.info({ name: SET_NAME }, "deleted prior emoji set for force-rebootstrap");
+    } catch (err) {
+      // 400 STICKERSET_INVALID just means it didn't exist; ignore.
+      if (!/STICKERSET_INVALID|not found/i.test(err.message || "")) {
+        logger.warn({ err: err.message }, "deleteStickerSet failed (continuing)");
+      }
+    }
+  }
+
+  // If not forcing and every entry is already cached locally, fast-exit.
   if (!force) {
     const have = await lookupMany(manifest.map((m) => m.name));
     if (have.size === manifest.length) {
@@ -186,19 +203,21 @@ async function bootstrap(bot, adminUserId, { force = false } = {}) {
     }
   }
 
-  // Does the set already exist on Telegram? We try getStickerSet —
-  // if it succeeds, we treat it as "set exists, add missing only";
-  // if it 404s, we create from scratch with the first sticker.
+  // Snapshot the set's current sticker count. We use this to figure out
+  // which set-position corresponds to the sticker we just uploaded —
+  // each successful add appends at position (prevCount). We re-fetch
+  // after each upload to grab the newly assigned custom_emoji_id.
   let setExists = false;
+  let setStickerCount = 0;
   try {
-    await rawApi(bot, "getStickerSet", { qs: { name: SET_NAME } });
+    const set = await rawApi(bot, "getStickerSet", { qs: { name: SET_NAME } });
     setExists = true;
+    setStickerCount = (set && set.stickers && set.stickers.length) || 0;
   } catch (err) {
     setExists = false;
   }
 
-  for (let i = 0; i < manifest.length; i++) {
-    const entry = manifest[i];
+  for (const entry of manifest) {
     if (!fs.existsSync(entry.file)) {
       logger.warn({ name: entry.name, file: entry.file }, "emoji file missing");
       failed++;
@@ -210,13 +229,18 @@ async function bootstrap(bot, adminUserId, { force = false } = {}) {
       continue;
     }
     try {
-      const isFirst = !setExists && uploaded === 0;
       const stickerSpec = {
         sticker: "attach://emoji_file",
         format: "static",
         emoji_list: [entry.fallback],
       };
-      if (isFirst) {
+      const formData = {
+        emoji_file: {
+          value: fs.createReadStream(entry.file),
+          options: { filename: `${entry.name}.webp`, contentType: "image/webp" },
+        },
+      };
+      if (!setExists) {
         await rawApi(bot, "createNewStickerSet", {
           qs: {
             user_id: adminUserId,
@@ -225,12 +249,7 @@ async function bootstrap(bot, adminUserId, { force = false } = {}) {
             sticker_type: "custom_emoji",
             stickers: JSON.stringify([stickerSpec]),
           },
-          formData: {
-            emoji_file: {
-              value: fs.createReadStream(entry.file),
-              options: { filename: `${entry.name}.webp`, contentType: "image/webp" },
-            },
-          },
+          formData,
         });
         setExists = true;
       } else {
@@ -240,52 +259,32 @@ async function bootstrap(bot, adminUserId, { force = false } = {}) {
             name: SET_NAME,
             sticker: JSON.stringify(stickerSpec),
           },
-          formData: {
-            emoji_file: {
-              value: fs.createReadStream(entry.file),
-              options: { filename: `${entry.name}.webp`, contentType: "image/webp" },
-            },
-          },
+          formData,
         });
+      }
+      // Pull the set back and claim the sticker at the new tail
+      // position — that's the one we just added. This robustly handles
+      // gaps (skipped cached entries) and partial failures because we
+      // associate THIS entry's name with the sticker we actually got
+      // back from Telegram, not its position in the local manifest.
+      const refreshed = await rawApi(bot, "getStickerSet", { qs: { name: SET_NAME } });
+      const stickers = (refreshed && refreshed.stickers) || [];
+      if (stickers.length > setStickerCount) {
+        const added = stickers[setStickerCount];
+        if (added && added.custom_emoji_id) {
+          await setCustomEmojiId(entry.name, added.custom_emoji_id, SET_NAME);
+          logger.info(
+            { name: entry.name, custom_emoji_id: added.custom_emoji_id },
+            "emoji cached",
+          );
+        }
+        setStickerCount = stickers.length;
       }
       uploaded++;
     } catch (err) {
       failed++;
       logger.error({ err: err.message, name: entry.name }, "emoji upload failed");
     }
-  }
-
-  // After uploading all, pull the set back and map positions → names.
-  // The pack manifest's order is the order Telegram returned stickers
-  // in (because we added them sequentially), so we can zip them.
-  try {
-    const set = await rawApi(bot, "getStickerSet", { qs: { name: SET_NAME } });
-    const stickers = set && set.stickers ? set.stickers : [];
-    // We may be filling holes (skipped means already cached). Iterate
-    // by position assuming the set order matches the manifest order
-    // for the entries we just uploaded. For each manifest entry that
-    // does NOT have a cached id yet, claim the next stickers[i] that
-    // we haven't claimed.
-    const claimed = new Set();
-    for (let i = 0; i < manifest.length && i < stickers.length; i++) {
-      const entry = manifest[i];
-      const cached = await getCustomEmojiId(entry.name);
-      if (cached) {
-        claimed.add(i);
-        continue;
-      }
-      const s = stickers[i];
-      if (s && s.custom_emoji_id) {
-        await setCustomEmojiId(entry.name, s.custom_emoji_id, SET_NAME);
-        claimed.add(i);
-        logger.info(
-          { name: entry.name, custom_emoji_id: s.custom_emoji_id },
-          "emoji cached",
-        );
-      }
-    }
-  } catch (err) {
-    logger.error({ err: err.message }, "post-bootstrap getStickerSet failed");
   }
 
   return { uploaded, skipped, failed };

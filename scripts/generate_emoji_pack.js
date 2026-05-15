@@ -50,11 +50,15 @@ function cantoSlug(name) {
 }
 
 async function convert(srcPath, outPath) {
+  // Telegram custom emoji requires EXACTLY 100×100. Use `fit: contain`
+  // so the source aspect is preserved (cards are ~65×100, cantos are
+  // square so they fill). The result is always 100×100 with transparent
+  // padding where the source doesn't reach.
   await sharp(srcPath)
     .resize({
       width: SIZE,
       height: SIZE,
-      fit: "inside",
+      fit: "contain",
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .webp({ quality: 90 })
