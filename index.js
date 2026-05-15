@@ -101,13 +101,20 @@ process.on("uncaughtException", (err) => {
 });
 
 // Flush any debounced game-state saves on shutdown so a deploy / SIGTERM
-// in the middle of an active game doesn't drop the latest move.
+// in the middle of an active game doesn't drop the latest move, then
+// close the DB pool so deploys don't leave sockets in TIME_WAIT.
 async function gracefulShutdown(signal) {
   logger.info({ signal }, "shutdown: flushing pending saves");
   try {
     await game.flushPendingSaves();
   } catch (err) {
     logger.warn({ err: err.message }, "shutdown flush failed");
+  }
+  try {
+    const db = require("./config/db");
+    if (db.shutdown) await db.shutdown();
+  } catch (err) {
+    logger.warn({ err: err.message }, "shutdown db close failed");
   }
   process.exit(0);
 }
