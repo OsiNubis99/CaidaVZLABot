@@ -45,6 +45,10 @@ class Game {
     // Stays null until shuffle() runs for the first time (i.e., the
     // group has > 1 user and someone hit /inicia_ya).
     this.started_at = null;
+    // Cards played since the start of the current deck. Used by the
+    // pro CPU to count cards (knowing what's been seen narrows down
+    // what opponents still hold). Reset on every shuffle().
+    this.played_cards = [];
   }
 
   /**
@@ -221,6 +225,8 @@ class Game {
     const wasInitialShuffle = this.decks === 0;
     this.decks++;
     if (wasInitialShuffle && !this.started_at) this.started_at = Date.now();
+    // Card-counting memory belongs to the current deck only.
+    this.played_cards = [];
     this.deck = [
       11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
       22, 32, 6, 4, 0, 27, 37, 17, 28, 33, 21, 3, 23, 34, 20, 7, 31, 36, 26, 13,
@@ -437,6 +443,11 @@ class Game {
           }
         }
         this.last_card_played = card;
+        // Bookkeeping for the pro CPU's card-counting heuristic. Append
+        // by number so the cost is tiny and stable across persistence.
+        if (card && typeof card.number === "number") {
+          this.played_cards.push(card.number);
+        }
         // Only the first play of a deck can trigger mata_mesa.
         this._dealerSyncCandidate = null;
         for (let i = 0; i < this.points.length; i++) {

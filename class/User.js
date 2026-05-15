@@ -28,6 +28,11 @@ class User {
     // per-deck rotation in handing_out_cards shifts users[] around.
     // Empty in parejas mode (team colors are computed from decks % 2).
     this.color = "";
+    // null for human players. For bot-controlled seats, one of:
+    //   "easy"   → random plays + always cantos when value > 0
+    //   "medium" → table-aware heuristic, no opponent info
+    //   "pro"    → also sees other players' cards + card-counts the deck
+    this.cpu_difficulty = factory_user.cpu_difficulty || null;
   }
 
   /**

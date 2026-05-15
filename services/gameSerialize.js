@@ -27,6 +27,7 @@ function serialize(game) {
     name: game.name,
     decks: game.decks,
     started_at: game.started_at,
+    played_cards: Array.isArray(game.played_cards) ? game.played_cards.slice() : [],
     last_hand: game.last_hand,
     last_player_on_take: game.last_player_on_take,
     player: game.player,
@@ -53,6 +54,7 @@ function serialize(game) {
       caida: u.caida,
       caido: u.caido,
       color: u.color,
+      cpu_difficulty: u.cpu_difficulty || null,
       cards: (u.cards || []).map(cardToNumber),
       sing: {
         active: u.sing && u.sing.active,
@@ -69,6 +71,7 @@ function deserialize(data) {
   const game = new Game(data.name, config);
   game.decks = data.decks;
   game.started_at = data.started_at || null;
+  game.played_cards = Array.isArray(data.played_cards) ? data.played_cards.slice() : [];
   game.last_hand = data.last_hand;
   game.last_player_on_take = data.last_player_on_take;
   game.player = data.player;
@@ -92,6 +95,7 @@ function deserialize(data) {
       last_name: u.last_name,
       username: u.username,
       is_banned: u.is_banned,
+      cpu_difficulty: u.cpu_difficulty || null,
     });
     user.caida = u.caida || 0;
     user.caido = u.caido || 0;

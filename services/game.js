@@ -2,6 +2,7 @@ const { getLang } = require("../lang");
 const Game = require("../class/Game");
 const User = require("../class/User");
 const Config = require("../class/Config");
+const CpuPlayer = require("../class/CpuPlayer");
 const emojisService = require("./emojis");
 const cantos = require("./cantos");
 const mesa = require("./mesa");
@@ -272,6 +273,179 @@ module.exports = {
       return message.reply(L.game_is_running, req.message_id);
     }
     return message.reply(L.user_is_banned, req.message_id);
+  },
+
+  /**
+   * Add a CPU-controlled player to the lobby. Pre-game only and
+   * capacity-checked (the 4-seat limit is hard). The CPU gets a
+   * synthetic id_user (collision-proof vs Telegram's numeric ids)
+   * stored in the global users[] map so the inline picker won't
+   * route inline queries to it (it has no human behind it).
+   *
+   * @param {String} chatId  - The chat hosting the lobby.
+   * @param {"easy"|"medium"|"pro"} difficulty
+   * @returns {{ok:boolean, msg:string}} structured result so the
+   *   callback handler can decide how to render the answer.
+   */
+  async joinCpu(chatId, difficulty) {
+    const L = getLang((games[chatId] && games[chatId].config && games[chatId].config.locale) || "es");
+    let group = games[chatId];
+    if (!group) {
+      // Try to bootstrap from the DB config (same path as join()).
+      const configs = await GroupController.getOneById(chatId);
+      if (!configs) return { ok: false, msg: L.group_invalid };
+      games[chatId] = new Game(configs.name, new Config(configs));
+      group = games[chatId];
+    }
+    if (group.decks > 0) return { ok: false, msg: L.game_is_running };
+    if (group.users.length >= 4) return { ok: false, msg: L.game_is_full };
+    if (!["easy", "medium", "pro"].includes(difficulty)) {
+      return { ok: false, msg: "Dificultad inválida" };
+    }
+    // Pick a slot index unique within the chat. We can't just use
+    // users.length because removeCpu shrinks the array; a 2nd CPU
+    // joining after a 1st leaves would otherwise collide on the
+    // synthetic id. Use a counter scanned from existing CPU ids.
+    const existing = group.users
+      .filter((u) => u && u.cpu_difficulty)
+      .map((u) => {
+        const m = /^cpu_[^_]+_(\d+)$/.exec(u.id_user || "");
+        return m ? Number(m[1]) : 0;
+      });
+    const nextSlot = existing.length ? Math.max(...existing) + 1 : 1;
+    const labels = { easy: "Fácil", medium: "Medio", pro: "Pro" };
+    const cpu = new User({
+      id_user: `cpu_${chatId}_${nextSlot}`,
+      first_name: `🤖 ${labels[difficulty]}`,
+      last_name: "",
+      username: null,
+      is_banned: false,
+      cpu_difficulty: difficulty,
+    });
+    users[cpu.id_user] = chatId;
+    group.join(cpu);
+    await persistOrRemove(chatId, false);
+    events.record(chatId, events.EVENT_TYPES.PLAYER_JOINED, {
+      user_id: cpu.id_user,
+      first_name: cpu.first_name,
+      cpu_difficulty: difficulty,
+    });
+    return { ok: true, msg: `${cpu.first_name} agregado.` };
+  },
+
+  /**
+   * Remove the CPU at the given seat (1-indexed among CPUs, not among
+   * all players). Pre-game any human can remove; mid-game restricted
+   * to admin.
+   *
+   * @returns {{ok:boolean, msg:string}}
+   */
+  async removeCpu(chatId, seat, { isAdmin = false } = {}) {
+    const group = games[chatId];
+    if (!group) return { ok: false, msg: "No hay partida activa." };
+    const cpus = group.users.filter((u) => u && u.cpu_difficulty);
+    if (group.decks > 0 && !isAdmin) {
+      return { ok: false, msg: "La partida ya empezó, solo un admin puede sacar bots." };
+    }
+    const target = cpus[seat - 1];
+    if (!target) return { ok: false, msg: "Ese bot no está en la partida." };
+    const idx = group.users.findIndex((u) => u && u.id_user === target.id_user);
+    if (idx >= 0) group.users.splice(idx, 1);
+    delete users[target.id_user];
+    if (group.users.length === 0) {
+      delete games[chatId];
+      await persistOrRemove(chatId, true);
+    } else {
+      await persistOrRemove(chatId, false);
+    }
+    return { ok: true, msg: `${target.first_name} retirado.` };
+  },
+
+  /**
+   * List CPU seats currently in the lobby. The UI uses this to build
+   * the /salirBot button keyboard. Returns seat-numbered tuples (1-N).
+   */
+  listCpus(chatId) {
+    const group = games[chatId];
+    if (!group) return [];
+    return group.users
+      .filter((u) => u && u.cpu_difficulty)
+      .map((u, i) => ({
+        seat: i + 1,
+        first_name: u.first_name,
+        difficulty: u.cpu_difficulty,
+        id_user: u.id_user,
+      }));
+  },
+
+  /**
+   * Lobby capacity check used by the callback handler so multiple
+   * humans hammering /unirBot concurrently each get a clean
+   * accept-or-reject without the UI lying about whether there's room.
+   * Node's single-threaded event loop guarantees atomicity between
+   * this check and the subsequent joinCpu call (they run back-to-back
+   * in the same callback handler).
+   */
+  hasCapacityForCpu(chatId) {
+    const group = games[chatId];
+    if (!group) return true; // a fresh game will be created
+    if (group.decks > 0) return false;
+    return group.users.length < 4;
+  },
+
+  /**
+   * Take one auto-play step for the CPU currently up. Used by the
+   * setTimeout-driven scheduler in index.js. Returns the same shape
+   * as a human play (chat_id, message, options...) plus an optional
+   * `again` flag that signals "this was a canto; schedule another
+   * step right after to actually play a card".
+   *
+   * @param {String} chatId
+   * @returns {Promise<Object|null>}
+   */
+  async cpuAutoStep(chatId) {
+    const group = games[chatId];
+    if (!group || group.decks === 0) return null;
+    // Identify who's up. Start_By state: dealer (last user) is up;
+    // otherwise it's group.player.
+    const lastUser = group.users[group.users.length - 1];
+    const isStartBy =
+      lastUser && Array.isArray(lastUser.cards) && lastUser.cards[0] === "Start_By";
+    const actorIdx = isStartBy ? group.users.length - 1 : group.player;
+    const actor = group.users[actorIdx];
+    if (!actor || !actor.cpu_difficulty) return null;
+    const decision = CpuPlayer.decide(group, actorIdx, actor.cpu_difficulty);
+    if (decision.action === "start_by") {
+      const resp = await module.exports.handing_out_cards(actor, decision.value);
+      return resp ? { ...resp, again: false } : null;
+    }
+    if (decision.action === "sing") {
+      const resp = await module.exports.sing(actor);
+      // After cantoing the CPU still has all 3 cards — return again:true
+      // so the scheduler chains another step to actually play one.
+      return resp ? { ...resp, again: true } : null;
+    }
+    const resp = await module.exports.play_card(actor, decision.cardIdx);
+    return resp ? { ...resp, again: false } : null;
+  },
+
+  /**
+   * Scanner used at startup to re-arm CPU turns after a process
+   * restart. Same shape as pendingTimerArmList() but for CPUs.
+   */
+  pendingCpuTurnList() {
+    const out = [];
+    for (const chatId of Object.keys(games)) {
+      const g = games[chatId];
+      if (!g || g.decks === 0) continue;
+      const lastUser = g.users[g.users.length - 1];
+      const isStartBy =
+        lastUser && Array.isArray(lastUser.cards) && lastUser.cards[0] === "Start_By";
+      const actorIdx = isStartBy ? g.users.length - 1 : g.player;
+      const actor = g.users[actorIdx];
+      if (actor && actor.cpu_difficulty) out.push({ chatId });
+    }
+    return out;
   },
 
   /**

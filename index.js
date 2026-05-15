@@ -109,6 +109,8 @@ const COMMAND_LIMITS = {
   "/inicia_ya": { windowMs: 5_000, max: 3 },
   "/reiniciar": { windowMs: 10_000, max: 3 },
   "/salir": { windowMs: 5_000, max: 3 },
+  "/unirBot": { windowMs: 5_000, max: 4 },
+  "/salirBot": { windowMs: 5_000, max: 4 },
   "/estado": { windowMs: 5_000, max: 5 },
   "/configurar": { windowMs: 5_000, max: 5 },
   "/configura": { windowMs: 5_000, max: 5 },
@@ -193,8 +195,79 @@ bot.on(
     }
     await maybeDmNextTurn(response);
     scheduleSkip(response);
+    scheduleCpuTurn(response);
   }),
 );
+
+// ---- CPU autoplay scheduler ----
+// Mirrors the TURBO skipTimers Map. One pending timer per chat at a
+// time so a rapid sequence of CPU plays serializes naturally and human
+// /play_card events cancel the bot's pending move.
+const cpuTimers = new Map();
+
+function clearCpuTimer(chatId) {
+  const h = cpuTimers.get(chatId);
+  if (h) {
+    clearTimeout(h);
+    cpuTimers.delete(chatId);
+  }
+}
+
+function scheduleCpuTurn(response, delayMs = 2500) {
+  if (!response || !response.chat_id) return;
+  const chatId = String(response.chat_id);
+  const group = game.peek(chatId);
+  if (!group || group.decks === 0) return;
+  // Figure out who's up (handles Start_By dealer + regular turn).
+  const lastUser = group.users[group.users.length - 1];
+  const isStartBy =
+    lastUser && Array.isArray(lastUser.cards) && lastUser.cards[0] === "Start_By";
+  const actor = isStartBy ? lastUser : group.users[group.player];
+  if (!actor || !actor.cpu_difficulty) return;
+  clearCpuTimer(chatId);
+  const handle = setTimeout(() => cpuStep(chatId), delayMs);
+  cpuTimers.set(chatId, handle);
+}
+
+async function cpuStep(chatId) {
+  cpuTimers.delete(chatId);
+  let result;
+  try {
+    result = await game.cpuAutoStep(chatId);
+  } catch (err) {
+    logger.warn({ err: err.message, chatId }, "CPU autoplay failed");
+    return;
+  }
+  if (!result) return;
+  // Send the message (mirror the send logic from chosen_inline_result).
+  try {
+    if (result.photo) {
+      const opts = {
+        reply_markup: result.options && result.options.reply_markup,
+      };
+      if (result.message && result.message.trim()) {
+        opts.caption =
+          result.message.length > 1024
+            ? result.message.slice(0, 1021) + "..."
+            : result.message;
+      }
+      await bot.sendPhoto(result.chat_id, result.photo, opts);
+    } else {
+      await bot.sendMessage(result.chat_id, result.message, result.options);
+    }
+    if (result.audio) {
+      audio.play(bot, result.chat_id, result.audio).catch(() => {});
+    }
+  } catch (err) {
+    logger.warn({ err: err.message, chatId }, "CPU autoplay send failed");
+  }
+  await maybeDmNextTurn(result);
+  scheduleSkip(result);
+  // If the step was a canto, immediately chain another step (play
+  // happens right after). Otherwise, if the next player is also a CPU
+  // (e.g. all 3 opponents are bots), schedule them too.
+  scheduleCpuTurn(result, result.again ? 1500 : 2500);
+}
 
 //**                      CallBacks                      */
 
@@ -232,6 +305,42 @@ bot.on(
     }
 
     await bot.answerCallbackQuery(query.id);
+
+    // /unirBot, /salirBot button callbacks. Race-safe: capacity is
+    // re-checked here right before joinCpu, and the button message is
+    // always deleted so the same buttons can't be re-used.
+    if (query.data.startsWith("cpu:")) {
+      const chatId = String(query.message.chat.id);
+      const [, action, arg] = query.data.split(":");
+      const tryDelete = async () => {
+        try {
+          await bot.deleteMessage(chatId, query.message.message_id);
+        } catch (_) {}
+      };
+      if (action === "add") {
+        if (!game.hasCapacityForCpu(chatId)) {
+          await bot.answerCallbackQuery(query.id, {
+            text: "Partida llena o ya empezó.",
+            show_alert: true,
+          });
+          await tryDelete();
+          return;
+        }
+        const r = await game.joinCpu(chatId, arg);
+        await tryDelete();
+        await bot.sendMessage(chatId, r.msg);
+        return;
+      }
+      if (action === "rm") {
+        const seat = parseInt(arg, 10);
+        const isAdminUser = admin.is_admin(query.from.id);
+        const r = await game.removeCpu(chatId, seat, { isAdmin: isAdminUser });
+        await tryDelete();
+        await bot.sendMessage(chatId, r.msg);
+        return;
+      }
+      return;
+    }
 
     // Admin UI callbacks: only allowed for admins.
     if (query.data.startsWith("a:")) {
@@ -302,6 +411,7 @@ bot.on(
         if (response) {
           await bot.sendMessage(query.message.chat.id, response.message, response.options);
           scheduleSkip(response);
+          scheduleCpuTurn(response);
         }
         await bot.deleteMessage(query.message.chat.id, query.message.message_id);
         break;
@@ -626,11 +736,70 @@ bot.onText(
 );
 
 bot.onText(
-  /\/salir/,
+  /\/salir(?!Bot)/,
   safe("/salir", async (msg) => {
     if (await rateLimited(msg, "/salir")) return;
     const response = await game.leave(RequestDTO.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
+
+bot.onText(
+  /\/unirBot/i,
+  safe("/unirBot", async (msg) => {
+    if (await rateLimited(msg, "/unirBot")) return;
+    const chatId = String(msg.chat.id);
+    if (!game.hasCapacityForCpu(chatId)) {
+      const L = langForMsg(msg);
+      const group = game.peek(chatId);
+      await bot.sendMessage(
+        msg.chat.id,
+        group && group.decks > 0 ? L.unir_bot_running : L.unir_bot_full,
+      );
+      return;
+    }
+    const L = langForMsg(msg);
+    await bot.sendMessage(msg.chat.id, L.unir_bot_prompt, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🟢 Fácil", callback_data: "cpu:add:easy" },
+            { text: "🟡 Medio", callback_data: "cpu:add:medium" },
+            { text: "🔴 Pro", callback_data: "cpu:add:pro" },
+          ],
+        ],
+      },
+    });
+  }),
+);
+
+bot.onText(
+  /\/salirBot/i,
+  safe("/salirBot", async (msg) => {
+    if (await rateLimited(msg, "/salirBot")) return;
+    const chatId = String(msg.chat.id);
+    const L = langForMsg(msg);
+    const cpus = game.listCpus(chatId);
+    if (cpus.length === 0) {
+      await bot.sendMessage(msg.chat.id, L.salir_bot_empty);
+      return;
+    }
+    const group = game.peek(chatId);
+    if (group && group.decks > 0 && !admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, L.salir_bot_running_not_admin);
+      return;
+    }
+    await bot.sendMessage(msg.chat.id, L.salir_bot_prompt, {
+      reply_markup: {
+        inline_keyboard: cpus.map((c) => [
+          {
+            text: `❌ ${c.first_name}`,
+            callback_data: `cpu:rm:${c.seat}`,
+          },
+        ]),
+      },
+    });
   }),
 );
 
@@ -655,6 +824,7 @@ bot.onText(
     if (response) {
       await bot.sendMessage(msg.chat.id, response.message, response.options);
       scheduleSkip(response);
+      scheduleCpuTurn(response);
     }
     logger.info(
       { chat_id: msg.chat.id, chat_title: msg.chat.title },
@@ -712,6 +882,8 @@ bot.setMyCommands([
   { command: "inicia_ya", description: "Inicia la partida, pero se salta las configuraciones" },
   { command: "estado", description: "Muestra información sobre la partida." },
   { command: "salir", description: "Te saca de la partida (solo antes de empezar)." },
+  { command: "unirBot", description: "Agregar un bot CPU al lobby (fácil/medio/pro)." },
+  { command: "salirBot", description: "Sacar un bot CPU del lobby." },
   { command: "reiniciar", description: "Elimina la partida actual y crea una nueva." },
   { command: "configurar", description: "Muestra el panel de configuración." },
   { command: "help", description: "Muestra una ayuda de como usar el bot." },
@@ -746,6 +918,16 @@ game.loadedPromise
     }
     if (pending.length > 0) {
       logger.info({ count: pending.length }, "re-armed TURBO timers after reload");
+    }
+    // Same idea for CPU autoplay timers — they're transient setTimeouts
+    // and don't survive restart, so re-arm based on whose turn it is
+    // after the persistence reload.
+    const cpuPending = game.pendingCpuTurnList();
+    for (const p of cpuPending) {
+      scheduleCpuTurn({ chat_id: p.chatId });
+    }
+    if (cpuPending.length > 0) {
+      logger.info({ count: cpuPending.length }, "re-armed CPU turns after reload");
     }
   })
   .catch((err) => logger.warn({ err: err.message }, "TURBO timer re-arm failed"));

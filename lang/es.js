@@ -77,6 +77,18 @@ module.exports = {
   salir_left: "Saliste de la partida. Ya podés /unirse en otro grupo.",
   game_expired:
     "⏰ Esta partida fue cancelada automáticamente por exceder el tiempo máximo configurado. Pueden /unirse a una nueva.",
+  unir_bot_prompt:
+    "🤖 *Agregar bot a la partida*\n\n" +
+    "Elegí dificultad:\n" +
+    "• *Fácil*: juega cartas al azar (siempre canta).\n" +
+    "• *Medio*: prioriza caídas, mesa limpia y máx cartas. Ve la mesa.\n" +
+    "• *Pro*: ve cartas de todos + cuenta cartas + evita regalar caídas.",
+  unir_bot_full: "La partida está llena (4/4). No se puede agregar otro bot.",
+  unir_bot_running: "La partida ya empezó. No se pueden agregar bots ahora.",
+  salir_bot_empty: "No hay bots en la partida.",
+  salir_bot_running_not_admin:
+    "La partida ya empezó. Solo un admin puede retirar bots ahora.",
+  salir_bot_prompt: "Tocá el bot que querés retirar:",
   user_is_not_admin: "Este comando solo debe ser usado por un #admin.",
   user_unbanned: "Usuario Desbloqueado.",
 
