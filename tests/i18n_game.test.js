@@ -171,6 +171,17 @@ describe("Game.print i18n + clean layout", () => {
     expect(out).not.toContain("cartas · sin canto");
   });
 
+  it("renderShortStatus uses the ⭐ pts + 🃏 tomadas compact line format", () => {
+    const g = mk("es", 1); // individual, 2 users
+    g.points = [12, 9];
+    g.took = [22, 4];
+    const out = g.renderShortStatus();
+    // "🔴 12⭐ 22🃏 | 🔵 9⭐ 4🃏" — points and tomadas per player.
+    expect(out).toMatch(/🔴 12⭐ 22🃏/);
+    expect(out).toMatch(/🔵 9⭐ 4🃏/);
+    expect(out).toContain("|");
+  });
+
   it("renderShortStatus includes mesa + última carta + points + turno", () => {
     // Direct unit test for the new helper. /play_card uses this path
     // on every card played (mid-mano) and at mid-deck mano boundaries.

@@ -646,22 +646,26 @@ class Game {
   }
 
   /**
-   * Compact one-line score "🔵 20 pts | 🔴 22 pts" used inside the
-   * short status. Parejas-4 emits team labels; individual emits one
-   * entry per user using their stable join-order color.
+   * Compact one-line summary "🔵 1⭐ 12🃏 | 🔴 0⭐ 15🃏" used inside the
+   * short status. Shows BOTH points (⭐) and cards taken (🃏) per
+   * player/team — taken count matters mid-deck because it feeds the
+   * end-of-deck threshold bonus, and players want to see it without
+   * jumping to /estado.
    */
   _renderReducedPointsLine() {
     const L = this._lang();
+    const fmt = (color, pts, took) =>
+      color + " " + (pts || 0) + "⭐ " + (took || 0) + "🃏";
     if (this.isParejasMode()) {
       const team0Red = this.decks % 2 === 0;
       const colors = [
-        team0Red ? L.ig_team_red_emoji : L.ig_team_blue_emoji,
-        team0Red ? L.ig_team_blue_emoji : L.ig_team_red_emoji,
+        team0Red ? L.ig_team_red_emoji.trim() : L.ig_team_blue_emoji.trim(),
+        team0Red ? L.ig_team_blue_emoji.trim() : L.ig_team_red_emoji.trim(),
       ];
       return (
-        colors[0].trim() + " " + (this.points[0] || 0) + L.ig_pts_suffix +
+        fmt(colors[0], this.points[0], this.took[0]) +
         "  |  " +
-        colors[1].trim() + " " + (this.points[1] || 0) + L.ig_pts_suffix
+        fmt(colors[1], this.points[1], this.took[1])
       );
     }
     const parts = [];
@@ -669,7 +673,7 @@ class Game {
       const u = this.users[i];
       if (!u) continue;
       const color = u.color || User.INDIVIDUAL_COLORS[i] || "•";
-      parts.push(color + " " + (this.points[i] || 0));
+      parts.push(fmt(color, this.points[i], this.took[i]));
     }
     return parts.join("  |  ");
   }
