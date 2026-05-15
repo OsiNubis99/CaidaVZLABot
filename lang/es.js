@@ -86,8 +86,8 @@ module.exports = {
   unir_bot_full: "La partida está llena (4/4). No se puede agregar otro bot.",
   unir_bot_running: "La partida ya empezó. No se pueden agregar bots ahora.",
   salir_bot_empty: "No hay bots en la partida.",
-  salir_bot_running_not_admin:
-    "La partida ya empezó. Solo un admin puede retirar bots ahora.",
+  salir_bot_running:
+    "La partida ya empezó. No se pueden retirar bots ahora — esperá a que termine o pedile a un admin que use /reiniciar.",
   salir_bot_prompt: "Tocá el bot que querés retirar:",
   user_is_not_admin: "Este comando solo debe ser usado por un #admin.",
   user_unbanned: "Usuario Desbloqueado.",

@@ -335,17 +335,22 @@ module.exports = {
 
   /**
    * Remove the CPU at the given seat (1-indexed among CPUs, not among
-   * all players). Pre-game any human can remove; mid-game restricted
-   * to admin.
+   * all players). Pre-game only — once decks > 0, per-index state
+   * (cards, points, took, sing, color) makes hot-removal unsafe, just
+   * like /salir for humans. Use /reiniciar (admin) or wait for the
+   * reaper if the game is stuck.
    *
    * @returns {{ok:boolean, msg:string}}
    */
-  async removeCpu(chatId, seat, { isAdmin = false } = {}) {
+  async removeCpu(chatId, seat) {
     const group = games[chatId];
     if (!group) return { ok: false, msg: "No hay partida activa." };
     const cpus = group.users.filter((u) => u && u.cpu_difficulty);
-    if (group.decks > 0 && !isAdmin) {
-      return { ok: false, msg: "La partida ya empezó, solo un admin puede sacar bots." };
+    if (group.decks > 0) {
+      return {
+        ok: false,
+        msg: "La partida ya empezó. Esperá a que termine o pedile a un admin que use /reiniciar.",
+      };
     }
     const target = cpus[seat - 1];
     if (!target) return { ok: false, msg: "Ese bot no está en la partida." };

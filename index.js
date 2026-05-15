@@ -333,8 +333,7 @@ bot.on(
       }
       if (action === "rm") {
         const seat = parseInt(arg, 10);
-        const isAdminUser = admin.is_admin(query.from.id);
-        const r = await game.removeCpu(chatId, seat, { isAdmin: isAdminUser });
+        const r = await game.removeCpu(chatId, seat);
         await tryDelete();
         await bot.sendMessage(chatId, r.msg);
         return;
@@ -786,8 +785,11 @@ bot.onText(
       return;
     }
     const group = game.peek(chatId);
-    if (group && group.decks > 0 && !admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, L.salir_bot_running_not_admin);
+    if (group && group.decks > 0) {
+      // Mid-game CPU removal is disallowed for everyone, same rule as
+      // /salir for humans. Only /reiniciar (admin) or the reaper
+      // can end an active game.
+      await bot.sendMessage(msg.chat.id, L.salir_bot_running);
       return;
     }
     await bot.sendMessage(msg.chat.id, L.salir_bot_prompt, {
