@@ -82,7 +82,10 @@ const CANTOS = [
   // don't break the aesthetic next to the cards-based cantos.
   { name: "Patrulla", display: "Patrulla", type: "emoji_cards", hex: "1f693", count: 3 },
   { name: "Vigía", display: "Vigía", type: "emoji_cards", hex: "1f441", count: 3 },
-  { name: "Chiguire", display: "Chigüire", type: "emoji_cards", hex: "1f417", count: 3 },
+  // Twemoji beaver (1f9ab) is the closest standing emoji to a capybara
+  // (no native capybara codepoint exists in Unicode yet). The chigüire
+  // IS a capybara in Venezuelan Spanish.
+  { name: "Chiguire", display: "Chigüire", type: "emoji_cards", hex: "1f9ab", count: 3 },
 ];
 
 function slug(name) {

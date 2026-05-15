@@ -218,6 +218,34 @@ describe("CpuPlayer.decide", () => {
     expect(g.users[0].cards[out.cardIdx].value).toBe(10);
   });
 
+  it("pro: preserves a card whose value a non-immediate opp also holds (future caída setup)", () => {
+    // 3p game. Bot (idx 0) has 7 and 11 (and a junk 3). Immediate
+    // next (idx 1) has nothing that matches. The OTHER opp (idx 2)
+    // has an 11. If bot plays 11 now, they burn the future caída
+    // opportunity — idx 2 will eventually play their 11 and bot
+    // could have caída'd them in a future turn. Pro should pick the
+    // 7 over the 11 in that case.
+    const cfg = new Config({ ...game_modes[1], caida: 1, mata_canto: "off" });
+    const g = new Game("T", cfg);
+    g.join(makeUser(1, "Bot"));
+    g.join(makeUser(2, "A"));
+    g.join(makeUser(3, "B"));
+    g.decks = 1;
+    g.table = Array(10).fill(null);
+    g.last_card_played = c(5, "Copa"); // unrelated
+    // Bot hand: [11, 7, 3] (sorted desc by position).
+    g.users[0].cards = [c(11, "Copa"), c(7, "Oro"), c(3, "Espada")];
+    // Idx 1 (immediate next): no 11, no 7 — safe targets all around.
+    g.users[1].cards = [c(2, "Oro"), c(4, "Basto"), c(6, "Copa")];
+    // Idx 2 (future opp): has an 11 — preserve our 11 to caída later.
+    g.users[2].cards = [c(11, "Basto"), c(10, "Copa"), c(1, "Espada")];
+    g.player = 0;
+    g.last_hand = false;
+    const out = cpu.decide(g, 0, "pro");
+    expect(out.action).toBe("play");
+    expect(g.users[0].cards[out.cardIdx].value).not.toBe(11);
+  });
+
   it("Start_By dealer auto-picks 4", () => {
     const g = buildGame();
     // Mark a user as the dealer with the Start_By sentinel.

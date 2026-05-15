@@ -53,7 +53,7 @@ const CANTO_NAMES = [
 // still hints at which canto it was.
 const CANTO_FALLBACK = {
   Ronda: "🃏",
-  Chiguire: "🐗",
+  Chiguire: "🦫",
   Patrulla: "🚓",
   "Vigía": "👁",
   Registro: "📋",

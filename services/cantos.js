@@ -5,7 +5,7 @@
  */
 const ICONS = {
   Ronda: "🃏",
-  Chiguire: "🐗",
+  Chiguire: "🦫",
   Patrulla: "🚓",
   "Vigía": "👁",
   Vigia: "👁",
@@ -31,7 +31,7 @@ function withIcon(name) {
 // from the maintained jdecked/twemoji repo.
 const THUMBS = {
   Ronda:        "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f0cf.png",
-  Chiguire:     "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f417.png",
+  Chiguire:     "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f9ab.png",
   Patrulla:     "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f693.png",
   "Vigía":      "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f441.png",
   Vigia:        "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f441.png",

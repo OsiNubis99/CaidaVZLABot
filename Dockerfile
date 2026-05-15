@@ -21,7 +21,7 @@ RUN node scripts/slice_deck.js
 # and compose them into per-canto 512x512 sticker PNGs. Used by the
 # canto custom-emoji pack.
 RUN mkdir -p /app/public/twemoji && \
-    for hex in 1f0cf 1f417 1f693 1f441 1f4cb 1f985 1f5d2 1f3e0 1f3db 1f3ba; do \
+    for hex in 1f0cf 1f9ab 1f693 1f441 1f4cb 1f985 1f5d2 1f3e0 1f3db 1f3ba; do \
       wget -q -O /app/public/twemoji/$hex.svg \
         "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/$hex.svg" || exit 1; \
     done && \

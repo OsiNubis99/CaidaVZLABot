@@ -216,12 +216,11 @@ function scorePlay(game, botIdx, cardIdx, difficulty) {
     // (exact info, high confidence).
     const weight = difficulty === "pro" ? 10 : 3;
     score -= worstChain * weight;
-    // Pro extra: penalize leaving last_card_played that the next
-    // player can caída us on. We can detect this exactly because we
-    // know their hand. The setup is: after our play, last_card_played
-    // is our card; if the next player has a same-value card AND a
-    // matching-position table slot, they caída us → opponent gains
-    // card.points × caida × 10.
+    // Pro extra A: penalize leaving last_card_played that the next
+    // player can caída us on. After our play, last_card_played is our
+    // card; if the next player has a same-value card AND a matching-
+    // position table slot, they caída us → opponent gains card.points
+    // × caida × 10.
     if (difficulty === "pro") {
       const nextIdx = (botIdx + 1) % game.users.length;
       const nextHand = game.users[nextIdx].cards || [];
@@ -235,6 +234,36 @@ function scorePlay(game, botIdx, cardIdx, difficulty) {
           score -= card.points * (cfg.caida || 1) * 10;
           break;
         }
+      }
+    }
+    // Pro extra B: preserve cards that match the value of any FUTURE
+    // opponent's hand. Reasoning: that opp will eventually have to
+    // play their card; if we still hold the matching value when they
+    // do, we can caída them next turn (their card becomes
+    // last_card_played, and ours matches). Playing this value now
+    // burns the caída opportunity for a non-caída play, so penalize.
+    // Skip the immediate-next opp — that's already covered by extra A
+    // with a HARDER penalty (immediate self-exposure).
+    if (difficulty === "pro" && game.users.length > 2 && !isC) {
+      const nextIdx = (botIdx + 1) % game.users.length;
+      let foundMatchInFuture = false;
+      for (let off = 2; off < game.users.length; off++) {
+        const futureIdx = (botIdx + off) % game.users.length;
+        if (futureIdx === botIdx) break;
+        const futureHand = game.users[futureIdx].cards || [];
+        for (const c of futureHand) {
+          if (c && typeof c.position === "number" && c.position === card.position) {
+            foundMatchInFuture = true;
+            break;
+          }
+        }
+        if (foundMatchInFuture) break;
+      }
+      if (foundMatchInFuture) {
+        // Half-weight: future caída is a soft preference (depends on
+        // when the opp plays their card vs our next turn), not a hard
+        // immediate consequence. Card.points × caida × 5.
+        score -= card.points * (cfg.caida || 1) * 5;
       }
     }
   }
