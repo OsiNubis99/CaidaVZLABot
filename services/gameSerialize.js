@@ -26,6 +26,7 @@ function serialize(game) {
   return {
     name: game.name,
     decks: game.decks,
+    started_at: game.started_at,
     last_hand: game.last_hand,
     last_player_on_take: game.last_player_on_take,
     player: game.player,
@@ -67,6 +68,7 @@ function deserialize(data) {
   const config = new Config(data.config);
   const game = new Game(data.name, config);
   game.decks = data.decks;
+  game.started_at = data.started_at || null;
   game.last_hand = data.last_hand;
   game.last_player_on_take = data.last_player_on_take;
   game.player = data.player;

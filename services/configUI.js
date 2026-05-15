@@ -33,6 +33,7 @@ const KEY_ALIAS = {
   cgra: "casa_grande",
   triv: "trivilin",
   tt: "turn_timeout_seconds",
+  md: "max_game_duration_minutes",
   vc: "visual_cards",
   vt: "visual_table",
   ae: "audio_effects",
@@ -64,6 +65,8 @@ const NUMERIC_FIELDS = {
   casa_grande: { min: 0, max: 100, steps: [-5, -1, 1, 5] },
   trivilin: { min: 0, max: 100, steps: [-10, -5, -1, 1, 5, 10] },
   turn_timeout_seconds: { min: 0, max: 600, steps: [-30, -10, 10, 30] },
+  // 30-min steps between 30 (half hour) and 300 (5h).
+  max_game_duration_minutes: { min: 30, max: 300, steps: [-30, 30] },
 };
 
 const FIELD_LABELS = {
@@ -81,6 +84,7 @@ const FIELD_LABELS = {
   casa_grande: "Casa Grande",
   trivilin: "Trivilín",
   turn_timeout_seconds: "Timeout (s)",
+  max_game_duration_minutes: "Max duración (min)",
 };
 
 const KEY_TO_SHORT = Object.fromEntries(Object.entries(KEY_ALIAS).map(([k, v]) => [v, k]));
@@ -359,13 +363,16 @@ async function systemView(chatId) {
     message:
       "⚙️ *Sistema*\n\n" +
       `Timeout por turno: *${c.turn_timeout_seconds > 0 ? c.turn_timeout_seconds + "s" : "off"}*\n` +
+      `Máx duración partida: *${(c.max_game_duration_minutes / 60).toFixed(1)}h*\n` +
       `Idioma: *${c.locale}*\n\n` +
+      `_Máx duración: partidas más largas se cancelan automáticamente. Step 30 min (0.5h–5h)._\n` +
       `_Idioma cambia el bot. Solo es está completamente traducido; en/pt parcial._`,
     options: {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [{ text: `Timeout: ${c.turn_timeout_seconds}s`, callback_data: "c:e:tt" }],
+          [{ text: `Máx duración: ${(c.max_game_duration_minutes / 60).toFixed(1)}h`, callback_data: "c:e:md" }],
           [
             { text: `${c.locale === "es" ? "✓ es" : "es"}`, callback_data: "c:set:lc:es" },
             { text: `${c.locale === "en" ? "✓ en" : "en"}`, callback_data: "c:set:lc:en" },
@@ -408,7 +415,7 @@ async function numericEditView(chatId, shortKey) {
 function parentForKey(key) {
   if (["points", "mesa", "caida", "ronda"].includes(key)) return "points";
   if (CANTOS.includes(key)) return "cantos";
-  if (["turn_timeout_seconds"].includes(key)) return "system";
+  if (["turn_timeout_seconds", "max_game_duration_minutes"].includes(key)) return "system";
   return "m";
 }
 
@@ -437,8 +444,10 @@ async function dispatch(chatId, data) {
     const delta = parseInt(parts[3], 10);
     const cfg = NUMERIC_FIELDS[key];
     if (!cfg) return mainView(chatId);
-    // turn_timeout is render-only; everything else is a game rule.
-    const allowMidGame = key === "turn_timeout_seconds";
+    // turn_timeout and max_game_duration are operational, not game
+    // rules — safe to change mid-game; everything else is a game rule.
+    const allowMidGame =
+      key === "turn_timeout_seconds" || key === "max_game_duration_minutes";
     const result = await applyChange(
       chatId,
       (config) => {

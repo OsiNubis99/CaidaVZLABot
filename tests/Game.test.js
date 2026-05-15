@@ -405,6 +405,28 @@ describe("Game", () => {
     });
   });
 
+  describe("started_at + reaper signal", () => {
+    it("started_at is null until the first shuffle", () => {
+      const g = new Game("test", new Config(game_modes[1]));
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      expect(g.started_at).toBeNull();
+      g.shuffle();
+      expect(typeof g.started_at).toBe("number");
+      expect(g.started_at).toBeGreaterThan(0);
+    });
+
+    it("started_at is preserved across subsequent shuffles", () => {
+      const g = new Game("test", new Config(game_modes[1]));
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.shuffle();
+      const first = g.started_at;
+      g.shuffle();
+      expect(g.started_at).toBe(first);
+    });
+  });
+
   describe("3-player support", () => {
     it("3p threshold rule: dealer (idx 2) gets 14, others get 13", () => {
       const g = new Game("test", new Config(game_modes[1]));

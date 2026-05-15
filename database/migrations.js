@@ -78,6 +78,12 @@ const STATEMENTS = [
      set_name text NOT NULL,
      uploaded_at timestamptz DEFAULT CURRENT_TIMESTAMP
    )`,
+
+  // Per-group max game duration in minutes. The reaper cron auto-
+  // cancels in-flight games whose started_at exceeds this many
+  // minutes ago. Default 120 (2h). Configurable in 30-min steps via
+  // /configurar → Sistema.
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS max_game_duration_minutes int DEFAULT 120`,
 ];
 
 async function run() {

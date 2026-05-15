@@ -40,6 +40,11 @@ class Game {
     this.table_order = "";
     this.took = [0, 0, 0, 0];
     this._dealerSyncCandidate = null;
+    // Epoch ms when the first deck was dealt. Used by the game-reaper
+    // cron to auto-cancel games that exceed config.max_game_duration_minutes.
+    // Stays null until shuffle() runs for the first time (i.e., the
+    // group has > 1 user and someone hit /inicia_ya).
+    this.started_at = null;
   }
 
   /**
@@ -215,6 +220,7 @@ class Game {
   shuffle() {
     const wasInitialShuffle = this.decks === 0;
     this.decks++;
+    if (wasInitialShuffle && !this.started_at) this.started_at = Date.now();
     this.deck = [
       11, 10, 38, 19, 25, 18, 14, 2, 5, 39, 8, 15, 29, 24, 30, 1, 12, 16, 9, 35,
       22, 32, 6, 4, 0, 27, 37, 17, 28, 33, 21, 3, 23, 34, 20, 7, 31, 36, 26, 13,

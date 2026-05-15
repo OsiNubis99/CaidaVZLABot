@@ -64,6 +64,12 @@ module.exports = {
     "You were temporarily or permanently blocked from using this bot." + ERROR,
   user_is_already_joined: "You're already in this game",
   user_is_already_joined_other_group: "You're already in another game",
+  salir_not_in_game: "You're not in any game.",
+  salir_in_progress:
+    "The game already started, you can't leave. Ask an admin to use /reiniciar.",
+  salir_left: "You left the game. You can /unirse to another group now.",
+  game_expired:
+    "⏰ This game was automatically cancelled for exceeding the configured maximum duration. Players can /unirse to a new one.",
   user_is_not_admin: "This command must be used by a #admin.",
   user_unbanned: "User unblocked.",
 

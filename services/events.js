@@ -11,12 +11,14 @@ const logger = require("../config/logger");
 const EVENT_TYPES = {
   GAME_CREATED: "game_created",
   PLAYER_JOINED: "player_joined",
+  PLAYER_LEFT: "player_left",
   DECK_SHUFFLED: "deck_shuffled",
   CARD_PLAYED: "card_played",
   CAIDA: "caida",
   SING: "sing",
   HAND_DEALT: "hand_dealt",
   GAME_FINISHED: "game_finished",
+  GAME_EXPIRED: "game_expired",
 };
 
 async function record(id_group, event_type, payload = {}) {

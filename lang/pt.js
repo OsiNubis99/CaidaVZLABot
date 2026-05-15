@@ -64,6 +64,12 @@ module.exports = {
     "Você foi temporária ou permanentemente bloqueado para usar este bot." + ERROR,
   user_is_already_joined: "Você já está nessa partida",
   user_is_already_joined_other_group: "Você já está em outra partida",
+  salir_not_in_game: "Você não está em nenhuma partida.",
+  salir_in_progress:
+    "A partida já começou, você não pode sair. Peça a um admin para usar /reiniciar.",
+  salir_left: "Você saiu da partida. Já pode /unirse em outro grupo.",
+  game_expired:
+    "⏰ Esta partida foi cancelada automaticamente por exceder o tempo máximo configurado. Podem /unirse a uma nova.",
   user_is_not_admin: "Este comando deve ser usado por um #admin.",
   user_unbanned: "Usuário desbloqueado.",
 

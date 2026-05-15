@@ -71,6 +71,12 @@ module.exports = {
     ERROR,
   user_is_already_joined: "Ya estas unido a esta partida",
   user_is_already_joined_other_group: "Ya estas unido a otra partida",
+  salir_not_in_game: "No estás en ninguna partida.",
+  salir_in_progress:
+    "La partida ya empezó, no podés salirte. Pedile a un admin que use /reiniciar.",
+  salir_left: "Saliste de la partida. Ya podés /unirse en otro grupo.",
+  game_expired:
+    "⏰ Esta partida fue cancelada automáticamente por exceder el tiempo máximo configurado. Pueden /unirse a una nueva.",
   user_is_not_admin: "Este comando solo debe ser usado por un #admin.",
   user_unbanned: "Usuario Desbloqueado.",
 

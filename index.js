@@ -6,6 +6,7 @@ const adminUI = require("./services/adminUI");
 const cards = require("./services/cards");
 const emojis = require("./services/emojis");
 const audio = require("./services/audio");
+const gameReaper = require("./services/gameReaper");
 const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
 const events = require("./services/events");
@@ -107,6 +108,7 @@ const COMMAND_LIMITS = {
   "/iniciar": { windowMs: 5_000, max: 3 },
   "/inicia_ya": { windowMs: 5_000, max: 3 },
   "/reiniciar": { windowMs: 10_000, max: 3 },
+  "/salir": { windowMs: 5_000, max: 3 },
   "/estado": { windowMs: 5_000, max: 5 },
   "/configurar": { windowMs: 5_000, max: 5 },
   "/configura": { windowMs: 5_000, max: 5 },
@@ -624,6 +626,15 @@ bot.onText(
 );
 
 bot.onText(
+  /\/salir/,
+  safe("/salir", async (msg) => {
+    if (await rateLimited(msg, "/salir")) return;
+    const response = await game.leave(RequestDTO.fromTelegram(msg));
+    await bot.sendMessage(msg.chat.id, response.message, response.options);
+  }),
+);
+
+bot.onText(
   /\/iniciar/,
   safe("/iniciar", async (msg) => {
     if (await rateLimited(msg, "/iniciar")) return;
@@ -697,6 +708,7 @@ bot.onText(
 
 bot.setMyCommands([
   { command: "unirse", description: "Te agrega a la partida." },
+  { command: "salir", description: "Te saca de la partida (solo antes de empezar)." },
   { command: "iniciar", description: "Inicia la partida." },
   { command: "inicia_ya", description: "Inicia la partida, pero se salta las configuraciones" },
   { command: "estado", description: "Muestra información sobre la partida." },
@@ -737,4 +749,9 @@ game.loadedPromise
     }
   })
   .catch((err) => logger.warn({ err: err.message }, "TURBO timer re-arm failed"));
+
+// Periodic sweep for games that exceeded their group's configured
+// max_game_duration_minutes. Stops them and posts a notice to the
+// chat. First sweep happens after a 60s startup delay.
+gameReaper.start(bot);
 

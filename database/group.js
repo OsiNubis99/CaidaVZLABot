@@ -88,7 +88,7 @@ module.exports = {
           registro = $14, maguaro = $15, registrico = $16, casa_chica = $17,
           casa_grande = $18, trivilin = $19, visual_cards = $20,
           visual_table = $21, turn_timeout_seconds = $22, locale = $23,
-          audio_effects = $24
+          audio_effects = $24, max_game_duration_minutes = $25
        WHERE id_group = $1 RETURNING *;`,
       [
         group_id,
@@ -115,6 +115,7 @@ module.exports = {
         Number(new_config.turn_timeout_seconds) || 0,
         new_config.locale || "es",
         new_config.audio_effects !== false,
+        Number(new_config.max_game_duration_minutes) || 120,
       ],
     );
     return result.rows;

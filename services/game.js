@@ -151,6 +151,40 @@ module.exports = {
   },
 
   /**
+   * Sweep all in-flight games and cancel any that have exceeded their
+   * group's max_game_duration_minutes. Returns the chat_ids that were
+   * reaped so the caller (services/gameReaper.js) can post a message
+   * to each one explaining what happened.
+   *
+   * Pre-game lobbies (decks === 0, started_at null) are NEVER reaped —
+   * a lobby with people in it isn't "stuck", it's just waiting.
+   *
+   * @returns {Promise<Array<{chatId:string, groupName:string}>>}
+   */
+  async reapExpired() {
+    const reaped = [];
+    const now = Date.now();
+    for (const chatId of Object.keys(games)) {
+      const g = games[chatId];
+      if (!g || !g.started_at) continue;
+      const limitMin = (g.config && g.config.max_game_duration_minutes) || 120;
+      const elapsedMin = (now - g.started_at) / 60000;
+      if (elapsedMin < limitMin) continue;
+      events.record(chatId, events.EVENT_TYPES.GAME_EXPIRED, {
+        elapsed_minutes: Math.round(elapsedMin),
+        limit_minutes: limitMin,
+        decks: g.decks,
+        players: g.users.length,
+      });
+      cleanUsers(g.users, chatId);
+      reaped.push({ chatId, groupName: g.name });
+      delete games[chatId];
+      await persistOrRemove(chatId, true);
+    }
+    return reaped;
+  },
+
+  /**
    * Update the in-memory Game's config (after a configUI edit) so the
    * change is reflected in subsequent gameplay without waiting for a
    * restart. Idempotent; no-op if no in-memory game.
@@ -238,6 +272,55 @@ module.exports = {
       return message.reply(L.game_is_running, req.message_id);
     }
     return message.reply(L.user_is_banned, req.message_id);
+  },
+
+  /**
+   * Leave the current game. Pre-game only — once decks > 0 the user
+   * has to ask an admin to /reiniciar, because mid-game removal would
+   * shuffle every per-index field (cards, points, took, sing). The
+   * reaper cron also catches stuck games via max_game_duration_minutes.
+   *
+   * Frees the global users[user_id] → chat_id mapping so the user
+   * can /unirse to a different group right away.
+   *
+   * @param {RequestDTO} req
+   */
+  async leave(req) {
+    const L = langOf(req);
+    const chatId = users[req.user.id_user];
+    if (!chatId) {
+      return message.reply(L.salir_not_in_game, req.message_id);
+    }
+    /**
+     * @type {Game}
+     */
+    const group = games[chatId];
+    if (!group) {
+      // Stale mapping — clean it up so the user isn't stuck.
+      delete users[req.user.id_user];
+      return message.reply(L.salir_left, req.message_id);
+    }
+    if (group.decks > 0) {
+      return message.reply(L.salir_in_progress, req.message_id);
+    }
+    // Pre-game: just remove from lobby.
+    const idx = group.users.findIndex((u) => u && u.id_user === req.user.id_user);
+    if (idx >= 0) group.users.splice(idx, 1);
+    delete users[req.user.id_user];
+    events.record(chatId, events.EVENT_TYPES.PLAYER_LEFT, {
+      user_id: req.user.id_user,
+      first_name: req.user.first_name,
+      username: req.user.username,
+    });
+    if (group.users.length === 0) {
+      // No one left in the lobby — discard the empty Game shell so a
+      // future /unirse creates a fresh one from the latest config.
+      delete games[chatId];
+      await persistOrRemove(chatId, true);
+    } else {
+      await persistOrRemove(chatId, false);
+    }
+    return message.reply(L.salir_left, req.message_id);
   },
 
   /**

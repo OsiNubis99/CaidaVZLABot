@@ -20,6 +20,8 @@ class Config {
     this.visual_table = new_config.visual_table !== false;
     this.audio_effects = new_config.audio_effects !== false;
     this.turn_timeout_seconds = Number(new_config.turn_timeout_seconds) || 0;
+    // Default 120 (2h). Step 30 min. The reaper enforces this.
+    this.max_game_duration_minutes = Number(new_config.max_game_duration_minutes) || 120;
     this.locale = new_config.locale || "es";
   }
   get_game_mode() {
@@ -166,6 +168,15 @@ class Config {
       const n = parseInt(value, 10);
       if (Number.isInteger(n) && n >= 0 && n <= 600) {
         this.turn_timeout_seconds = n;
+        return false;
+      }
+      return resp.config_number_invalid;
+    }
+    if (config == "max_game_duration_minutes") {
+      const n = parseInt(value, 10);
+      // 30-min step, between 30 (half hour) and 300 (5 h) minutes.
+      if (Number.isInteger(n) && n >= 30 && n <= 300 && n % 30 === 0) {
+        this.max_game_duration_minutes = n;
         return false;
       }
       return resp.config_number_invalid;
