@@ -4,6 +4,7 @@ const game = require("./services/game");
 const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
 const cards = require("./services/cards");
+const emojis = require("./services/emojis");
 const audio = require("./services/audio");
 const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
@@ -512,6 +513,26 @@ bot.onText(
       `Subiendo 40 cartas como stickers${force ? " (force=reset cache)" : ""}. Esto toma ~1 min.`,
     );
     const result = await cards.bootstrap(bot, msg.chat.id, { force });
+    await bot.sendMessage(
+      msg.chat.id,
+      `Bootstrap completo. Subidas: ${result.uploaded}, ya cacheadas: ${result.skipped}, fallidas: ${result.failed}.`,
+    );
+  }),
+);
+
+bot.onText(
+  /\/bootstrap_emojis(?:\s+(force))?/,
+  safe("/bootstrap_emojis", async (msg, match) => {
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person);
+      return;
+    }
+    const force = !!(match && match[1]);
+    await bot.sendMessage(
+      msg.chat.id,
+      `Creando set de custom emojis "${emojis.SET_TITLE}"${force ? " (force=reset cache)" : ""}.\nEsto toma ~1-2 min para 50 emojis.\nEl set queda asociado a tu user_id; podés removerlo desde Telegram → tu perfil → emoji packs.`,
+    );
+    const result = await emojis.bootstrap(bot, msg.from.id, { force });
     await bot.sendMessage(
       msg.chat.id,
       `Bootstrap completo. Subidas: ${result.uploaded}, ya cacheadas: ${result.skipped}, fallidas: ${result.failed}.`,

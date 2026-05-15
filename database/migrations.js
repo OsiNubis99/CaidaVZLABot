@@ -67,6 +67,17 @@ const STATEMENTS = [
      file_id text NOT NULL,
      uploaded_at timestamptz DEFAULT CURRENT_TIMESTAMP
    )`,
+
+  // custom emoji pack cache. Each row maps a logical name (e.g.
+  // "card-1-Oro" or "canto-Trivilin") to the custom_emoji_id Telegram
+  // assigns when the bot creates the emoji set. Used to send messages
+  // with inline custom emoji entities — replaces the old sticker flow.
+  `CREATE TABLE IF NOT EXISTS public.card_emojis (
+     name text PRIMARY KEY,
+     custom_emoji_id text NOT NULL,
+     set_name text NOT NULL,
+     uploaded_at timestamptz DEFAULT CURRENT_TIMESTAMP
+   )`,
 ];
 
 async function run() {

@@ -2,7 +2,7 @@ const { getLang } = require("../lang");
 const Game = require("../class/Game");
 const User = require("../class/User");
 const Config = require("../class/Config");
-const cardsService = require("./cards");
+const emojisService = require("./emojis");
 const cantos = require("./cantos");
 const mesa = require("./mesa");
 const persistence = require("./persistence");
@@ -628,85 +628,89 @@ module.exports = {
               },
             ];
           }
+          // Build inline-article results for each playable card + the
+          // optional canto. Each article carries an input_message_content
+          // whose `entities` array points to our custom emoji cache; if
+          // the cache doesn't have the id for that card, we fall through
+          // to plain text ("4 de Oro") — no generic emoji prefix.
+          //
+          // visual_cards toggles message shape:
+          //   on  → "🃏" (placeholder replaced by custom emoji, renders jumbo)
+          //   off → "🃏 4 de Oro" (custom emoji inline + text)
+          // Both share the same picker article preview so the player
+          // sees a readable list of cards by name in the search dropdown.
           const visual = group.config.visual_cards !== false;
-          const response = [];
-          // In sticker mode the inline grid renders left-to-right which
-          // visually reverses our default high→low array. Flip the
-          // playable-card slice so the picker shows low→high. The canto
-          // (index 3) is kept last. IDs still match cardsHand indices —
-          // play_card looks up the card by id, so the underlying order
-          // (which the canto detection relies on) is untouched.
+          const names = [];
+          for (let i = 0; i < cardsHand.length; i++) {
+            const el = cardsHand[i];
+            if (i == 3) names.push(emojisService.cantoName(el.name));
+            else if (el && el.value && el.type) names.push(emojisService.cardName(el.value, el.type));
+          }
+          const emojiIds = await emojisService.lookupMany(names);
+
           const cardResults = [];
           let cantoResult = null;
           for (let index = 0; index < cardsHand.length; index++) {
             const element = cardsHand[index];
             if (index == 3) {
-              // Prefer a cached canto sticker when visual_cards is on
-              // and bootstrap has uploaded one; fall back to the text
-              // article (with a Twemoji thumb) otherwise.
-              const cantoFileId = visual
-                ? await cardsService.getCantoFileId(element.name)
-                : null;
-              if (cantoFileId) {
-                cantoResult = {
-                  id: "4",
-                  type: "sticker",
-                  sticker_file_id: cantoFileId,
-                };
-              } else {
-                const cantoThumb = cantos.thumb(element.name);
+              const emojiId = emojiIds.get(emojisService.cantoName(element.name));
+              const placeholder = "🃏"; // 2 utf-16 code units; gets replaced by the custom emoji
+              const labelText = `${placeholder} ${element.name}`;
+              if (emojiId) {
                 cantoResult = {
                   id: "4",
                   type: "article",
-                  title: cantos.withIcon(element.name) || "Error en canto",
+                  title: element.name,
+                  description: "Valor: " + element.value,
                   input_message_content: {
-                    message_text: `Tengo ${cantos.icon(element.name)} ${element.name}`,
+                    message_text: visual ? placeholder : labelText,
+                    entities: [
+                      { type: "custom_emoji", offset: 0, length: 2, custom_emoji_id: emojiId },
+                    ],
                   },
-                  description: "Vale: " + element.value,
-                  ...(cantoThumb && {
-                    thumb_url: cantoThumb,
-                    thumb_width: 72,
-                    thumb_height: 72,
-                  }),
+                };
+              } else {
+                // No emoji cached → plain text fallback (text mode).
+                cantoResult = {
+                  id: "4",
+                  type: "article",
+                  title: element.name,
+                  description: "Valor: " + element.value,
+                  input_message_content: { message_text: `Tengo ${element.name}` },
                 };
               }
             } else {
-              // visual_cards toggles whether to use the cached sticker
-              // or render as a text article. Tapping a result IS the
-              // chat message, so the picker and chat-side display are
-              // necessarily tied.
-              let fileId = null;
-              if (visual && element.value && element.type) {
-                fileId = await cardsService.getFileId(element.value, element.type);
-              }
-              if (fileId) {
-                // Use cached_sticker so the card stays compact in chat
-                // and renders as a grid in the inline picker. The bot's
-                // follow-up message still says "Ultima carta: X de Y"
-                // so context isn't lost.
+              const cardLabel = `${element.value} de ${element.type}`;
+              const emojiId =
+                element && element.value && element.type
+                  ? emojiIds.get(emojisService.cardName(element.value, element.type))
+                  : null;
+              const placeholder = "🃏";
+              if (emojiId) {
                 cardResults.push({
                   id: String(index),
-                  type: "sticker",
-                  sticker_file_id: fileId,
+                  type: "article",
+                  title: cardLabel,
+                  description: "De " + element.type,
+                  input_message_content: {
+                    message_text: visual ? placeholder : `${placeholder} ${cardLabel}`,
+                    entities: [
+                      { type: "custom_emoji", offset: 0, length: 2, custom_emoji_id: emojiId },
+                    ],
+                  },
                 });
               } else {
                 cardResults.push({
                   id: String(index),
                   type: "article",
-                  title: element.value || "Error en Carta",
-                  input_message_content: {
-                    message_text: "Juego el " + element.value + " de " + element.type,
-                  },
+                  title: cardLabel,
                   description: "De " + element.type,
+                  input_message_content: { message_text: "Juego el " + cardLabel },
                 });
               }
             }
           }
-          // Reverse the playable-card slice when in sticker mode so the
-          // grid reads low→high. IDs still encode the original cardsHand
-          // index, so play_card receives the correct card. Articles are
-          // left in source order (the user prefers high→low text list).
-          if (visual) cardResults.reverse();
+          const response = [];
           response.push(...cardResults);
           if (cantoResult) response.push(cantoResult);
           return response;

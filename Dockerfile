@@ -14,18 +14,22 @@ RUN npm install --omit=dev
 COPY . .
 
 # Slice the Wikimedia Spanish deck PNG into 40 individual card images +
-# the reverse, so they're baked into the image and ready to upload to
-# Telegram at first run.
+# the reverse, so they're baked into the image and ready to use.
 RUN node scripts/slice_deck.js
 
 # Fetch the 10 canto emoji SVGs from Twemoji (jdecked maintained mirror)
-# and compose them into per-canto 512x512 sticker PNGs.
+# and compose them into per-canto 512x512 sticker PNGs. Used by the
+# canto custom-emoji pack.
 RUN mkdir -p /app/public/twemoji && \
     for hex in 1f0cf 1f417 1f693 1f441 1f4cb 1f985 1f5d2 1f3e0 1f3db 1f3ba; do \
       wget -q -O /app/public/twemoji/$hex.svg \
         "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/$hex.svg" || exit 1; \
     done && \
     node scripts/generate_canto_stickers.js
+
+# Generate the 50 custom-emoji WEBPs (40 cards + 10 cantos) at 100x100,
+# ready for /bootstrap_emojis to upload to Telegram's emoji pack API.
+RUN node scripts/generate_emoji_pack.js
 
 ENV NODE_ENV=production
 EXPOSE 3000
