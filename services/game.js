@@ -431,8 +431,28 @@ module.exports = {
       // so the scheduler chains another step to actually play one.
       return resp ? { ...resp, again: true } : null;
     }
+    // Capture which card the CPU is about to play BEFORE play_card
+    // removes it from the hand. The index.js scheduler sends this as
+    // a separate message (sticker or text) so the chat can see the
+    // play happening — humans see this naturally via the inline
+    // picker's send, CPUs need an explicit announcement.
+    const cardToPlay = actor.cards[decision.cardIdx];
+    let presentation = null;
+    if (cardToPlay && cardToPlay.value && cardToPlay.type) {
+      const visual = group.config && group.config.visual_cards !== false;
+      if (visual) {
+        const fileId = await cardsService.getFileId(cardToPlay.value, cardToPlay.type);
+        if (fileId) presentation = { sticker_file_id: fileId };
+      }
+      if (!presentation) {
+        presentation = {
+          message: `${actor.first_name} jugó ${cardToPlay.value} de ${cardToPlay.type}`,
+        };
+      }
+    }
     const resp = await module.exports.play_card(actor, decision.cardIdx);
-    return resp ? { ...resp, again: false } : null;
+    if (!resp) return null;
+    return { ...resp, presentation, again: false };
   },
 
   /**

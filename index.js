@@ -242,9 +242,19 @@ async function cpuStep(chatId) {
     return;
   }
   if (!result) return;
-  // Mirror the send logic from chosen_inline_result — audio first so
-  // the caída "thump" lands before the state message.
+  // Send order:
+  //   1. presentation (sticker or text "X jugó N de Y") — only CPU
+  //      plays have this; humans get it for free via inline picker
+  //   2. audio (caída sound effect, if any) — punctuates the moment
+  //   3. state message (mesa + caída text + points + turno)
   try {
+    if (result.presentation) {
+      if (result.presentation.sticker_file_id) {
+        await bot.sendSticker(result.chat_id, result.presentation.sticker_file_id);
+      } else if (result.presentation.message) {
+        await bot.sendMessage(result.chat_id, result.presentation.message);
+      }
+    }
     if (result.audio) {
       await audio.play(bot, result.chat_id, result.audio);
     }
