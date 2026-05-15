@@ -140,7 +140,7 @@ describe("Game.print i18n + clean layout", () => {
     expect(out2).toMatch(/Pulsa el botón para escoger si empezar mesa con 1 o 4/);
   });
 
-  it("mid-deck mano shows the reduced status with turno line", () => {
+  it("mid-deck mano shows the short status with mesa + last card + points + turno", () => {
     const g = mk("es", 1); // individual
     g.points = [12, 9];
     // Seed enough deck so handing_out_cards takes the deck > 0 branch
@@ -149,9 +149,28 @@ describe("Game.print i18n + clean layout", () => {
     g.users.forEach((u) => (u.cards = []));
     g.decks = 1;
     const out = g.handing_out_cards(0);
+    // Short status now carries everything the player needs per-play:
+    expect(out).toContain("Mesa:");
     expect(out).toMatch(/🔴 12.*\|.*🔵 9/);
     expect(out).toContain("Turno:");
-    // Should NOT include the full status player blocks
+    // But not the per-player block (cards/canto/took counters).
+    expect(out).not.toContain("cartas · sin canto");
+  });
+
+  it("renderShortStatus includes mesa + última carta + points + turno", () => {
+    // Direct unit test for the new helper. /play_card uses this path
+    // on every card played (mid-mano) and at mid-deck mano boundaries.
+    const g = mk("es", 1); // individual, 2 users
+    g.points = [12, 9];
+    g.last_card_played = { value: 11, type: "Copa" };
+    g.table[3] = { value: 4, type: "Oro" };
+    const out = g.renderShortStatus();
+    expect(out).toContain("Mesa:");
+    expect(out).toContain("4"); // mesa shows the 4 placed at position 3
+    expect(out).toContain("Última carta: 11 de Copa");
+    expect(out).toMatch(/🔴 12.*\|.*🔵 9/);
+    expect(out).toContain("Turno: A");
+    // No per-player block.
     expect(out).not.toContain("cartas · sin canto");
   });
 

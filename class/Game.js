@@ -323,7 +323,7 @@ class Game {
       // mano (every player just emptied their hand and got 3 new
       // cards) — show the compact reduced status with the next turno.
       const renderFull = start_by !== 0;
-      return added + (renderFull ? this.print(false) : this._renderReducedStatus(true));
+      return added + (renderFull ? this.print(false) : this.renderShortStatus());
     }
     // Clean las tabble
     for (let position = 0; position < this.table.length; position++) {
@@ -438,7 +438,7 @@ class Game {
         }
         if (this.users[this.users.length - 1].cards.length > 0) {
           this.player = (this.player + 1) % this.users.length;
-          return response + this.print();
+          return response + this.renderShortStatus();
         }
         let sings = [0, 0, 0, 0];
         let biggest = 0;
@@ -607,42 +607,63 @@ class Game {
   }
 
   /**
-   * Compact "🔵 20 pts | 🔴 22 pts" status line. Used between mid-deck
-   * manos (where the full status would be visual noise — only points
-   * and whose turn it is matter).
-   *
-   * @param {Boolean} withTurn - When true, append the "Turno: X" line
-   *   (and the "Última mano" warning if applicable). Off for callers
-   *   that only need the bare score line.
+   * Compact one-line score "🔵 20 pts | 🔴 22 pts" used inside the
+   * short status. Parejas-4 emits team labels; individual emits one
+   * entry per user using their stable join-order color.
    */
-  _renderReducedStatus(withTurn = false) {
+  _renderReducedPointsLine() {
     const L = this._lang();
-    let line;
     if (this.isParejasMode()) {
       const team0Red = this.decks % 2 === 0;
       const colors = [
         team0Red ? L.ig_team_red_emoji : L.ig_team_blue_emoji,
         team0Red ? L.ig_team_blue_emoji : L.ig_team_red_emoji,
       ];
-      line =
+      return (
         colors[0].trim() + " " + (this.points[0] || 0) + L.ig_pts_suffix +
         "  |  " +
-        colors[1].trim() + " " + (this.points[1] || 0) + L.ig_pts_suffix;
-    } else {
-      const parts = [];
-      for (let i = 0; i < this.users.length; i++) {
-        const u = this.users[i];
-        if (!u) continue;
-        const color = u.color || User.INDIVIDUAL_COLORS[i] || "•";
-        parts.push(color + " " + (this.points[i] || 0));
-      }
-      line = parts.join("  |  ");
+        colors[1].trim() + " " + (this.points[1] || 0) + L.ig_pts_suffix
+      );
     }
-    if (!withTurn) return line;
-    let tail = "";
-    if (this.last_hand) tail += "\n" + L.ig_last_hand.trimEnd();
-    tail += "\n" + L.ig_next_label + this.playerName();
-    return line + tail;
+    const parts = [];
+    for (let i = 0; i < this.users.length; i++) {
+      const u = this.users[i];
+      if (!u) continue;
+      const color = u.color || User.INDIVIDUAL_COLORS[i] || "•";
+      parts.push(color + " " + (this.points[i] || 0));
+    }
+    return parts.join("  |  ");
+  }
+
+  /**
+   * "Short" status: header + compact points + turno. This is what gets
+   * sent after every card play and between mid-deck manos. Carries the
+   * same surface info as the full status (mesa, última carta, who's
+   * next) plus the running scoreline, but skips the per-player block
+   * (cards/canto/took) which only matters on /estado, deck-end, and
+   * "Iniciar por 1/4".
+   */
+  renderShortStatus() {
+    const L = this._lang();
+    if (this.decks === 0) return L.game_no_started;
+    let out = "";
+    if (this.last_hand) out += L.ig_last_hand;
+    out += L.ig_mesa_label;
+    this.table.forEach((item) => {
+      if (item != null) out += " " + item.value;
+      else out += L.ig_empty_slot;
+    });
+    if (this.last_card_played) {
+      out +=
+        "\n" +
+        L.ig_last_card_label +
+        this.last_card_played.value +
+        L.ig_card_of +
+        this.last_card_played.type;
+    }
+    out += "\n" + this._renderReducedPointsLine();
+    out += "\n" + L.ig_next_label + this.playerName();
+    return out;
   }
 
   /**
