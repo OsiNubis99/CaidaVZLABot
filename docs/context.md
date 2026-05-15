@@ -13,8 +13,11 @@ exact state of the world.
   the "Allow only @OsiNubis99 to run bot-only games" task). His
   Telegram user_id is in `.env` as `ADMIN_USER_IDS`.
 - **Official group**: `@CaidaVZLA` — public Telegram group for
-  reporting bugs, suggesting features, finding partidas with the
-  community. Linked from announcements.
+  finding partidas with the community. Linked from announcements.
+- **News / bug-report channel**: `@CaidaVZLANews` —
+  https://t.me/CaidaVZLANews. The bot's error footer references this
+  channel (it used to ping @OsiNubis99 directly, but error reports
+  outgrew DMs).
 
 ## Stack
 

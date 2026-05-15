@@ -1,5 +1,5 @@
 const ERROR =
-  "\nIf you are running into an error, please let me know by writing to @OsiNubis99.";
+  "\nIf you are running into an error, please report it at @CaidaVZLANews.";
 module.exports = {
   bad_turn: "Already seen",
   bad_sync_cards: "Wrong guess!\n",

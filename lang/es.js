@@ -1,5 +1,5 @@
 const ERROR =
-  "\nSi estas experimentando algún error, por favor dejámelo saber escribiendo a @OsiNubis99.";
+  "\nSi estás experimentando algún error, por favor repórtalo en @CaidaVZLANews.";
 module.exports = {
   bad_turn: "Carta vista",
   bad_sync_cards: "Mal echada!\n",

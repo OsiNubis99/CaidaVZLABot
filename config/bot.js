@@ -42,7 +42,7 @@ function sayHi(msg) {
 /stats — tus estadísticas
 /list\\_groups — lista de grupos públicos
 
-¿Querés que tu grupo aparezca como público? Hablá con @OsiNubis99.`,
+¿Querés que tu grupo aparezca como público o reportar un error? Escribinos en @CaidaVZLANews.`,
     { parse_mode: "Markdown" },
   );
 }
