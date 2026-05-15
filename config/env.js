@@ -17,4 +17,15 @@ module.exports = {
   log_level: process.env.LOG_LEVEL || "info",
   admin_ids,
   stats_token: process.env.STATS_TOKEN || "",
+  // Admin dashboard. Both _SECRET and _BASE_URL required to enable.
+  // _PATH is the URL prefix the Express app mounts at; it must match
+  // the public path (nginx proxies the same prefix straight through,
+  // no rewrites). Default keeps the prefix self-descriptive on dev.
+  dashboard_jwt_secret: process.env.DASHBOARD_JWT_SECRET || "",
+  dashboard_base_url: (process.env.DASHBOARD_BASE_URL || "").replace(/\/+$/, ""),
+  dashboard_path: (() => {
+    let p = process.env.DASHBOARD_PATH || "/dashboard";
+    if (!p.startsWith("/")) p = "/" + p;
+    return p.replace(/\/+$/, "") || "/dashboard";
+  })(),
 };

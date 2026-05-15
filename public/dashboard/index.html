@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CaidaVZLA — Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>CaidaVZLA Admin</h1>
+      <nav class="tabs">
+        <button class="tab" data-tab="groups">Grupos</button>
+        <button class="tab" data-tab="users">Usuarios</button>
+      </nav>
+      <div class="topbar-right">
+        <span id="who" class="muted"></span>
+        <button id="logout" class="btn btn-ghost">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="tab-groups" class="tab-panel">
+      <div class="toolbar">
+        <input
+          type="search"
+          id="groups-q"
+          class="input"
+          placeholder="Buscar por nombre o id_group…"
+          autocomplete="off"
+        />
+        <select id="groups-sort" class="input">
+          <option value="name">Orden: nombre</option>
+          <option value="active">Orden: más activos</option>
+          <option value="public">Orden: públicos primero</option>
+        </select>
+        <span id="groups-summary" class="muted"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>id_group</th>
+              <th>Público</th>
+              <th>Baneado</th>
+              <th>Pagado hasta</th>
+              <th>Partidas</th>
+              <th>Creado</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="groups-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="groups-pager"></div>
+    </section>
+
+    <section id="tab-users" class="tab-panel" hidden>
+      <div class="toolbar">
+        <input
+          type="search"
+          id="users-q"
+          class="input"
+          placeholder="Buscar por nombre, username o id_user…"
+          autocomplete="off"
+        />
+        <select id="users-sort" class="input">
+          <option value="name">Orden: nombre</option>
+          <option value="wins">Orden: más wins</option>
+          <option value="banned">Orden: baneados primero</option>
+        </select>
+        <span id="users-summary" class="muted"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>@username</th>
+              <th>id_user</th>
+              <th>Partidas</th>
+              <th>Wins</th>
+              <th>Win custom</th>
+              <th>Caídas</th>
+              <th>Baneado</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="users-pager"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

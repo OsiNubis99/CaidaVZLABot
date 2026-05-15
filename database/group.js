@@ -147,15 +147,16 @@ module.exports = {
   },
 
   /**
-   * Paginated + sortable group list for the admin UI.
+   * Paginated + sortable + searchable group list for the admin UI.
    *
    * @param {Object} opts
    * @param {number} opts.page       1-indexed
    * @param {number} opts.pageSize   default 10
    * @param {"name"|"active"|"public"} opts.sort
+   * @param {string} [opts.q]        ILIKE filter on name or id_group
    * @returns {Promise<{rows:Array, total:number, page:number, pageSize:number, totalPages:number, sort:string}>}
    */
-  async listPaged({ page = 1, pageSize = 10, sort = "name" } = {}) {
+  async listPaged({ page = 1, pageSize = 10, sort = "name", q = "" } = {}) {
     let orderBy;
     switch (sort) {
       case "active":
@@ -170,13 +171,22 @@ module.exports = {
         break;
     }
     const offset = Math.max(0, (page - 1) * pageSize);
+    const where = [];
+    const params = [];
+    if (q && q.trim()) {
+      params.push(`%${q.trim()}%`);
+      where.push(`(name ILIKE $${params.length} OR id_group ILIKE $${params.length})`);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
     const countResult = await database.query(
-      "SELECT COUNT(*)::int AS c FROM public.group",
+      `SELECT COUNT(*)::int AS c FROM public.group ${whereSql}`,
+      params,
     );
     const total = countResult.rows[0].c;
+    params.push(pageSize, offset);
     const rowsResult = await database.query(
-      `SELECT * FROM public.group ORDER BY ${orderBy} LIMIT $1 OFFSET $2`,
-      [pageSize, offset],
+      `SELECT * FROM public.group ${whereSql} ORDER BY ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
     );
     return {
       rows: rowsResult.rows,

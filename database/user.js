@@ -128,4 +128,82 @@ module.exports = {
     );
     return result.rows[0].is_banned;
   },
+
+  /**
+   * Toggle banned by id only (used by the admin UI).
+   */
+  async setBanned(id_user, banned) {
+    const result = await database.query(
+      "UPDATE public.user SET is_banned = $2 WHERE id_user = $1 RETURNING * ;",
+      [id_user, !!banned],
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Return one user by id (no filtering — admin views need banned users too).
+   */
+  async getOneById(id) {
+    const result = await database.query(
+      "SELECT * FROM public.user WHERE id_user = $1;",
+      [id],
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Paginated + sortable + searchable user list for the admin UI.
+   *
+   * @param {Object} opts
+   * @param {number} opts.page       1-indexed
+   * @param {number} opts.pageSize   default 10
+   * @param {"name"|"wins"|"banned"} opts.sort
+   * @param {string} [opts.q]        ILIKE filter on first/last name, username, or id_user
+   * @returns {Promise<{rows:Array, total:number, page:number, pageSize:number, totalPages:number, sort:string}>}
+   */
+  async listPaged({ page = 1, pageSize = 10, sort = "name", q = "" } = {}) {
+    let orderBy;
+    switch (sort) {
+      case "wins":
+        orderBy =
+          "COALESCE(win, 0) DESC, COALESCE(win_custom, 0) DESC, COALESCE(finished, 0) DESC, first_name ASC";
+        break;
+      case "banned":
+        orderBy = "COALESCE(is_banned, false) DESC, first_name ASC";
+        break;
+      case "name":
+      default:
+        orderBy = "first_name ASC, last_name ASC";
+        break;
+    }
+    const offset = Math.max(0, (page - 1) * pageSize);
+    const where = [];
+    const params = [];
+    if (q && q.trim()) {
+      params.push(`%${q.trim()}%`);
+      const p = `$${params.length}`;
+      where.push(
+        `(first_name ILIKE ${p} OR last_name ILIKE ${p} OR username ILIKE ${p} OR id_user ILIKE ${p})`,
+      );
+    }
+    const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const countResult = await database.query(
+      `SELECT COUNT(*)::int AS c FROM public.user ${whereSql}`,
+      params,
+    );
+    const total = countResult.rows[0].c;
+    params.push(pageSize, offset);
+    const rowsResult = await database.query(
+      `SELECT * FROM public.user ${whereSql} ORDER BY ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+    return {
+      rows: rowsResult.rows,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      sort,
+    };
+  },
 };

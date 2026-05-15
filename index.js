@@ -3,6 +3,7 @@ const bot = require("./config/server");
 const game = require("./services/game");
 const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
+const dashboardAuth = require("./services/dashboardAuth");
 const cards = require("./services/cards");
 const emojis = require("./services/emojis");
 const audio = require("./services/audio");
@@ -139,6 +140,7 @@ const COMMAND_LIMITS = {
   "/stats": { windowMs: 5_000, max: 5 },
   "/list_groups": { windowMs: 10_000, max: 3 },
   "/admin": { windowMs: 5_000, max: 10 },
+  "/dashboard_login": { windowMs: 30_000, max: 3 },
   "/notify": { windowMs: 5_000, max: 5 },
   "/historial": { windowMs: 30_000, max: 3 },
   "/addgroup": { windowMs: 10_000, max: 3 },
@@ -376,8 +378,8 @@ bot.on(
       return;
     }
 
-    // Admin UI callbacks: only allowed for admins.
-    if (query.data.startsWith("a:")) {
+    // Admin UI callbacks (groups: "a:", users: "au:"). Admin-only.
+    if (query.data.startsWith("a:") || query.data.startsWith("au:")) {
       if (!admin.is_admin(query.from.id)) {
         await bot.answerCallbackQuery(query.id, {
           text: "No tienes permisos.",
@@ -390,9 +392,21 @@ bot.on(
       const editOpts = (view) => ({ ...view.options, chat_id, message_id });
 
       const parts = query.data.split(":");
+      const ns = parts[0]; // "a" (groups) | "au" (users)
       const action = parts[1];
       let view;
-      if (action === "l") {
+      if (ns === "au") {
+        if (action === "l") {
+          const page = parts[2] ? parseInt(parts[2], 10) || 1 : 1;
+          const sortShort = parts[3] || "n";
+          view = await adminUI.userListView({ page, sortShort });
+        } else if (action === "u") {
+          view = await adminUI.userDetailView(parts[2]);
+        } else if (action === "tb") {
+          view = await adminUI.toggleUserBanned(parts[2]);
+        } else if (action === "noop") return;
+        else return;
+      } else if (action === "l") {
         // a:l (legacy) or a:l:<page>:<sortShort>
         const page = parts[2] ? parseInt(parts[2], 10) || 1 : 1;
         const sortShort = parts[3] || "n";
@@ -413,7 +427,7 @@ bot.on(
       } catch (err) {
         // editMessageText fails if content is identical; ignore that case.
         if (!String(err.message).includes("message is not modified")) {
-          logger.warn({ err: err.message, action }, "admin callback edit failed");
+          logger.warn({ err: err.message, ns, action }, "admin callback edit failed");
         }
       }
       return;
@@ -738,6 +752,48 @@ bot.onText(
       await bot.sendMessage(
         msg.chat.id,
         "Lista de grupos (modo simple):\n" + view.message.replace(/[*_`]/g, ""),
+      );
+    }
+  }),
+);
+
+// /dashboard_login: DM a one-shot magic link to the web admin. Only
+// useful in a private chat with the bot — the link grants 12h of
+// session-cookie access to /dashboard.
+bot.onText(
+  /\/dashboard_login/,
+  safe("/dashboard_login", async (msg) => {
+    if (await rateLimited(msg, "/dashboard_login")) return;
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person);
+      return;
+    }
+    if (!dashboardAuth.isEnabled()) {
+      await bot.sendMessage(
+        msg.chat.id,
+        "Dashboard deshabilitado. Configurá DASHBOARD_JWT_SECRET y DASHBOARD_BASE_URL en el .env.",
+      );
+      return;
+    }
+    const url = dashboardAuth.buildMagicUrl(msg.from.id);
+    // Always DM the link — never echo it in a group, even if /dashboard_login
+    // is somehow typed there.
+    try {
+      await bot.sendMessage(
+        msg.from.id,
+        `🔐 Magic link (válido 5 min):\n${url}\n\nAl tocarlo se setea una sesión de 12h.`,
+        { disable_web_page_preview: true },
+      );
+      if (String(msg.chat.id) !== String(msg.from.id)) {
+        await bot.sendMessage(msg.chat.id, "Te DMié el link.", {
+          reply_to_message_id: msg.message_id,
+        });
+      }
+    } catch (err) {
+      logger.error({ err: err.message, user_id: msg.from.id }, "/dashboard_login DM failed");
+      await bot.sendMessage(
+        msg.chat.id,
+        "No pude DM-arte. Abrí chat privado con el bot y volvé a intentar.",
       );
     }
   }),

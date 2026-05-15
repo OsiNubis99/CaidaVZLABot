@@ -3,10 +3,25 @@ const db = require("./db");
 const env = require("./env");
 const logger = require("./logger");
 const express = require("express");
+const cookieParser = require("cookie-parser");
+const dashboardAuth = require("../services/dashboardAuth");
+const dashboardApi = require("../services/dashboardApi");
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
+
+// Admin dashboard. Only enabled if both DASHBOARD_JWT_SECRET and
+// DASHBOARD_BASE_URL are set. The router serves /auth (magic-link
+// exchange), /api/* (REST), and the static SPA under DASHBOARD_PATH.
+// nginx must proxy the same prefix straight through (no rewrites).
+if (dashboardAuth.isEnabled()) {
+  app.use(env.dashboard_path, dashboardApi.build(bot));
+  logger.info({ path: env.dashboard_path }, "dashboard mounted");
+} else {
+  logger.info("dashboard disabled (set DASHBOARD_JWT_SECRET + DASHBOARD_BASE_URL to enable)");
+}
 
 app.get("/", (req, res) => {
   res.send("Telegram Bot '" + env.name + "'");

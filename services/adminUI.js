@@ -1,26 +1,38 @@
 /**
- * BotFather-style admin UI for managing groups via inline keyboards.
+ * BotFather-style admin UI for managing groups and users via inline keyboards.
  *
  * Callback data scheme (capped at 64 bytes by Telegram):
- *   a:l                  list groups (legacy alias for a:l:1:n)
- *   a:l:<pg>:<sort>      paginated list — sort ∈ {n=name,a=active,p=public}
- *   a:g:<id_group>       group detail
- *   a:tp:<id>            toggle public
- *   a:tb:<id>            toggle banned
- *   a:p:<id>:<m>         extend payment by <m> months
- *   a:rn:<id>            start rename flow
- *   a:dq:<id>            ask delete confirmation
- *   a:dc:<id>            confirm delete
- *   a:noop               no-op (used for visual separators)
  *
- * Group ids look like "-1003919767008" (14 chars). With prefix + months
- * the longest payload is ~22 chars, well under the 64-byte limit.
+ *   Groups (prefix a:)
+ *     a:l                  list groups (legacy alias for a:l:1:n)
+ *     a:l:<pg>:<sort>      paginated list — sort ∈ {n=name,a=active,p=public}
+ *     a:g:<id_group>       group detail
+ *     a:tp:<id>            toggle public
+ *     a:tb:<id>            toggle banned
+ *     a:p:<id>:<m>         extend payment by <m> months
+ *     a:rn:<id>            start rename flow
+ *     a:dq:<id>            ask delete confirmation
+ *     a:dc:<id>            confirm delete
+ *     a:noop               no-op (used for visual separators)
+ *
+ *   Users (prefix au:)
+ *     au:l                 list users (legacy alias for au:l:1:n)
+ *     au:l:<pg>:<sort>     paginated list — sort ∈ {n=name,w=wins,b=banned}
+ *     au:u:<id_user>       user detail
+ *     au:tb:<id_user>      toggle banned
+ *     au:noop              no-op
+ *
+ * Group ids look like "-1003919767008" (14 chars), user ids up to 10
+ * digits; with prefix + months the longest payload is ~22 chars, well
+ * under the 64-byte limit.
  */
-const { GroupController } = require("../database");
+const { GroupController, UserController } = require("../database");
 
 const PAGE_SIZE = 10;
 const SORT_LABELS = { n: "📛 Nombre", a: "🔥 Activo", p: "🌐 Público" };
 const SORT_KEY_FROM_SHORT = { n: "name", a: "active", p: "public" };
+const USER_SORT_LABELS = { n: "📛 Nombre", w: "🏆 Wins", b: "🚫 Baneado" };
+const USER_SORT_KEY_FROM_SHORT = { n: "name", w: "wins", b: "banned" };
 
 // userId -> { id_group } : users in the middle of a rename flow.
 const pendingRenames = new Map();
@@ -71,6 +83,8 @@ function groupListKeyboard(groups, page, totalPages, sortShort) {
       },
     ]);
   }
+  // Jump-to-users tab.
+  rows.push([{ text: "👥 Ver usuarios", callback_data: "au:l" }]);
   return { inline_keyboard: rows };
 }
 
@@ -232,6 +246,137 @@ function getPendingRename(userId) {
   return pendingRenames.get(String(userId));
 }
 
+// ─── Users ────────────────────────────────────────────────────────────────
+
+function userDisplayName(u) {
+  const parts = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
+  if (parts) return parts;
+  if (u.username) return "@" + u.username;
+  return String(u.id_user);
+}
+
+function userRowLabel(u) {
+  const flag = u.is_banned ? "🚫" : "👤";
+  const wins = Number(u.win) || 0;
+  const customWins = Number(u.win_custom) || 0;
+  const totalWins = wins + customWins;
+  const winsSuffix = totalWins > 0 ? ` 🏆${totalWins}` : "";
+  return `${flag} ${userDisplayName(u)}${winsSuffix}`;
+}
+
+function userListKeyboard(users, page, totalPages, sortShort) {
+  const rows = users.map((u) => [
+    { text: userRowLabel(u), callback_data: `au:u:${u.id_user}` },
+  ]);
+  // Sort selector row.
+  rows.push(
+    ["n", "w", "b"].map((s) => ({
+      text: (sortShort === s ? "✓ " : "") + USER_SORT_LABELS[s],
+      callback_data: `au:l:1:${s}`,
+    })),
+  );
+  // Pagination row only if more than one page.
+  if (totalPages > 1) {
+    const prev = Math.max(1, page - 1);
+    const next = Math.min(totalPages, page + 1);
+    rows.push([
+      {
+        text: page > 1 ? "◀️" : "·",
+        callback_data: page > 1 ? `au:l:${prev}:${sortShort}` : "au:noop",
+      },
+      { text: `${page} / ${totalPages}`, callback_data: "au:noop" },
+      {
+        text: page < totalPages ? "▶️" : "·",
+        callback_data: page < totalPages ? `au:l:${next}:${sortShort}` : "au:noop",
+      },
+    ]);
+  }
+  // Jump-to-groups tab.
+  rows.push([{ text: "📦 Ver grupos", callback_data: "a:l" }]);
+  return { inline_keyboard: rows };
+}
+
+function userDetailKeyboard(u) {
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: u.is_banned ? "✅ Desbanear" : "🚫 Banear",
+          callback_data: `au:tb:${u.id_user}`,
+        },
+      ],
+      [{ text: "⬅️ Volver al listado", callback_data: "au:l" }],
+    ],
+  };
+}
+
+function formatUserDetail(u) {
+  const handle = u.username ? "@" + u.username : "(sin username)";
+  const finished = Number(u.finished) || 0;
+  const win = Number(u.win) || 0;
+  const winCustom = Number(u.win_custom) || 0;
+  const caida = Number(u.caida) || 0;
+  const caido = Number(u.caido) || 0;
+  return (
+    `${userDisplayName(u)}\n` +
+    `${handle} · ${u.id_user}\n` +
+    `\n` +
+    `Baneado: ${u.is_banned ? "🚫 Sí" : "❌ No"}\n` +
+    `Partidas: ${finished}\n` +
+    `Wins: ${win} · Wins custom: ${winCustom}\n` +
+    `Caídas dadas: ${caida} · Caídas recibidas: ${caido}\n` +
+    `Notify on turn: ${u.notify_on_turn ? "✅" : "❌"}`
+  );
+}
+
+async function userListView({ page = 1, sortShort = "n" } = {}) {
+  const sort = USER_SORT_KEY_FROM_SHORT[sortShort] || "name";
+  const result = await UserController.listPaged({ page, pageSize: PAGE_SIZE, sort });
+  if (result.total === 0) {
+    return {
+      message: "No hay usuarios registrados.",
+      options: {
+        reply_markup: {
+          inline_keyboard: [[{ text: "📦 Ver grupos", callback_data: "a:l" }]],
+        },
+      },
+    };
+  }
+  const sortLabel = USER_SORT_LABELS[sortShort] || USER_SORT_LABELS.n;
+  return {
+    message:
+      `${result.total} usuario${result.total === 1 ? "" : "s"}` +
+      ` · orden: ${sortLabel}` +
+      ` · página ${result.page}/${result.totalPages}`,
+    options: {
+      reply_markup: userListKeyboard(result.rows, result.page, result.totalPages, sortShort),
+    },
+  };
+}
+
+async function userDetailView(id_user) {
+  const u = await UserController.getOneById(id_user);
+  if (!u) {
+    return {
+      message: "Usuario no encontrado.",
+      options: {
+        reply_markup: { inline_keyboard: [[{ text: "⬅️ Volver", callback_data: "au:l" }]] },
+      },
+    };
+  }
+  return {
+    message: formatUserDetail(u),
+    options: { reply_markup: userDetailKeyboard(u) },
+  };
+}
+
+async function toggleUserBanned(id_user) {
+  const current = await UserController.getOneById(id_user);
+  if (!current) return userDetailView(id_user);
+  await UserController.setBanned(id_user, !current.is_banned);
+  return userDetailView(id_user);
+}
+
 module.exports = {
   listView,
   groupDetailView,
@@ -245,4 +390,7 @@ module.exports = {
   startRename,
   cancelRename,
   getPendingRename,
+  userListView,
+  userDetailView,
+  toggleUserBanned,
 };
