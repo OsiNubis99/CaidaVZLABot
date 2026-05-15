@@ -92,29 +92,41 @@ async function persistOrRemove(chatId, finished) {
 }
 
 // Render the current table as a PNG and attach it as `photo` to the
-// response, when visual_table is enabled and the game is mid-deck.
+// response, when visual_table is enabled. Strips the literal "Mesa: ..."
+// line from the caption either way — when there are cards we replace
+// it with the photo, when the mesa is empty (e.g. just-cleaned or post-
+// kill) we silently drop the empty-slot line so the message stays clean.
 //
-// Only the single line `Mesa: <slot contents>` is stripped from the
-// caption — everything else (Ultimas!, Ultima carta, Siguiente, Caidó,
-// Mesa Limpia, Barajando, team listing) stays as caption so action and
-// status notifications still reach the user.
-// Errors are swallowed and the response falls back to the text-only mesa.
+// The "finished" flag is no longer a hard bail — the victory message
+// also honors visual_table, so a win-via-took on a populated mesa
+// renders with a photo too. Errors fall back to text.
 async function attachMesaPhoto(group, finished, response) {
   if (!group || !group.config || !group.config.visual_table) return response;
-  if (finished) return response;
-  if (!group.table || group.decks === 0) return response;
-  try {
-    const photo = await mesa.render(group.table);
-    const L = group._lang ? group._lang() : require("../lang/es");
-    const mesaLabel = (L.ig_mesa_label || "Mesa:").trim();
-    const raw = String(response.message || "");
-    const caption = raw
+  if (!group.table) return response;
+  const tableHasCards = group.table.some((c) => c != null);
+  const L = group._lang ? group._lang() : require("../lang/es");
+  const mesaLabel = (L.ig_mesa_label || "Mesa:").trim();
+  const stripMesaLine = (raw) =>
+    String(raw || "")
       .split("\n")
       .filter((line) => !line.startsWith(mesaLabel))
       .join("\n")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
-    return { ...response, photo, message: caption };
+
+  // Pre-game (no game started): nothing to render.
+  if (group.decks === 0 && !group.started_at && !finished) {
+    return response;
+  }
+
+  if (!tableHasCards) {
+    // Empty mesa — no point showing "Mesa: [] [] ..." or rendering a
+    // blank green photo. Just strip the line.
+    return { ...response, message: stripMesaLine(response.message) };
+  }
+  try {
+    const photo = await mesa.render(group.table);
+    return { ...response, photo, message: stripMesaLine(response.message) };
   } catch (err) {
     logger.warn({ err: err.message }, "mesa render failed; falling back to text");
     return response;
