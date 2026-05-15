@@ -972,6 +972,13 @@ module.exports = {
               }
             }
           }
+          // Always present the picker low→high regardless of visual
+          // mode — natural ascending reading order. The internal
+          // cardsHand array stays high→low (the canto detector depends
+          // on that order); each result's `id` still encodes the
+          // original index so play_card receives the correct card no
+          // matter what slot the user tapped in the picker.
+          cardResults.reverse();
           const response = [];
           response.push(...cardResults);
           if (cantoResult) response.push(cantoResult);
