@@ -109,8 +109,8 @@ const COMMAND_LIMITS = {
   "/inicia_ya": { windowMs: 5_000, max: 3 },
   "/reiniciar": { windowMs: 10_000, max: 3 },
   "/salir": { windowMs: 5_000, max: 3 },
-  "/unirBot": { windowMs: 5_000, max: 4 },
-  "/salirBot": { windowMs: 5_000, max: 4 },
+  "/unir_bot": { windowMs: 5_000, max: 4 },
+  "/salir_bot": { windowMs: 5_000, max: 4 },
   "/estado": { windowMs: 5_000, max: 5 },
   "/configurar": { windowMs: 5_000, max: 5 },
   "/configura": { windowMs: 5_000, max: 5 },
@@ -745,9 +745,9 @@ bot.onText(
 );
 
 bot.onText(
-  /\/unirBot/i,
-  safe("/unirBot", async (msg) => {
-    if (await rateLimited(msg, "/unirBot")) return;
+  /\/unir_?bot/i,
+  safe("/unir_bot", async (msg) => {
+    if (await rateLimited(msg, "/unir_bot")) return;
     const chatId = String(msg.chat.id);
     if (!game.hasCapacityForCpu(chatId)) {
       const L = langForMsg(msg);
@@ -775,9 +775,9 @@ bot.onText(
 );
 
 bot.onText(
-  /\/salirBot/i,
-  safe("/salirBot", async (msg) => {
-    if (await rateLimited(msg, "/salirBot")) return;
+  /\/salir_?bot/i,
+  safe("/salir_bot", async (msg) => {
+    if (await rateLimited(msg, "/salir_bot")) return;
     const chatId = String(msg.chat.id);
     const L = langForMsg(msg);
     const cpus = game.listCpus(chatId);
@@ -882,8 +882,8 @@ bot.setMyCommands([
   { command: "inicia_ya", description: "Inicia la partida, pero se salta las configuraciones" },
   { command: "estado", description: "Muestra información sobre la partida." },
   { command: "salir", description: "Te saca de la partida (solo antes de empezar)." },
-  { command: "unirBot", description: "Agregar un bot CPU al lobby (fácil/medio/pro)." },
-  { command: "salirBot", description: "Sacar un bot CPU del lobby." },
+  { command: "unir_bot", description: "Agregar un bot CPU al lobby (fácil/medio/pro)." },
+  { command: "salir_bot", description: "Sacar un bot CPU del lobby." },
   { command: "reiniciar", description: "Elimina la partida actual y crea una nueva." },
   { command: "configurar", description: "Muestra el panel de configuración." },
   { command: "help", description: "Muestra una ayuda de como usar el bot." },
