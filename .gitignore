@@ -72,3 +72,4 @@ public/cards/*.png
 !public/cards/_source_baraja_espanola_completa.png
 public/twemoji/
 public/emojis/
+.DS_Store
