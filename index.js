@@ -708,10 +708,10 @@ bot.onText(
 
 bot.setMyCommands([
   { command: "unirse", description: "Te agrega a la partida." },
-  { command: "salir", description: "Te saca de la partida (solo antes de empezar)." },
   { command: "iniciar", description: "Inicia la partida." },
   { command: "inicia_ya", description: "Inicia la partida, pero se salta las configuraciones" },
   { command: "estado", description: "Muestra información sobre la partida." },
+  { command: "salir", description: "Te saca de la partida (solo antes de empezar)." },
   { command: "reiniciar", description: "Elimina la partida actual y crea una nueva." },
   { command: "configurar", description: "Muestra el panel de configuración." },
   { command: "help", description: "Muestra una ayuda de como usar el bot." },
