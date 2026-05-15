@@ -234,32 +234,39 @@ async function bootstrap(bot, adminUserId, { force = false } = {}) {
         format: "static",
         emoji_list: [entry.fallback],
       };
-      const formData = {
-        emoji_file: {
-          value: fs.createReadStream(entry.file),
-          options: { filename: `${entry.name}.webp`, contentType: "image/webp" },
-        },
+      // Put all params in formData (not qs) so Telegram parses them
+      // out of the multipart body alongside the file. user_id is
+      // stringified — some Telegram endpoints reject numeric
+      // multipart fields in subtle ways (manifests as STICKERSET_INVALID
+      // even when the set exists).
+      const fileField = {
+        value: fs.createReadStream(entry.file),
+        options: { filename: `${entry.name}.webp`, contentType: "image/webp" },
       };
       if (!setExists) {
         await rawApi(bot, "createNewStickerSet", {
-          qs: {
-            user_id: adminUserId,
+          formData: {
+            user_id: String(adminUserId),
             name: SET_NAME,
             title: SET_TITLE,
             sticker_type: "custom_emoji",
             stickers: JSON.stringify([stickerSpec]),
+            emoji_file: fileField,
           },
-          formData,
         });
         setExists = true;
+        // Telegram has a brief propagation delay between set creation
+        // and the set being findable by addStickerToSet. Sleep before
+        // the next add to avoid a STICKERSET_INVALID barrage.
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       } else {
         await rawApi(bot, "addStickerToSet", {
-          qs: {
-            user_id: adminUserId,
+          formData: {
+            user_id: String(adminUserId),
             name: SET_NAME,
             sticker: JSON.stringify(stickerSpec),
+            emoji_file: fileField,
           },
-          formData,
         });
       }
       // Pull the set back and claim the sticker at the new tail
