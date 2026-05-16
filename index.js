@@ -854,23 +854,29 @@ bot.setMyCommands([
 ]);
 
 // Set the persistent menu button (📎 next to the input in DMs with the
-// bot) to open the Telegram Web App. Idempotent — Telegram is happy to
-// receive the same setting repeatedly.
+// bot) to open the Telegram Web App. Idempotent — Telegram accepts the
+// same setting repeatedly.
 //
-// The button is set "globally" (no chat_id), so it applies to every user
-// who DMs the bot, admin or not. Tab visibility inside the app is the
-// thing that differentiates admin vs regular user.
+// node-telegram-bot-api only auto-JSON-stringifies a handful of fields
+// (reply_markup, entities, ...). menu_button is NOT one of them, so we
+// have to stringify it manually — otherwise it goes out as
+// "[object Object]" in the form body and Telegram drops it silently
+// (returns ok:true but doesn't apply it).
+//
+// The button is set "globally" (no chat_id) so it becomes the default
+// for every DM with the bot. Tab visibility inside the app then
+// differentiates admin vs regular user.
 if (env.dashboard_base_url) {
   const webAppUrl = env.dashboard_base_url.endsWith("/")
     ? env.dashboard_base_url
     : env.dashboard_base_url + "/";
   bot
     .setChatMenuButton({
-      menu_button: {
+      menu_button: JSON.stringify({
         type: "web_app",
         text: "📊 Mi cuenta",
         web_app: { url: webAppUrl },
-      },
+      }),
     })
     .then(() => logger.info({ url: webAppUrl }, "chat menu button set"))
     .catch((err) => logger.warn({ err: err.message }, "setChatMenuButton failed"));
