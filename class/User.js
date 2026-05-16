@@ -36,6 +36,21 @@ class User {
   }
 
   /**
+   * Persistence-side id. For humans this is just id_user. For bots the
+   * in-memory id is per-lobby (cpu_<chatId>_<slot>) so several games
+   * can host their own Pro/Medio/Fácil simultaneously without aliasing,
+   * but stats are accumulated into 3 shared rows (cpu_easy / cpu_medium
+   * / cpu_pro) seeded in migrations. This is the id callers use when
+   * writing to public.user (set_stats, set_sing).
+   *
+   * @returns {String}
+   */
+  statsId() {
+    if (this.cpu_difficulty) return "cpu_" + this.cpu_difficulty;
+    return this.id_user;
+  }
+
+  /**
    * @param {Boolean} started - Set true if the game is already started.
    * @param {Object} [lang] - Localized strings table. Falls back to the
    *   global es table when omitted (callers from Game.js pass through

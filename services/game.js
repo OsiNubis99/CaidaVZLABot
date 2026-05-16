@@ -420,14 +420,18 @@ module.exports = {
       cpu_difficulty: difficulty,
     });
     users[cpu.id_user] = chatId;
-    group.join(cpu);
+    // Return the same lobby-state print that /unirse produces so adding
+    // a bot looks identical to a human joining (consistency requested:
+    // before we replied "Fácil agregado." which broke the "who's in"
+    // mental model players had after /unirse).
+    const joinResp = group.join(cpu);
     await persistOrRemove(chatId, false);
     events.record(chatId, events.EVENT_TYPES.PLAYER_JOINED, {
       user_id: cpu.id_user,
       first_name: cpu.first_name,
       cpu_difficulty: difficulty,
     });
-    return { ok: true, msg: `${cpu.first_name} agregado.` };
+    return { ok: true, msg: joinResp };
   },
 
   /**

@@ -97,6 +97,18 @@ const STATEMENTS = [
   // "sort by most active" option in /admin list.
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS is_banned boolean DEFAULT false`,
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS games_played int DEFAULT 0`,
+
+  // Seed CPU users. Bots are in-memory objects per-lobby but they roll
+  // up stats into 3 shared rows (one per difficulty) so they show in
+  // the leaderboard, in the admin user list, and accumulate caída /
+  // sing counters globally. The synthetic in-memory id stays
+  // cpu_<chatId>_<slot> for lobby isolation; only the persistence
+  // writes route to these three rows via User.statsId().
+  `INSERT INTO public.user (id_user, first_name, last_name, username, is_banned)
+   VALUES ('cpu_easy',   '🤖 CPU Fácil', '', NULL, false),
+          ('cpu_medium', '🤖 CPU Medio', '', NULL, false),
+          ('cpu_pro',    '🤖 CPU Pro',   '', NULL, false)
+   ON CONFLICT (id_user) DO NOTHING`,
 ];
 
 async function run() {
