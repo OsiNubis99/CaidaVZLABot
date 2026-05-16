@@ -16,18 +16,45 @@
 (function () {
   "use strict";
 
+  // Surface bootstrap errors visibly. Otherwise a single throw before
+  // DOMContentLoaded leaves the user staring at Telegram's placeholder.
+  function fatalError(msg) {
+    try {
+      const main = document.getElementById("app");
+      if (main) {
+        main.innerHTML = `
+          <div class="banner" style="margin:24px auto; display:block">
+            <h2>Algo falló</h2>
+            <p>${msg}</p>
+            <p class="muted">Tomá screenshot y mandalo en @CaidaVZLANews.</p>
+          </div>`;
+      }
+    } catch {/* last resort */}
+  }
+  window.addEventListener("error", (e) => fatalError(e.message || "Error desconocido"));
+  window.addEventListener("unhandledrejection", (e) =>
+    fatalError((e.reason && e.reason.message) || String(e.reason)),
+  );
+
   const tg = window.Telegram && window.Telegram.WebApp;
-  if (!tg || !tg.initData) {
-    // Open outside Telegram → show the banner and stop.
+  // If the SDK never loaded (no `Telegram.WebApp`) we're definitely
+  // outside Telegram — show the banner and stop.
+  if (!tg) {
+    document.getElementById("app").hidden = true;
     document.getElementById("not-in-telegram").hidden = false;
     return;
   }
-  tg.ready();
-  tg.expand();
+  // We're inside Telegram. initData may still be empty in some edge
+  // cases (e.g. the very first render before `ready()` settles) — we
+  // proceed and let the API surface a 401 with a clear message.
+  try { tg.ready(); } catch {/* tolerate */}
+  try { tg.expand(); } catch {/* tolerate */}
 
   // Apply Telegram theme to our CSS vars when available.
-  applyTheme();
-  tg.onEvent && tg.onEvent("themeChanged", applyTheme);
+  try { applyTheme(); } catch {/* fall back to defaults */}
+  if (tg.onEvent) {
+    try { tg.onEvent("themeChanged", applyTheme); } catch {/* tolerate */}
+  }
 
   const API = "api";
   const PAGE_SIZE = 25;
@@ -476,9 +503,15 @@
   }
 
   // ─── Boot ────────────────────────────────────────────────────────────
-  document.addEventListener("DOMContentLoaded", async () => {
-    document.getElementById("app").hidden = false;
+  // If DOMContentLoaded already fired (script is at end of body), run
+  // immediately. Otherwise wait.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 
+  async function boot() {
     // Toolbar handlers.
     document.getElementById("top-limit").addEventListener("change", loadTop);
 
@@ -490,6 +523,10 @@
     document.getElementById("users-sort").addEventListener("change", (e) => { usersState.sort = e.target.value; usersState.page = 1; loadUsers(); });
 
     // Always start by loading /me — sets role and lets us decide tabs.
-    await loadMe();
-  });
+    try {
+      await loadMe();
+    } catch (err) {
+      fatalError(err.message || "no se pudo cargar tu cuenta");
+    }
+  }
 })();
