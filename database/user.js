@@ -86,8 +86,10 @@ module.exports = {
    * @param {Number} limit
    */
   async top(limit = 10) {
+    // caido is required by the dashboard so it can render Caídas
+    // recibidas and Caída ratio. Cheap to add — same row, same index.
     const r = await database.query(
-      `SELECT id_user, first_name, last_name, username, finished, win, win_custom, caida
+      `SELECT id_user, first_name, last_name, username, finished, win, win_custom, caida, caido
        FROM public.user
        WHERE finished > 0 AND COALESCE(is_banned, false) = false
        ORDER BY win DESC, win_custom DESC, finished DESC
