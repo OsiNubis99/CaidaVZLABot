@@ -8,6 +8,16 @@ Documentación específica adicional:
 - `docs/context.md` — arquitectura completa, decisiones de juego, dominio
 - `docs/dashboard.md` — web admin dashboard (auth, endpoints, deploy)
 - `nginx-caidavzlabot.conf` — snippet nginx para producción
+- `dashboard-ui/` — React + Vite + TypeScript SPA. Build se corre en stage 1 del Dockerfile, output va a `public/dashboard/` (gitignored)
+
+Dev del SPA local:
+```sh
+cd dashboard-ui
+nvm use 22       # o ajustar PATH a node 22+
+npm install
+npm run dev      # Vite dev server :5173 (no requiere bot corriendo)
+npm run build    # output a dashboard-ui/dist/
+```
 
 ---
 

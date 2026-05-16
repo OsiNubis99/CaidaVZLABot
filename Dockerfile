@@ -1,3 +1,15 @@
+# ─── Stage 1: build the React SPA ─────────────────────────────────────
+# Vite + TS build that emits a hashed-asset bundle into /ui/dist.
+# We then copy that into the runtime image under /app/public/dashboard,
+# so Express serves it as static files at DASHBOARD_PATH.
+FROM node:22-alpine AS ui-builder
+WORKDIR /ui
+COPY dashboard-ui/package.json dashboard-ui/package-lock.json* ./
+RUN npm install
+COPY dashboard-ui/ ./
+RUN npm run build
+
+# ─── Stage 2: bot runtime ─────────────────────────────────────────────
 FROM node:22-alpine
 
 WORKDIR /app
@@ -12,6 +24,11 @@ COPY package*.json ./
 RUN npm install --omit=dev
 
 COPY . .
+
+# Drop in the built SPA. This goes AFTER `COPY . .` so it wins over
+# any stale public/dashboard committed in the repo (we keep that path
+# gitignored, but defensive ordering doesn't hurt).
+COPY --from=ui-builder /ui/dist /app/public/dashboard
 
 # Slice the Wikimedia Spanish deck PNG into 40 individual card images +
 # the reverse, so they're baked into the image and ready to use.

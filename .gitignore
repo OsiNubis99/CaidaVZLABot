@@ -72,4 +72,11 @@ public/cards/*.png
 !public/cards/_source_baraja_espanola_completa.png
 public/twemoji/
 public/emojis/
+
+# Dashboard SPA build output. Vite (run inside the Dockerfile multi-
+# stage) emits hashed assets here. Source lives in dashboard-ui/.
+public/dashboard/
+dashboard-ui/dist/
+dashboard-ui/tsconfig.tsbuildinfo
+
 .DS_Store
