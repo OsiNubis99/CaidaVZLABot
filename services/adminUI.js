@@ -202,7 +202,7 @@ function renamePromptView(id_group) {
   return {
     message:
       `Envía el nuevo nombre para el grupo ${id_group}.\n` +
-      `O /cancelar para abortar.`,
+      `Tocá el botón de abajo para abortar.`,
     options: {
       reply_markup: {
         inline_keyboard: [[{ text: "Cancelar", callback_data: `a:g:${id_group}` }]],

@@ -140,7 +140,8 @@ module.exports = {
 			`\nCasa chica: ${user.alive_casa_chica} vivas / ${user.casa_chica} cantadas ` +
 			`\nCasa grande: ${user.alive_casa_grande} vivas / ${user.casa_grande} cantadas ` +
 			`\nTrivilin: ${user.alive_trivilin} vivas / ${user.trivilin} cantadas ` +
-			"\n" + (user.is_banned ? "Esta" : "No esta") + " baneado";
+			"\n" + (user.is_banned ? "Esta" : "No esta") + " baneado" +
+			"\n\nℹ️ Abrí la app Caída en el menú del bot (📎 al lado del input en el DM con el bot) para ver gráficos, leaderboard y más detalles.";
 		return message.reply(text, req.message_id);
 	},
 };

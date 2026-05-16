@@ -5,7 +5,6 @@ const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
 const dashboardAuth = require("./services/dashboardAuth");
 const cards = require("./services/cards");
-const emojis = require("./services/emojis");
 const audio = require("./services/audio");
 const gameReaper = require("./services/gameReaper");
 const leaderboard = require("./services/leaderboard");
@@ -16,7 +15,7 @@ const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const RequestDTO = require("./class/RequestDTO");
 const UserDTO = require("./class/UserDTO");
-const { UserController, GroupController } = require("./database");
+const { UserController } = require("./database");
 
 // Localised strings for raw Telegram-message handlers. Falls back to es
 // when the chat has no in-memory game yet.
@@ -143,7 +142,6 @@ const COMMAND_LIMITS = {
   "/dashboard_login": { windowMs: 30_000, max: 3 },
   "/notify": { windowMs: 5_000, max: 5 },
   "/historial": { windowMs: 30_000, max: 3 },
-  "/addgroup": { windowMs: 10_000, max: 3 },
 };
 
 async function rateLimited(msg, command) {
@@ -535,78 +533,10 @@ bot.onText(
 );
 
 bot.onText(
-  /\/addg-(.*)-(.*)/,
-  safe("/addg", async (msg, match) => {
-    await bot.sendMessage(
-      msg.chat.id,
-      admin.add_group(RequestDTO.fromTelegram(msg), match[1], match[2]),
-      { reply_to_message_id: msg.message_id },
-    );
-  }),
-);
-
-bot.onText(
-  /^\/addgroup(?:@\w+)?$/,
-  safe("/addgroup", async (msg) => {
-    if (await rateLimited(msg, "/addgroup")) return;
-    if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person, {
-        reply_to_message_id: msg.message_id,
-      });
-      return;
-    }
-    if (msg.chat.type !== "group" && msg.chat.type !== "supergroup") {
-      await bot.sendMessage(
-        msg.chat.id,
-        "Este comando solo funciona dentro de un grupo. Agregame al grupo y corré /addgroup allí.",
-        { reply_to_message_id: msg.message_id },
-      );
-      return;
-    }
-    const id_group = String(msg.chat.id);
-    const name = msg.chat.title || "(sin nombre)";
-    try {
-      await GroupController.add(id_group, name);
-      logger.info({ id_group, name, by: msg.from.id }, "/addgroup registered");
-      await bot.sendMessage(
-        msg.chat.id,
-        `Grupo registrado:\n  id: ${id_group}\n  nombre: ${name}\n\nUsa /admin para hacerlo público o extender pago.`,
-        { reply_to_message_id: msg.message_id },
-      );
-    } catch (err) {
-      logger.error({ err: err.message, id_group }, "/addgroup failed");
-      await bot.sendMessage(msg.chat.id, "Error al registrar el grupo.", {
-        reply_to_message_id: msg.message_id,
-      });
-    }
-  }),
-);
-
-bot.onText(
-  /\/paid-(.*)-(.*)/,
-  safe("/paid", async (msg, match) => {
-    await bot.sendMessage(
-      msg.chat.id,
-      await admin.paid(RequestDTO.fromTelegram(msg), match[1], match[2]),
-      { reply_to_message_id: msg.message_id },
-    );
-  }),
-);
-
-bot.onText(
   /\/list_groups/,
   safe("/list_groups", async (msg) => {
     if (await rateLimited(msg, "/list_groups")) return;
     await bot.sendMessage(msg.chat.id, await admin.list_group(msg), {
-      reply_to_message_id: msg.message_id,
-    });
-  }),
-);
-
-bot.onText(
-  /\/listUsers/,
-  safe("/listUsers", async (msg) => {
-    await bot.sendMessage(msg.chat.id, await admin.list_user(msg), {
       reply_to_message_id: msg.message_id,
     });
   }),
@@ -618,31 +548,6 @@ bot.onText(
     if (await rateLimited(msg, "/stats")) return;
     const response = await admin.get_user_stats(RequestDTO.fromTelegram(msg));
     await bot.sendMessage(msg.chat.id, response.message, response.options);
-  }),
-);
-
-bot.onText(
-  /\/test_emoji/,
-  safe("/test_emoji", async (msg) => {
-    if (!admin.is_admin(msg.from.id)) return;
-    // Direct bot → chat with custom_emoji entity. If this shows the
-    // actual card image inline (~24px) → bots CAN send custom emojis,
-    // so the inline-result path is the broken piece. If this shows
-    // just the fallback 🃏 → Telegram's Fragment paywall is real and
-    // we have to switch strategy.
-    const id = await emojis.getCustomEmojiId("card-1-Oro");
-    if (!id) {
-      await bot.sendMessage(msg.chat.id, "No hay emoji cacheado para card-1-Oro");
-      return;
-    }
-    // Simplest possible test: just the placeholder, entity at offset 0.
-    // If this renders the custom emoji, bots CAN send them and we know
-    // the inline-result path is the broken piece. If it shows the
-    // fallback 🃏, there's a deeper restriction.
-    await bot.sendMessage(msg.chat.id, "🃏", {
-      entities: [{ type: "custom_emoji", offset: 0, length: 2, custom_emoji_id: id }],
-    });
-    await bot.sendMessage(msg.chat.id, "↑ Si ves la carta 1-Oro mini, los custom emojis sí funcionan vía sendMessage.\nID usado: " + id);
   }),
 );
 
@@ -717,26 +622,6 @@ bot.onText(
 );
 
 bot.onText(
-  /\/bootstrap_emojis(?:\s+(force))?/,
-  safe("/bootstrap_emojis", async (msg, match) => {
-    if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person);
-      return;
-    }
-    const force = !!(match && match[1]);
-    await bot.sendMessage(
-      msg.chat.id,
-      `Creando set de custom emojis "${emojis.SET_TITLE}"${force ? " (force=reset cache)" : ""}.\nEsto toma ~1-2 min para 50 emojis.\nEl set queda asociado a tu user_id; podés removerlo desde Telegram → tu perfil → emoji packs.`,
-    );
-    const result = await emojis.bootstrap(bot, msg.from.id, { force });
-    await bot.sendMessage(
-      msg.chat.id,
-      `Bootstrap completo. Subidas: ${result.uploaded}, ya cacheadas: ${result.skipped}, fallidas: ${result.failed}.`,
-    );
-  }),
-);
-
-bot.onText(
   /\/admin/,
   safe("/admin", async (msg) => {
     logger.info(
@@ -800,18 +685,6 @@ bot.onText(
         msg.chat.id,
         "No pude DM-arte. Abrí chat privado con el bot y volvé a intentar.",
       );
-    }
-  }),
-);
-
-bot.onText(
-  /^\/cancelar/,
-  safe("/cancelar", async (msg) => {
-    if (adminUI.getPendingRename(msg.from.id)) {
-      adminUI.cancelRename(msg.from.id);
-      await bot.sendMessage(msg.chat.id, "Renombrado cancelado.", {
-        reply_to_message_id: msg.message_id,
-      });
     }
   }),
 );
