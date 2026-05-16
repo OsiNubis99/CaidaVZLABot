@@ -201,6 +201,7 @@ input[type="number"].input, input[type="text"].input { width: 100%; }
 .badge.ok { background: rgba(63,185,80,0.18); color: var(--ok); }
 .badge.no { background: rgba(139,148,158,0.18); color: var(--text-muted); }
 .badge.banned { background: rgba(248,81,73,0.18); color: var(--danger); }
+.badge.cpu { background: rgba(47,129,247,0.18); color: var(--accent, #2f81f7); margin-left: 6px; vertical-align: middle; }
 
 /* ─── buttons ─── */
 .btn {

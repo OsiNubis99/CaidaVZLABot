@@ -159,6 +159,12 @@
   function badge(text, kind) { return `<span class="badge ${kind}">${text}</span>`; }
   function yesno(v) { return v ? badge("✓", "ok") : badge("—", "no"); }
   function bannedBadge(v) { return v ? badge("🚫", "banned") : badge("OK", "ok"); }
+  // CPU users live in public.user with synthetic ids "cpu_easy" |
+  // "cpu_medium" | "cpu_pro" (seeded in migrations). They behave like
+  // regular users in stats queries but we don't let admins ban them
+  // and we tag them visually so they don't look like normal humans.
+  function isCpu(u) { return !!(u && u.id_user && String(u.id_user).startsWith("cpu_")); }
+  function cpuBadge() { return `<span class="badge cpu">🤖 CPU</span>`; }
 
   function displayName(u) {
     const parts = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
@@ -261,7 +267,11 @@
       ? r.rows.map((u, i) => `
           <tr>
             <td class="cell-mono">${i + 1}</td>
-            <td>${escapeHtml(displayName(u))}${u.username ? `<small class="muted"> @${escapeHtml(u.username)}</small>` : ""}</td>
+            <td>
+              ${escapeHtml(displayName(u))}
+              ${isCpu(u) ? cpuBadge() : ""}
+              ${u.username ? `<small class="muted"> @${escapeHtml(u.username)}</small>` : ""}
+            </td>
             <td>${Number(u.finished) || 0}</td>
             <td>${Number(u.win) || 0}</td>
             <td>${Number(u.win_custom) || 0}</td>
@@ -439,19 +449,23 @@
   }
 
   function userRow(u) {
+    const cpu = isCpu(u);
     const name = displayName(u);
     const handle = u.username ? "@" + u.username : "—";
     return `
       <tr data-id="${escapeHtml(u.id_user)}">
-        <td>${escapeHtml(name)}</td>
+        <td>${escapeHtml(name)} ${cpu ? cpuBadge() : ""}</td>
         <td>${escapeHtml(handle)}</td>
         <td class="cell-mono">${escapeHtml(u.id_user)}</td>
         <td>${Number(u.finished) || 0}</td>
         <td>${Number(u.win) || 0}</td>
         <td class="cell-mono">${Number(u.caida) || 0}↑/${Number(u.caido) || 0}↓</td>
-        <td>${bannedBadge(u.is_banned)}</td>
+        <td>${cpu ? badge("—", "no") : bannedBadge(u.is_banned)}</td>
         <td class="col-actions">
-          <button class="btn" data-action="banned">${u.is_banned ? "Desbanear" : "Banear"}</button>
+          ${cpu
+            ? `<span class="muted" style="font-size:11px">no aplica</span>`
+            : `<button class="btn" data-action="banned">${u.is_banned ? "Desbanear" : "Banear"}</button>`
+          }
         </td>
       </tr>
     `;

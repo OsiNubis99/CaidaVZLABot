@@ -263,6 +263,13 @@ function build(bot) {
   });
 
   router.post("/api/users/:id/banned", async (req, res) => {
+    // Bots are virtual users — banning them has no effect (the in-memory
+    // join check uses cpu_<chatId>_<slot>, not cpu_<difficulty>) and is
+    // confusing to expose in the UI. Reject explicitly so a stale frontend
+    // can't accidentally toggle them.
+    if (String(req.params.id).startsWith("cpu_")) {
+      return res.status(400).json({ error: "cannot_ban_cpu" });
+    }
     try {
       const u = await UserController.setBanned(req.params.id, asBool(req.body.value));
       if (!u) return res.status(404).json({ error: "not_found" });
