@@ -853,16 +853,34 @@ bot.setMyCommands([
   { command: "historial", description: "Resumen de la última partida del grupo" },
 ]);
 
-// The Telegram Web App is launched from a BotFather Main App entry
-// (configured manually via /myapps in BotFather). We intentionally do
-// NOT call setChatMenuButton here — that would override the Main App
-// surface with a separate Menu Button and create two redundant
-// launch points. Main App has better discoverability (shows in the
-// bot profile, supports direct links, has metadata).
+// Set the persistent menu button (📎 next to the input in DMs with
+// the bot) to open the Telegram Web App.
 //
-// If you ever want to switch back to a programmatic Menu Button, the
-// pattern is bot.setChatMenuButton({ menu_button: JSON.stringify({...}) })
-// — note menu_button MUST be JSON.stringify'd, the lib doesn't do it.
+// Cache-busting note: Telegram's iOS WebView caches the WebApp URL
+// aggressively per cache-key. Appending ?v=<bootTimestamp> means every
+// bot deploy gets a fresh cache-key, so users see the new SPA without
+// having to clear app cache or kill Telegram. The query string is
+// inert on our end (Express ignores it).
+//
+// Quirk: node-telegram-bot-api only auto-JSON-stringifies a handful of
+// fields (reply_markup, entities, ...). menu_button is NOT one of them
+// — pass it stringified manually or Telegram silently drops the call.
+if (env.dashboard_base_url) {
+  const base = env.dashboard_base_url.endsWith("/")
+    ? env.dashboard_base_url
+    : env.dashboard_base_url + "/";
+  const webAppUrl = `${base}?v=${Date.now()}`;
+  bot
+    .setChatMenuButton({
+      menu_button: JSON.stringify({
+        type: "web_app",
+        text: "📊 Mi cuenta",
+        web_app: { url: webAppUrl },
+      }),
+    })
+    .then(() => logger.info({ url: webAppUrl }, "chat menu button set"))
+    .catch((err) => logger.warn({ err: err.message }, "setChatMenuButton failed"));
+}
 
 // Prune the events table once a day so it doesn't grow forever.
 setInterval(
