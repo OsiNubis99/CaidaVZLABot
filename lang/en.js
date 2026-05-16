@@ -20,6 +20,7 @@ module.exports = {
   game_is_running:
     "Game already started. Wait for it to end or use /reiniciar",
   game_no_started: "Game has not started yet.",
+  only_admin_all_cpu: "Only @OsiNubis99 can run BOT-only games.",
   game_is_restarted: "Game was restarted, /unirse to join",
   game_no_started_description: "Wait until the game starts.",
   game_no_started_message: "Game has not started yet.",

@@ -461,7 +461,12 @@ bot.on(
         break;
       }
       case "start": {
-        const response = await game.shuffle(RequestDTO.fromTelegram(query.message));
+        // query.message.from is the BOT (it sent the keyboard); use
+        // query.from so checks like is_admin see the human who clicked.
+        const response = await game.shuffle(
+          RequestDTO.fromTelegram({ ...query.message, from: query.from }),
+          false,
+        );
         if (response) {
           await bot.sendMessage(query.message.chat.id, response.message, response.options);
           scheduleSkip(response);

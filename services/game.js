@@ -10,6 +10,7 @@ const mesa = require("./mesa");
 const persistence = require("./persistence");
 const events = require("./events");
 const db = require("../config/db");
+const env = require("../config/env");
 const logger = require("../config/logger");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
@@ -776,6 +777,14 @@ module.exports = {
     if (group) {
       if (group.decks == 0) {
         if (group.users.length > 1) {
+          // Block bot-only matches unless the requester is a Bot admin.
+          // Keeps the leaderboard honest: humans can play vs CPUs all
+          // they want, but a lobby of 3-4 CPUs only spins up if an admin
+          // explicitly kicks it off (used for testing / probability work).
+          const allCpu = group.users.every((u) => u && u.cpu_difficulty);
+          if (allCpu && !env.admin_ids.includes(String(req.user.id_user))) {
+            return inLine ? false : message.reply(L.only_admin_all_cpu, req.message_id);
+          }
           let response = group.shuffle();
           await persistOrRemove(req.group.id_group, false);
           events.record(req.group.id_group, events.EVENT_TYPES.DECK_SHUFFLED, {
