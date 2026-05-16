@@ -16,20 +16,28 @@
 (function () {
   "use strict";
 
-  // Surface bootstrap errors visibly. Otherwise a single throw before
-  // DOMContentLoaded leaves the user staring at Telegram's placeholder.
+  // ─── Diagnostics — live status visible from the get-go ──────────────
+  // The index.html ships with a "loading" panel and three <li>s ready
+  // to be filled in. We update them as the bootstrap progresses, then
+  // hide the whole panel when the SPA renders successfully. If anything
+  // throws midway, the panel stays — telling us exactly which step
+  // failed without needing a remote console.
+  function diag(id, text, kind) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = el.textContent.replace(/…|: .*$/, "") + ": " + text;
+    if (kind === "ok") el.style.color = "#3fb950";
+    else if (kind === "err") el.style.color = "#f85149";
+  }
   function fatalError(msg) {
-    try {
-      const main = document.getElementById("app");
-      if (main) {
-        main.innerHTML = `
-          <div class="banner" style="margin:24px auto; display:block">
-            <h2>Algo falló</h2>
-            <p>${msg}</p>
-            <p class="muted">Tomá screenshot y mandalo en @CaidaVZLANews.</p>
-          </div>`;
-      }
-    } catch {/* last resort */}
+    const diagEl = document.getElementById("diag");
+    if (diagEl) {
+      diagEl.style.background = "#3a1517";
+      diagEl.innerHTML =
+        `<strong style="color:#f85149">Algo falló</strong>` +
+        `<div style="margin-top:8px;color:#e6edf3;font-size:13px;word-break:break-word;">${msg}</div>` +
+        `<div style="margin-top:10px;color:#8b949e;font-size:12px;">Tomá screenshot y mandalo en @CaidaVZLANews.</div>`;
+    }
   }
   window.addEventListener("error", (e) => fatalError(e.message || "Error desconocido"));
   window.addEventListener("unhandledrejection", (e) =>
@@ -37,16 +45,23 @@
   );
 
   const tg = window.Telegram && window.Telegram.WebApp;
+  diag("diag-sdk", tg ? "OK" : "no cargó", tg ? "ok" : "err");
+
   // If the SDK never loaded (no `Telegram.WebApp`) we're definitely
   // outside Telegram — show the banner and stop.
   if (!tg) {
-    document.getElementById("app").hidden = true;
     document.getElementById("not-in-telegram").hidden = false;
     return;
   }
+  const hasInit = !!(tg.initData && tg.initData.length > 0);
+  diag(
+    "diag-init",
+    hasInit ? "OK (" + tg.initData.length + " bytes)" : "vacía",
+    hasInit ? "ok" : "err",
+  );
+
   // We're inside Telegram. initData may still be empty in some edge
-  // cases (e.g. the very first render before `ready()` settles) — we
-  // proceed and let the API surface a 401 with a clear message.
+  // cases — we proceed and let the API surface a 401 with a clear msg.
   try { tg.ready(); } catch {/* tolerate */}
   try { tg.expand(); } catch {/* tolerate */}
 
@@ -524,9 +539,19 @@
 
     // Always start by loading /me — sets role and lets us decide tabs.
     try {
+      diag("diag-fetch", "fetching…");
       await loadMe();
+      diag("diag-fetch", "OK", "ok");
+      // Success — hide the diag panel and reveal the app.
+      const diagEl = document.getElementById("diag");
+      if (diagEl) diagEl.hidden = true;
+      document.getElementById("app").hidden = false;
     } catch (err) {
-      fatalError(err.message || "no se pudo cargar tu cuenta");
+      diag("diag-fetch", "FAIL — " + (err.message || "?"), "err");
+      fatalError(
+        (err.message || "no se pudo cargar tu cuenta") +
+          (err.status ? ` (HTTP ${err.status})` : ""),
+      );
     }
   }
 })();
