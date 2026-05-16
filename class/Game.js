@@ -68,12 +68,23 @@ class Game {
   }
 
   /**
-   * @returns {String} the current player name.
+   * @returns {String} the current player display name.
+   *
+   * Prefers @username so Telegram parses it as a mention and pings the
+   * user even when they have the group muted (notification override on
+   * direct mention is the standard Telegram behaviour). Falls back to
+   * first_name for users without a public Telegram username — those
+   * users won't get a notification, which is a known limitation.
+   *
+   * Future: lift this into a {text, entity} pair so we can emit a
+   * `text_mention` MessageEntity for users without username — that's
+   * the only way to notify them too.
    */
   playerName() {
-    if (this.users[this.player] && this.users[this.player].first_name)
-      return this.users[this.player].first_name;
-    return null
+    const u = this.users[this.player];
+    if (!u) return null;
+    if (u.username) return "@" + u.username;
+    return u.first_name || null;
   }
 
   /**
