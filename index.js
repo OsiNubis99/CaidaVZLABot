@@ -853,34 +853,16 @@ bot.setMyCommands([
   { command: "historial", description: "Resumen de la última partida del grupo" },
 ]);
 
-// Set the persistent menu button (📎 next to the input in DMs with the
-// bot) to open the Telegram Web App. Idempotent — Telegram accepts the
-// same setting repeatedly.
+// The Telegram Web App is launched from a BotFather Main App entry
+// (configured manually via /myapps in BotFather). We intentionally do
+// NOT call setChatMenuButton here — that would override the Main App
+// surface with a separate Menu Button and create two redundant
+// launch points. Main App has better discoverability (shows in the
+// bot profile, supports direct links, has metadata).
 //
-// node-telegram-bot-api only auto-JSON-stringifies a handful of fields
-// (reply_markup, entities, ...). menu_button is NOT one of them, so we
-// have to stringify it manually — otherwise it goes out as
-// "[object Object]" in the form body and Telegram drops it silently
-// (returns ok:true but doesn't apply it).
-//
-// The button is set "globally" (no chat_id) so it becomes the default
-// for every DM with the bot. Tab visibility inside the app then
-// differentiates admin vs regular user.
-if (env.dashboard_base_url) {
-  const webAppUrl = env.dashboard_base_url.endsWith("/")
-    ? env.dashboard_base_url
-    : env.dashboard_base_url + "/";
-  bot
-    .setChatMenuButton({
-      menu_button: JSON.stringify({
-        type: "web_app",
-        text: "📊 Mi cuenta",
-        web_app: { url: webAppUrl },
-      }),
-    })
-    .then(() => logger.info({ url: webAppUrl }, "chat menu button set"))
-    .catch((err) => logger.warn({ err: err.message }, "setChatMenuButton failed"));
-}
+// If you ever want to switch back to a programmatic Menu Button, the
+// pattern is bot.setChatMenuButton({ menu_button: JSON.stringify({...}) })
+// — note menu_button MUST be JSON.stringify'd, the lib doesn't do it.
 
 // Prune the events table once a day so it doesn't grow forever.
 setInterval(
