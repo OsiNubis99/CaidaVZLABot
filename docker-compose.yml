@@ -20,6 +20,11 @@ services:
     build: .
     container_name: caida-bot
     restart: unless-stopped
+    ports:
+      # Expose only on loopback — nginx (same host) proxies to here.
+      # Host 127.0.0.1:3010 → container 3000. Picked 3010 because the
+      # server already has another service on host:3000.
+      - "127.0.0.1:3010:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,6 +40,9 @@ services:
       # Opt-in verbose decision trace for the pro CPU. Set in .env when
       # debugging a reported bad pick; leave off in steady state.
       DEBUG_CPU_DECISIONS: ${DEBUG_CPU_DECISIONS:-}
+      DASHBOARD_JWT_SECRET: ${DASHBOARD_JWT_SECRET:-}
+      DASHBOARD_BASE_URL: ${DASHBOARD_BASE_URL:-}
+      DASHBOARD_PATH: ${DASHBOARD_PATH:-}
 
   # Daily pg_dump retained on its own volume. Retention: 14 daily / 4 weekly / 3 monthly.
   # Image is maintained and pinned to the postgres major version we use.
