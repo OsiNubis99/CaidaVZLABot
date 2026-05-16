@@ -23,9 +23,7 @@
   },
   "homepage": "https://github.com/OsiNubis99/CaidaVZLABot#readme",
   "dependencies": {
-    "cookie-parser": "^1.4.7",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.3",
     "node-telegram-bot-api": "^0.66.0",
     "node-telegram-keyboard-wrapper": "^2.0.1",
     "pg": "^8.13.1",

@@ -61,12 +61,13 @@ Tres containers gestionados por docker-compose:
 `.env` (en `~/Repos/Bots/CaidaVZLABot/`) tiene además de lo de `.env.example`:
 
 ```
-DASHBOARD_JWT_SECRET=<32 bytes hex>
 DASHBOARD_BASE_URL=https://server.codeaver.com/caidavzlabot
 DASHBOARD_PATH=/caidavzlabot
 ```
 
-`docker-compose.yml` forwardea esas tres vars al container.
+`docker-compose.yml` forwardea esas vars al container. La auth del
+dashboard usa HMAC del `initData` de Telegram WebApp contra `TELEGRAM_TOKEN`,
+así que no hay secret separado.
 
 ---
 
@@ -110,11 +111,16 @@ psql -h 127.0.0.1 -U "$DB_USER" -d "$DB_NAME"
 ### Smoke test del dashboard (interno, sin pasar por nginx)
 
 ```sh
-curl -i http://127.0.0.1:3010/caidavzlabot/login.html          # 200
-curl -i http://127.0.0.1:3010/caidavzlabot/api/me              # 401
-curl -i http://127.0.0.1:3010/caidavzlabot/                    # 302 a login.html
+curl -i http://127.0.0.1:3010/caidavzlabot/login.html          # 200 (página plana)
+curl -i http://127.0.0.1:3010/caidavzlabot/                    # 200 (SPA shell)
+curl -i http://127.0.0.1:3010/caidavzlabot/api/me              # 401 (sin X-Telegram-Init-Data)
 curl -i http://127.0.0.1:3010/health                            # {"status":"ok","db":"connected"}
 ```
+
+La WebApp se valida con HMAC del `initData` que Telegram inyecta. No
+hay forma de probar el API completo con curl plano sin generar un
+initData firmado con el bot token. Para debug rápido, abrir la app
+desde Telegram y mirar la pestaña Network en el devtools del cliente.
 
 ---
 
@@ -131,18 +137,20 @@ curl -i http://127.0.0.1:3010/health                            # {"status":"ok"
 
 Tres locales en `lang/{es,en,pt}.js` — mantenerlos sincronizados al agregar strings. Default es `es`.
 
-### Admin surfaces
+### Admin / user surfaces
 
-| Surface | Para qué |
-|---|---|
-| Telegram `/admin` | Acciones rápidas in-chat (banear grupo/user, +N meses, rename) |
-| Web `/caidavzlabot` | Search + paginación + audits (cuando crece, queda acá) |
+| Surface | Para quién | Para qué |
+|---|---|---|
+| Telegram `/admin` | Solo admins | Acciones rápidas in-chat (ban grupo/user, +N meses, rename) |
+| Web App `/caidavzlabot` | Todos los users de Telegram | 5 tabs: 👤 Mi cuenta + 🏆 Top + 🌐 Públicos + 📦 Grupos*¹ + 👥 Usuarios*¹ |
 
-Ambos coexisten — no es un reemplazo, es complemento.
+*¹ Las tabs de control (Grupos/Usuarios) solo aparecen para admins. La seguridad es backend: cualquier mutación va contra `requireAdmin` que verifica `initData.user.id` contra `ADMIN_USER_IDS`.
+
+Acceso a la WebApp: botón "📊 Mi cuenta" en el menú del bot (📎 al lado del input). Se setea al boot con `setChatMenuButton`.
 
 ### Notas de seguridad
 
-- `DASHBOARD_JWT_SECRET` no se commitea, vive solo en `.env` del server
-- Cookie del dashboard: HttpOnly + Secure + SameSite=Strict, scoped al `DASHBOARD_PATH`
-- Magic link TTL 5 min, sesión 12h, sin refresh — al expirar se vuelve a pedir `/dashboard_login`
-- Bot container expone puerto SOLO en `127.0.0.1` — nada de público fuera de nginx
+- Auth: HMAC-SHA256 del `initData` firmado por Telegram con `TELEGRAM_TOKEN`. Spoof imposible sin el token
+- `initData` aceptado solo si `auth_date` < 24h (anti-replay)
+- Rol se decide server-side cada request: `id in ADMIN_USER_IDS → admin`. No hay forma de "convertirse en admin" desde el cliente
+- Bot container expone puerto SOLO en `127.0.0.1:3010` — nada público fuera de nginx

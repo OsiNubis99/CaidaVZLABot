@@ -17,11 +17,11 @@ module.exports = {
   log_level: process.env.LOG_LEVEL || "info",
   admin_ids,
   stats_token: process.env.STATS_TOKEN || "",
-  // Admin dashboard. Both _SECRET and _BASE_URL required to enable.
-  // _PATH is the URL prefix the Express app mounts at; it must match
-  // the public path (nginx proxies the same prefix straight through,
-  // no rewrites). Default keeps the prefix self-descriptive on dev.
-  dashboard_jwt_secret: process.env.DASHBOARD_JWT_SECRET || "",
+  // Admin dashboard (Telegram Web App). Auth uses HMAC of initData
+  // against the bot's TELEGRAM_TOKEN — no separate JWT secret needed.
+  // _BASE_URL is the public URL passed to setChatMenuButton; _PATH is
+  // where the Express app mounts internally. They must agree (nginx
+  // proxies the same prefix straight through, no rewrites).
   dashboard_base_url: (process.env.DASHBOARD_BASE_URL || "").replace(/\/+$/, ""),
   dashboard_path: (() => {
     let p = process.env.DASHBOARD_PATH || "/dashboard";

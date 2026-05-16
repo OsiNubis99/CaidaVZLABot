@@ -2,27 +2,83 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CaidaVZLA — Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Caída</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <h1>CaidaVZLA Admin</h1>
-      <nav class="tabs">
-        <button class="tab" data-tab="groups">Grupos</button>
-        <button class="tab" data-tab="users">Usuarios</button>
-      </nav>
-      <div class="topbar-right">
-        <span id="who" class="muted"></span>
-        <button id="logout" class="btn btn-ghost">Logout</button>
-      </div>
-    </div>
-  </header>
+  <!-- Banner shown if the page is opened OUTSIDE Telegram (no WebApp.initData). -->
+  <div id="not-in-telegram" class="banner" hidden>
+    <h2>Abrime desde Telegram</h2>
+    <p>
+      Esta página es una Telegram Web App. Abrila desde el menú del bot
+      <strong>@CaidaVZLABot</strong> (📎 al lado del input).
+    </p>
+  </div>
 
-  <main class="container">
-    <section id="tab-groups" class="tab-panel">
+  <main id="app" hidden>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <h1 id="page-title">Mi cuenta</h1>
+        <span id="who" class="muted"></span>
+      </div>
+      <nav id="tabs" class="tabs"></nav>
+    </header>
+
+    <!-- ─── Mi cuenta ─── -->
+    <section id="tab-me" class="tab-panel">
+      <div class="cards-row" id="me-kpis"></div>
+      <div class="card">
+        <div class="card-title">Cantos (vivas / total)</div>
+        <div id="me-sings"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Preferencias</div>
+        <label class="row-toggle">
+          <span>
+            <strong>DM cuando sea mi turno</strong>
+            <small class="muted">El bot te avisa por mensaje privado</small>
+          </span>
+          <input type="checkbox" id="me-notify" />
+        </label>
+      </div>
+    </section>
+
+    <!-- ─── Top ─── -->
+    <section id="tab-top" class="tab-panel" hidden>
+      <div class="toolbar">
+        <select id="top-limit" class="input">
+          <option value="10">Top 10</option>
+          <option value="25" selected>Top 25</option>
+          <option value="50">Top 50</option>
+          <option value="100">Top 100</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Jugador</th>
+              <th>Partidas</th>
+              <th>Wins</th>
+              <th>Custom</th>
+              <th>Caídas</th>
+            </tr>
+          </thead>
+          <tbody id="top-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Grupos públicos ─── -->
+    <section id="tab-public" class="tab-panel" hidden>
+      <div id="public-list"></div>
+    </section>
+
+    <!-- ─── Grupos (admin) ─── -->
+    <section id="tab-groups" class="tab-panel" hidden>
       <div class="toolbar">
         <input
           type="search"
@@ -32,9 +88,9 @@
           autocomplete="off"
         />
         <select id="groups-sort" class="input">
-          <option value="name">Orden: nombre</option>
-          <option value="active">Orden: más activos</option>
-          <option value="public">Orden: públicos primero</option>
+          <option value="name">Nombre</option>
+          <option value="active">Más activos</option>
+          <option value="public">Públicos primero</option>
         </select>
         <span id="groups-summary" class="muted"></span>
       </div>
@@ -46,9 +102,8 @@
               <th>id_group</th>
               <th>Público</th>
               <th>Baneado</th>
-              <th>Pagado hasta</th>
+              <th>Pagado</th>
               <th>Partidas</th>
-              <th>Creado</th>
               <th class="col-actions">Acciones</th>
             </tr>
           </thead>
@@ -58,6 +113,7 @@
       <div class="pager" id="groups-pager"></div>
     </section>
 
+    <!-- ─── Usuarios (admin) ─── -->
     <section id="tab-users" class="tab-panel" hidden>
       <div class="toolbar">
         <input
@@ -68,9 +124,9 @@
           autocomplete="off"
         />
         <select id="users-sort" class="input">
-          <option value="name">Orden: nombre</option>
-          <option value="wins">Orden: más wins</option>
-          <option value="banned">Orden: baneados primero</option>
+          <option value="name">Nombre</option>
+          <option value="wins">Más wins</option>
+          <option value="banned">Baneados primero</option>
         </select>
         <span id="users-summary" class="muted"></span>
       </div>
@@ -79,11 +135,10 @@
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>@username</th>
-              <th>id_user</th>
+              <th>@user</th>
+              <th>id</th>
               <th>Partidas</th>
               <th>Wins</th>
-              <th>Win custom</th>
               <th>Caídas</th>
               <th>Baneado</th>
               <th class="col-actions">Acciones</th>
@@ -97,7 +152,6 @@
   </main>
 
   <div id="toast" class="toast" hidden></div>
-
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,22 +1,30 @@
 /**
- * Admin dashboard HTTP surface.
+ * Admin/user dashboard HTTP surface — Telegram Web App.
  *
- *   GET  /dashboard/auth?token=<magic>      exchange magic for session cookie
- *   POST /dashboard/api/logout              clear session cookie
- *   GET  /dashboard/api/me                  who am I (admin id)
- *   GET  /dashboard/api/groups              list paged groups
- *   GET  /dashboard/api/groups/:id          group detail (raw row)
- *   POST /dashboard/api/groups/:id/public   { value: bool }
- *   POST /dashboard/api/groups/:id/banned   { value: bool }
- *   POST /dashboard/api/groups/:id/paid     { months: int }
- *   POST /dashboard/api/groups/:id/rename   { name: string }
- *   DELETE /dashboard/api/groups/:id        remove group row
- *   GET  /dashboard/api/users               list paged users
- *   GET  /dashboard/api/users/:id           user detail (raw row)
- *   POST /dashboard/api/users/:id/banned    { value: bool }
+ * Auth: cada request lleva `X-Telegram-Init-Data` (lo agrega la SPA
+ * desde `window.Telegram.WebApp.initData`). El middleware verifica el
+ * HMAC contra el bot token y emite el rol.
  *
- * Auth: every /api/* and the index HTML go through dashboardAuth.requireSession.
- * /auth is the only public endpoint.
+ *   USER-tier (cualquier user de Telegram con initData válido):
+ *     GET  /api/me                       perfil + stats personales + role
+ *     POST /api/me/notify                { value: bool }  notify_on_turn
+ *     GET  /api/leaderboard?limit        top global
+ *     GET  /api/groups/public            grupos públicos con link
+ *
+ *   ADMIN-tier (además, id en ADMIN_USER_IDS):
+ *     GET  /api/groups                   lista paginada (todos)
+ *     GET  /api/groups/:id               detalle (raw)
+ *     POST /api/groups/:id/public        { value: bool }
+ *     POST /api/groups/:id/banned        { value: bool }
+ *     POST /api/groups/:id/paid          { months: int }
+ *     POST /api/groups/:id/rename        { name: string }
+ *     DEL  /api/groups/:id
+ *     GET  /api/users                    lista paginada
+ *     GET  /api/users/:id                detalle (raw)
+ *     POST /api/users/:id/banned         { value: bool }
+ *
+ * Static SPA: pasa por `requireAuth` para no exponerla a curl anónimo;
+ * Telegram Web Apps siempre llevan initData en el primer render.
  */
 const path = require("path");
 const express = require("express");
@@ -42,45 +50,102 @@ function asBool(v) {
   return v === true || v === "true" || v === 1 || v === "1";
 }
 
+/**
+ * Project a public-facing copy of a user row.
+ * Strips nothing right now but keeps a single funnel so we can scrub
+ * fields if we ever add anything private.
+ */
+function projectUser(u) {
+  if (!u) return null;
+  return u;
+}
+
 function build(bot) {
   const router = express.Router();
 
-  // ─── public: magic-link exchange ────────────────────────────────────
-  router.get("/auth", (req, res) => {
-    if (!auth.isEnabled()) {
-      return res.status(503).send("Dashboard disabled.");
-    }
-    const adminId = auth.verifyMagic(req.query.token);
-    if (!adminId) {
-      return res.status(401).send(
-        "Magic link is invalid or expired. Run /dashboard_login in the bot to get a new one.",
-      );
-    }
-    auth.setSessionCookie(res, adminId);
-    res.redirect(`${env.dashboard_path}/`);
-  });
-
-  // ─── static files ──────────────────────────────────────────────────
-  // login.html is public so unauth users see a friendly message instead
-  // of a redirect loop. Everything else under /dashboard/ requires auth.
+  // Static SPA — login.html is the only fully public file; everything
+  // else inside the SPA is functionally useless without a valid
+  // initData header anyway, but we still gate at the HTML level so
+  // browsers visiting the URL outside Telegram get a 401 + the
+  // "open me in Telegram" page.
   router.get("/login.html", (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, "login.html"));
   });
 
-  router.use("/api", auth.requireSession("api"));
-  router.use(auth.requireSession("page"), express.static(PUBLIC_DIR, { index: "index.html" }));
+  router.use("/api", auth.requireAuth);
 
-  // ─── API ────────────────────────────────────────────────────────────
-  router.get("/api/me", (req, res) => {
-    res.json({ admin_id: req.adminId });
+  // ─── USER tier ──────────────────────────────────────────────────────
+  router.get("/api/me", async (req, res) => {
+    try {
+      const u = await UserController.getOneById(req.tgUser.id);
+      res.json({
+        role: req.role,
+        telegram: req.tgUser,
+        user: projectUser(u), // null if the user has never registered (never /unirse'd)
+      });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/me failed");
+      res.status(500).json({ error: "internal" });
+    }
   });
 
-  router.post("/api/logout", (req, res) => {
-    auth.clearSessionCookie(res);
-    res.json({ ok: true });
+  router.post("/api/me/notify", async (req, res) => {
+    try {
+      await UserController.setNotifyOnTurn(req.tgUser.id, asBool(req.body.value));
+      const flag = await UserController.getNotifyOnTurn(req.tgUser.id);
+      res.json({ notify_on_turn: flag });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/me/notify failed");
+      res.status(500).json({ error: "internal" });
+    }
   });
 
-  // Groups
+  router.get("/api/leaderboard", async (req, res) => {
+    try {
+      const limit = clampPageSize(req.query.limit, 25, 100);
+      const rows = await UserController.top(limit);
+      res.json({ rows, limit });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/leaderboard failed");
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
+  router.get("/api/groups/public", async (req, res) => {
+    try {
+      const groups = await GroupController.listPublic();
+      // Try to attach invite link, best-effort. Failure here is
+      // common (bot not admin, group private, etc.) — we just omit.
+      const rows = await Promise.all(
+        groups.map(async (g) => {
+          let invite = null;
+          try {
+            invite = await bot.exportChatInviteLink(g.id_group);
+          } catch {
+            /* swallow — surface as null */
+          }
+          return {
+            id_group: g.id_group,
+            name: g.name,
+            games_played: g.games_played || 0,
+            invite,
+          };
+        }),
+      );
+      res.json({ rows });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/groups/public failed");
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
+  // ─── ADMIN tier ─────────────────────────────────────────────────────
+  // Note: requireAdmin runs AFTER requireAuth (router.use above), so
+  // req.tgUser + req.role are already populated.
+  router.use("/api/groups", auth.requireAdmin);
+  // /api/groups/public was already handled above, so the requireAdmin
+  // gate applies to everything else.
+
   router.get("/api/groups", async (req, res) => {
     try {
       const result = await GroupController.listPaged({
@@ -169,7 +234,8 @@ function build(bot) {
     }
   });
 
-  // Users
+  router.use("/api/users", auth.requireAdmin);
+
   router.get("/api/users", async (req, res) => {
     try {
       const result = await UserController.listPaged({
@@ -206,6 +272,12 @@ function build(bot) {
       res.status(500).json({ error: "internal" });
     }
   });
+
+  // Static SPA. Anyone landing here without initData will get 401 from
+  // the API on first fetch, and the SPA shows a "open me in Telegram"
+  // banner. We don't gate the static files themselves so the SPA can
+  // render and surface the proper error UX.
+  router.use(express.static(PUBLIC_DIR, { index: "index.html" }));
 
   return router;
 }

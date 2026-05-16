@@ -1,143 +1,141 @@
 /**
- * Admin dashboard auth — Telegram magic-link → JWT cookie.
+ * Auth para la Telegram Web App.
  *
- * Two token types, both HS256-signed with DASHBOARD_JWT_SECRET:
- *   - "magic" : one-shot, 5 min TTL, embedded in the URL the bot DMs.
- *   - "sess"  : session, 12 h TTL, stored in HttpOnly cookie after the
- *               magic link is exchanged.
+ * Telegram inyecta `initData` en `window.Telegram.WebApp.initData` cuando
+ * el usuario abre la app desde el botón del menú del bot. El cliente la
+ * pasa al backend en el header `X-Telegram-Init-Data` en cada request.
  *
- * The session token is *not* a refresh token. When it expires the admin
- * has to run /dashboard_login again. That's fine for a 1-admin tool.
+ * Verificación (algoritmo oficial de Telegram):
+ *   1. Parsear initData como query-string (URL-encoded)
+ *   2. Tomar todos los pares excepto "hash", ordenarlos por key
+ *   3. data_check_string = "<k1>=<v1>\n<k2>=<v2>\n..."
+ *   4. secret_key  = HMAC_SHA256(key="WebAppData", message=BOT_TOKEN)
+ *   5. computed    = HMAC_SHA256(key=secret_key,   message=data_check_string)
+ *   6. computed === initData.hash  → válido
+ *
+ * Aceptamos solo initData con `auth_date` reciente (<= INIT_DATA_TTL).
+ *
+ * Tres tiers de middleware:
+ *   requireAuth  — cualquier user de Telegram con initData válido
+ *   requireAdmin — además, su id tiene que estar en ADMIN_USER_IDS
+ *   (público sin auth) — no hay endpoints así por ahora
+ *
+ * No hay sesión persistente: cada request lleva el initData. La WebApp
+ * de Telegram refresca el initData internamente, no nos preocupamos.
  */
-const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const env = require("../config/env");
 
-// Inlined to avoid a circular require: services/admin.js pulls in
-// config/server.js which mounts this module.
+// Telegram sugiere 24h de TTL, pero somos más agresivos — la app le va a
+// pegar al server seguido, y si pasa un día sin tocar, mejor pedimos
+// reabrir.
+const INIT_DATA_TTL_SECONDS = 24 * 60 * 60;
+const HEADER_NAME = "x-telegram-init-data";
+
+function isEnabled() {
+  return Boolean(env.token && env.dashboard_base_url);
+}
+
 function isAdminId(id) {
   return env.admin_ids.includes(String(id));
 }
 
-const MAGIC_TTL_SECONDS = 5 * 60;
-const SESSION_TTL_SECONDS = 12 * 60 * 60;
-const COOKIE_NAME = "dash_session";
-
-function isEnabled() {
-  return Boolean(env.dashboard_jwt_secret && env.dashboard_base_url);
-}
-
-function signMagic(adminId) {
-  return jwt.sign(
-    { type: "magic", admin_id: String(adminId) },
-    env.dashboard_jwt_secret,
-    { expiresIn: MAGIC_TTL_SECONDS },
-  );
-}
-
-function signSession(adminId) {
-  return jwt.sign(
-    { type: "sess", admin_id: String(adminId) },
-    env.dashboard_jwt_secret,
-    { expiresIn: SESSION_TTL_SECONDS },
-  );
-}
-
 /**
- * Verify and consume a magic token. Returns admin_id on success, null on
- * any failure (expired, wrong type, bad signature, not in admin list).
+ * Validate initData. Returns the parsed Telegram user object on success
+ * (with id/first_name/last_name/username) or null on any failure.
  */
-function verifyMagic(token) {
+function verifyInitData(initData) {
+  if (!initData || typeof initData !== "string") return null;
+  if (!env.token) return null;
+
+  let params;
   try {
-    const payload = jwt.verify(token, env.dashboard_jwt_secret);
-    if (payload.type !== "magic") return null;
-    if (!isAdminId(payload.admin_id)) return null;
-    return payload.admin_id;
+    params = new URLSearchParams(initData);
   } catch {
     return null;
   }
-}
 
-function verifySession(token) {
+  const receivedHash = params.get("hash");
+  if (!receivedHash) return null;
+  params.delete("hash");
+
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+
+  const secretKey = crypto
+    .createHmac("sha256", "WebAppData")
+    .update(env.token)
+    .digest();
+  const computedHash = crypto
+    .createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest("hex");
+
+  // timingSafeEqual to dodge timing attacks on the comparison.
+  const a = Buffer.from(computedHash, "hex");
+  const b = Buffer.from(receivedHash, "hex");
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  // Freshness check: stale initData (laptop left open for days, etc.)
+  // is treated as expired.
+  const authDate = parseInt(params.get("auth_date"), 10);
+  if (!Number.isFinite(authDate)) return null;
+  if (Date.now() / 1000 - authDate > INIT_DATA_TTL_SECONDS) return null;
+
+  let user;
   try {
-    const payload = jwt.verify(token, env.dashboard_jwt_secret);
-    if (payload.type !== "sess") return null;
-    if (!isAdminId(payload.admin_id)) return null;
-    return payload.admin_id;
+    user = JSON.parse(params.get("user") || "null");
   } catch {
     return null;
   }
+  if (!user || !user.id) return null;
+  return user;
 }
 
 /**
- * Resolve the admin from the session cookie (or null).
+ * Middleware: any Telegram user with valid initData passes through.
+ * Attaches `req.tgUser` and `req.role` ("admin" | "user").
  */
-function resolveSession(req) {
-  if (!isEnabled()) return null;
-  const token = req.cookies && req.cookies[COOKIE_NAME];
-  if (!token) return null;
-  return verifySession(token);
+function requireAuth(req, res, next) {
+  if (!isEnabled()) {
+    return res.status(503).json({ error: "dashboard_disabled" });
+  }
+  const initData = req.get(HEADER_NAME);
+  const user = verifyInitData(initData);
+  if (!user) {
+    return res.status(401).json({ error: "unauthorized" });
+  }
+  req.tgUser = user;
+  req.role = isAdminId(user.id) ? "admin" : "user";
+  next();
 }
 
 /**
- * Express middleware factory. `mode` controls failure behavior:
- *   - "api"  → 401 JSON
- *   - "page" → 302 redirect to login.html
- *
- * Two flavors instead of inspecting req.path because the router mounts
- * each at a different sub-path; `req.path` is relative to that mount,
- * so a single middleware can't tell them apart from req alone.
+ * Middleware: admin tier. Use AFTER requireAuth in the chain.
+ * (Or standalone — it calls requireAuth internally if req.tgUser missing.)
  */
-function requireSession(mode = "page") {
-  return function requireSessionMw(req, res, next) {
-    if (!isEnabled()) {
-      return res.status(503).json({ error: "dashboard_disabled" });
+function requireAdmin(req, res, next) {
+  const proceed = () => {
+    if (req.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
     }
-    const adminId = resolveSession(req);
-    if (!adminId) {
-      if (mode === "api") {
-        return res.status(401).json({ error: "unauthorized" });
-      }
-      return res.redirect(`${env.dashboard_path}/login.html`);
-    }
-    req.adminId = adminId;
     next();
   };
-}
-
-function buildMagicUrl(adminId) {
-  const token = signMagic(adminId);
-  return `${env.dashboard_base_url}/auth?token=${encodeURIComponent(token)}`;
-}
-
-function setSessionCookie(res, adminId) {
-  const token = signSession(adminId);
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: SESSION_TTL_SECONDS * 1000,
-    // Scope to the public path prefix so the cookie is sent on every
-    // /dashboard/* (or /caidavzlabot/*) request but not the rest of
-    // the site that may share the domain.
-    path: env.dashboard_path,
+  if (req.tgUser) return proceed();
+  requireAuth(req, res, (err) => {
+    if (err) return next(err);
+    proceed();
   });
-}
-
-function clearSessionCookie(res) {
-  res.clearCookie(COOKIE_NAME, { path: env.dashboard_path });
 }
 
 module.exports = {
   isEnabled,
-  signMagic,
-  signSession,
-  verifyMagic,
-  verifySession,
-  requireSession,
-  buildMagicUrl,
-  setSessionCookie,
-  clearSessionCookie,
-  COOKIE_NAME,
-  MAGIC_TTL_SECONDS,
-  SESSION_TTL_SECONDS,
+  isAdminId,
+  verifyInitData,
+  requireAuth,
+  requireAdmin,
+  INIT_DATA_TTL_SECONDS,
+  HEADER_NAME,
 };

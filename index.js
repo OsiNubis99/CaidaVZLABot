@@ -3,7 +3,6 @@ const bot = require("./config/server");
 const game = require("./services/game");
 const admin = require("./services/admin");
 const adminUI = require("./services/adminUI");
-const dashboardAuth = require("./services/dashboardAuth");
 const cards = require("./services/cards");
 const audio = require("./services/audio");
 const gameReaper = require("./services/gameReaper");
@@ -11,6 +10,7 @@ const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
 const events = require("./services/events");
 const configUI = require("./services/configUI");
+const env = require("./config/env");
 const logger = require("./config/logger");
 const keyboard = require("./templates/keyboard");
 const RequestDTO = require("./class/RequestDTO");
@@ -139,7 +139,6 @@ const COMMAND_LIMITS = {
   "/stats": { windowMs: 5_000, max: 5 },
   "/list_groups": { windowMs: 10_000, max: 3 },
   "/admin": { windowMs: 5_000, max: 10 },
-  "/dashboard_login": { windowMs: 30_000, max: 3 },
   "/notify": { windowMs: 5_000, max: 5 },
   "/historial": { windowMs: 30_000, max: 3 },
 };
@@ -647,48 +646,6 @@ bot.onText(
   }),
 );
 
-// /dashboard_login: DM a one-shot magic link to the web admin. Only
-// useful in a private chat with the bot — the link grants 12h of
-// session-cookie access to /dashboard.
-bot.onText(
-  /\/dashboard_login/,
-  safe("/dashboard_login", async (msg) => {
-    if (await rateLimited(msg, "/dashboard_login")) return;
-    if (!admin.is_admin(msg.from.id)) {
-      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person);
-      return;
-    }
-    if (!dashboardAuth.isEnabled()) {
-      await bot.sendMessage(
-        msg.chat.id,
-        "Dashboard deshabilitado. Configurá DASHBOARD_JWT_SECRET y DASHBOARD_BASE_URL en el .env.",
-      );
-      return;
-    }
-    const url = dashboardAuth.buildMagicUrl(msg.from.id);
-    // Always DM the link — never echo it in a group, even if /dashboard_login
-    // is somehow typed there.
-    try {
-      await bot.sendMessage(
-        msg.from.id,
-        `🔐 Magic link (válido 5 min):\n${url}\n\nAl tocarlo se setea una sesión de 12h.`,
-        { disable_web_page_preview: true },
-      );
-      if (String(msg.chat.id) !== String(msg.from.id)) {
-        await bot.sendMessage(msg.chat.id, "Te DMié el link.", {
-          reply_to_message_id: msg.message_id,
-        });
-      }
-    } catch (err) {
-      logger.error({ err: err.message, user_id: msg.from.id }, "/dashboard_login DM failed");
-      await bot.sendMessage(
-        msg.chat.id,
-        "No pude DM-arte. Abrí chat privado con el bot y volvé a intentar.",
-      );
-    }
-  }),
-);
-
 // Intercept plain-text messages from admins who are in a rename flow.
 bot.on(
   "message",
@@ -895,6 +852,29 @@ bot.setMyCommands([
   { command: "notify", description: "Avisar por DM cuando sea tu turno (on/off)" },
   { command: "historial", description: "Resumen de la última partida del grupo" },
 ]);
+
+// Set the persistent menu button (📎 next to the input in DMs with the
+// bot) to open the Telegram Web App. Idempotent — Telegram is happy to
+// receive the same setting repeatedly.
+//
+// The button is set "globally" (no chat_id), so it applies to every user
+// who DMs the bot, admin or not. Tab visibility inside the app is the
+// thing that differentiates admin vs regular user.
+if (env.dashboard_base_url) {
+  const webAppUrl = env.dashboard_base_url.endsWith("/")
+    ? env.dashboard_base_url
+    : env.dashboard_base_url + "/";
+  bot
+    .setChatMenuButton({
+      menu_button: {
+        type: "web_app",
+        text: "📊 Mi cuenta",
+        web_app: { url: webAppUrl },
+      },
+    })
+    .then(() => logger.info({ url: webAppUrl }, "chat menu button set"))
+    .catch((err) => logger.warn({ err: err.message }, "setChatMenuButton failed"));
+}
 
 // Prune the events table once a day so it doesn't grow forever.
 setInterval(
