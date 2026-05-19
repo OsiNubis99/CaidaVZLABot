@@ -40,32 +40,8 @@ services:
       # Opt-in verbose decision trace for the pro CPU. Set in .env when
       # debugging a reported bad pick; leave off in steady state.
       DEBUG_CPU_DECISIONS: ${DEBUG_CPU_DECISIONS:-}
-      DASHBOARD_JWT_SECRET: ${DASHBOARD_JWT_SECRET:-}
       DASHBOARD_BASE_URL: ${DASHBOARD_BASE_URL:-}
       DASHBOARD_PATH: ${DASHBOARD_PATH:-}
 
-  # Daily pg_dump retained on its own volume. Retention: 14 daily / 4 weekly / 3 monthly.
-  # Image is maintained and pinned to the postgres major version we use.
-  backup:
-    image: prodrigestivill/postgres-backup-local:15
-    container_name: caida-backup
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      SCHEDULE: "@daily"
-      BACKUP_KEEP_DAYS: 14
-      BACKUP_KEEP_WEEKS: 4
-      BACKUP_KEEP_MONTHS: 3
-      HEALTHCHECK_PORT: 8080
-    volumes:
-      - caida-backups:/backups
-
 volumes:
   caida-pgdata:
-  caida-backups:

@@ -32,7 +32,7 @@ npm run build    # output a dashboard-ui/dist/
 ```
 ~/Repos/Bots/CaidaVZLABot/      repo deploy (mismo origin, branch develop)
    ├── .env                     vars de producción (NO commitear)
-   ├── docker-compose.yml       define caida-postgres / caida-bot / caida-backup
+   ├── docker-compose.yml       define caida-postgres / caida-bot
    └── …
 /etc/nginx/sites-enabled/
    ├── 00-http-redirect.conf    todo :80 → :443
@@ -56,13 +56,12 @@ npm run build    # output a dashboard-ui/dist/
 
 ### Stack del bot
 
-Tres containers gestionados por docker-compose:
+Dos containers gestionados por docker-compose:
 
 | Container | Imagen | Notas |
 |---|---|---|
 | `caida-postgres` | postgres:15-alpine | volumen `caida-pgdata` |
 | `caida-bot` | local build de Dockerfile | publica `127.0.0.1:3010:3000` |
-| `caida-backup` | prodrigestivill/postgres-backup-local:15 | pg_dump diario, 14d/4w/3m retention |
 
 `docker` está en grupo del usuario `andres` — `docker compose …` corre sin sudo.
 
@@ -107,7 +106,6 @@ Cambios que SÍ requieren sudo (pedírselos al usuario):
 ```sh
 docker logs --tail 100 -f caida-bot           # bot
 docker logs --tail 50 caida-postgres          # pg
-docker logs --tail 50 caida-backup            # cron de backups
 ```
 
 ### DB access
