@@ -40,6 +40,11 @@ class Game {
     this.table_order = "";
     this.took = [0, 0, 0, 0];
     this._dealerSyncCandidate = null;
+    // Scoring slot of a dealer whose pegar-en-mesa points crossed the
+    // winning threshold but whose win is deferred because mata_mesa can
+    // still reverse it. Resolved on the first play of the deck (see
+    // play_card). null = no pending mesa win.
+    this._pendingMesaWinSlot = null;
     // Epoch ms when the first deck was dealt. Used by the game-reaper
     // cron to auto-cancel games that exceed config.max_game_duration_minutes.
     // Stays null until shuffle() runs for the first time (i.e., the
@@ -68,7 +73,7 @@ class Game {
   }
 
   /**
-   * @returns {String} the current player display name.
+   * Display name for a single user, mention-style.
    *
    * Prefers @username so Telegram parses it as a mention and pings the
    * user even when they have the group muted (notification override on
@@ -79,12 +84,21 @@ class Game {
    * Future: lift this into a {text, entity} pair so we can emit a
    * `text_mention` MessageEntity for users without username — that's
    * the only way to notify them too.
+   *
+   * @param {Object} user
+   * @returns {String|null}
+   */
+  mentionName(user) {
+    if (!user) return null;
+    if (user.username) return "@" + user.username;
+    return user.first_name || null;
+  }
+
+  /**
+   * @returns {String} the current player display name (mention-style).
    */
   playerName() {
-    const u = this.users[this.player];
-    if (!u) return null;
-    if (u.username) return "@" + u.username;
-    return u.first_name || null;
+    return this.mentionName(this.users[this.player]);
   }
 
   /**
@@ -329,9 +343,27 @@ class Game {
       }
       added += this.table_order;
       if (points > 0) {
-        if (this.increase_points(this.users.length - 1, points))
-          return this.kill(this.users.length - 1);
+        const dealerIdx = this.users.length - 1;
+        const crossed = this.increase_points(dealerIdx, points);
         added += resp.sync_cards + points + "\n";
+        if (crossed) {
+          // A pegar-en-mesa win is reversible only when mata_mesa is on
+          // and the first player can still caída the dealt sync card.
+          // In that case defer the endgame: the win is resolved on the
+          // first play (see play_card). Otherwise end the game now.
+          const reversible =
+            this.config.mata_mesa === "on" && this._dealerSyncCandidate;
+          if (reversible) {
+            this._pendingMesaWinSlot = this.scoringSlot(dealerIdx);
+            const L = this._lang();
+            added += L.mesa_win_pending
+              .replace("{dealer}", this.mentionName(this.users[dealerIdx]))
+              .replace("{pts}", String(this.points[this.scoringSlot(dealerIdx)]))
+              .replace("{p0}", this.mentionName(this.users[0]));
+          } else {
+            return this.kill(dealerIdx);
+          }
+        }
       } else {
         if (start_by > 0) {
           if (this.increase_points(0, 1)) return this.kill(0);
@@ -465,6 +497,21 @@ class Game {
         }
         // Only the first play of a deck can trigger mata_mesa.
         this._dealerSyncCandidate = null;
+        // Resolve a deferred pegar-en-mesa win (set in handing_out_cards).
+        // mata_mesa already ran above this line, so if the dealer's mesa
+        // points survived (>= threshold) the first player did NOT kill
+        // them — the dealer's win, which happened first at deal time,
+        // takes priority over any win the first player just scored on
+        // this same turn. If mata_mesa reduced them below the threshold,
+        // fall through to the normal win check (the first player may win
+        // with their own caída points).
+        if (this._pendingMesaWinSlot != null) {
+          const slot = this._pendingMesaWinSlot;
+          this._pendingMesaWinSlot = null;
+          if (this.points[slot] >= this.config.points) {
+            return this.kill(slot, response + this.renderShortStatus());
+          }
+        }
         // Single win-check point for the play_card path. We pass the
         // current response + the short-status snapshot to kill() so the
         // victory message is preceded by what just happened.

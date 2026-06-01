@@ -30,21 +30,22 @@ describe("Game.print i18n + clean layout", () => {
     const g = mk("es");
     const out = g.print(true);
     expect(out).toContain("Última carta: 7 de Copa");
-    expect(out).toContain("Turno: A");
+    // playerName() mentions @username so muted-group users get pinged.
+    expect(out).toContain("Turno: @a");
   });
 
   it("English header has Last card and Turn", () => {
     const g = mk("en");
     const out = g.print(true);
     expect(out).toContain("Last card: 7 of Copa");
-    expect(out).toContain("Turn: A");
+    expect(out).toContain("Turn: @a");
   });
 
   it("Portuguese header has Última carta and Vez", () => {
     const g = mk("pt");
     const out = g.print(true);
     expect(out).toContain("Última carta: 7 de Copa");
-    expect(out).toContain("Vez: A");
+    expect(out).toContain("Vez: @a");
   });
 
   it("falls back to es for unknown locale", () => {
@@ -194,7 +195,7 @@ describe("Game.print i18n + clean layout", () => {
     expect(out).toContain("4"); // mesa shows the 4 placed at position 3
     expect(out).toContain("Última carta: 11 de Copa");
     expect(out).toMatch(/🔴 12.*\|.*🔵 9/);
-    expect(out).toContain("Turno: A");
+    expect(out).toContain("Turno: @a");
     // No per-player block.
     expect(out).not.toContain("cartas · sin canto");
   });

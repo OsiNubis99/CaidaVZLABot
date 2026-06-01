@@ -62,6 +62,8 @@ module.exports = {
   start_by_one_title: "Iniciar por 1",
   set_group_modes: "Escoge el nuevo modo de Juego",
   mata_mesa_msg: "🔄 Mata mesa: -{n} pts al dealer\n",
+  mesa_win_pending:
+    "⏳ {dealer} llegó a {pts} pegando en mesa. {p0} puede dar caída a la última carta para matarlos, o la partida termina.\n",
   sing_killed: "La caida mato el canto del jugador anterior!\n",
   sync_cards: "Pegado en mesa ",
   user_added: "Usuario agregado.",

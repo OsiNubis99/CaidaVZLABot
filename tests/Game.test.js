@@ -403,6 +403,96 @@ describe("Game", () => {
       // Player 0 got caída (+1) into slot 0 (also their partner idx 2).
       expect(g.points[0]).toBe(1);
     });
+
+    // ─── CVB-5: defer the endgame on a reversible pegar-en-mesa win ───
+    describe("endgame deferral (CVB-5)", () => {
+      // Build a 2p game and deal a brand-new deck (start_by=4) where the
+      // dealt mesa sequence 4->3->2->1 fully matches, so the dealer earns
+      // 4+3+2+1 = 10 sync points. With points threshold 10, that crosses.
+      function dealFullMesaMatch({ mata_mesa = "on", points = 10 }) {
+        const cfg = new Config({ ...game_modes[1], mata_mesa, mata_canto: "off" });
+        cfg.points = points;
+        const g = new Game("T", cfg);
+        g.join(makeUser(1, "U0"));
+        g.join(makeUser(2, "U1")); // U1 is the dealer (idx 1)
+        g.decks = 1;
+        // Deck order per new_cards(3,4): [mesa0,u,u, mesa1,u,u, mesa2,u,u, mesaFinal]
+        // value = position+1, position = floor(n/4).
+        // mesa: 12(pos3,val4), 8(pos2,val3), 4(pos1,val2), 0(pos0,val1).
+        g.deck = [12, 16, 20, 8, 24, 28, 4, 32, 36, 0];
+        g.users.forEach((u) => (u.cards = []));
+        return g;
+      }
+
+      it("mata_mesa on + dealer crosses threshold → defers, no kill", () => {
+        const g = dealFullMesaMatch({ mata_mesa: "on", points: 10 });
+        const response = g.handing_out_cards(4);
+        const dealerSlot = g.scoringSlot(g.users.length - 1);
+        expect(g.points[dealerSlot]).toBe(10); // crossed threshold
+        expect(g._pendingMesaWinSlot).toBe(dealerSlot); // deferred, not killed
+        expect(response).toContain("pegando en mesa"); // pending message shown
+        expect(response).not.toContain("🏆"); // no victory yet
+      });
+
+      it("mata_mesa off + dealer crosses threshold → ends immediately", () => {
+        const g = dealFullMesaMatch({ mata_mesa: "off", points: 10 });
+        const response = g.handing_out_cards(4);
+        expect(g._pendingMesaWinSlot).toBeNull(); // never deferred
+        // kill() returns { finished: true, response }
+        expect(response.finished).toBe(true);
+        expect(response.response).toContain("🏆"); // game over now
+      });
+
+      // For the resolve path, reuse primed() (post-deal state) and set the
+      // pending flag + a winning dealer score by hand, then play.
+      it("first player kills the mesa → win reverts, game continues", () => {
+        const g = primed({ mata_mesa: "on", syncPoints: 5, dealerExisting: 30 });
+        g.config.points = 30;
+        const dealerSlot = g.scoringSlot(g.dealerIdx());
+        g._pendingMesaWinSlot = dealerSlot;
+        const response = g.play_card("1", 0); // player 0 caídas the sync card
+        expect(g.points[dealerSlot]).toBe(25); // mata_mesa subtracted 5
+        expect(g._pendingMesaWinSlot).toBeNull(); // resolved
+        expect(response).not.toContain("🏆"); // nobody won
+      });
+
+      it("first player does NOT kill the mesa → dealer wins", () => {
+        const g = primed({ mata_mesa: "on", syncPoints: 5, dealerExisting: 30 });
+        g.config.points = 30;
+        const dealerSlot = g.scoringSlot(g.dealerIdx());
+        g._pendingMesaWinSlot = dealerSlot;
+        // Player 0 plays a card at position 0 → takes table[0] (set by
+        // primed) but it's not the sync card's position, so no caída.
+        g.users[0].cards = [new Card(1), new Card(13), new Card(17)]; // Card(1) = pos 0
+        const response = g.play_card("1", 0);
+        expect(g._pendingMesaWinSlot).toBeNull();
+        expect(response.finished).toBe(true);
+        expect(response.response).toContain("🏆"); // dealer wins
+        expect(response.response).toContain("U1"); // the dealer, not player 0
+      });
+
+      it("player 0 also reaches threshold but didn't kill → dealer wins (priority)", () => {
+        const g = primed({ mata_mesa: "on", syncPoints: 5, dealerExisting: 30 });
+        g.config.points = 30;
+        const dealerSlot = g.scoringSlot(g.dealerIdx());
+        g._pendingMesaWinSlot = dealerSlot;
+        g.points[0] = 30; // player 0 also at threshold
+        g.users[0].cards = [new Card(1), new Card(13), new Card(17)]; // no caída
+        const response = g.play_card("1", 0);
+        // Dealer's deferred win resolves first → dealer (U1) wins, not U0.
+        expect(response.finished).toBe(true);
+        expect(response.response).toContain("🏆");
+        expect(response.response).toContain("U1");
+      });
+
+      it("pending flag survives serialize → deserialize", () => {
+        const { serialize, deserialize } = require("../services/gameSerialize");
+        const g = primed({ mata_mesa: "on", syncPoints: 5, dealerExisting: 30 });
+        g._pendingMesaWinSlot = g.scoringSlot(g.dealerIdx());
+        const restored = deserialize(serialize(g));
+        expect(restored._pendingMesaWinSlot).toBe(g._pendingMesaWinSlot);
+      });
+    });
   });
 
   describe("started_at + reaper signal", () => {
