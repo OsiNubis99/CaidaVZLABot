@@ -91,6 +91,11 @@ action:sing       {}                   → declarar tu canto
 session:leave     {}
 ```
 
+**Payload de `action:play`:** en estado normal `cardIndex` es el índice de la carta
+en `you.hand`. En estado `startBy` (la mano es `{type:"startBy"}`), `cardIndex`
+lleva el **valor de dirección literal `1` o `4`** (NO un índice). `GameSession.play`
+lo lee como `dir = arg === 4 ? 4 : 1`.
+
 **Server → Cliente**
 ```
 session:state     { state }            → snapshot por-viewer; en join y tras CADA cambio

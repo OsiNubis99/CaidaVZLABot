@@ -8,8 +8,9 @@ import { TopTab } from "./tabs/TopTab";
 import { PublicTab } from "./tabs/PublicTab";
 import { GroupsTab } from "./tabs/GroupsTab";
 import { UsersTab } from "./tabs/UsersTab";
+import { GameTab } from "./game/GameTab";
 
-type TabId = "me" | "top" | "public" | "groups" | "users";
+type TabId = "play" | "me" | "top" | "public" | "groups" | "users";
 
 interface TabMeta {
   id: TabId;
@@ -19,6 +20,7 @@ interface TabMeta {
 }
 
 const TABS: TabMeta[] = [
+  { id: "play", label: "🎮 Jugar", title: "Jugar Caída", admin: false },
   { id: "me", label: "👤 Mi cuenta", title: "Mi cuenta", admin: false },
   { id: "top", label: "🏆 Top", title: "Top global", admin: false },
   { id: "public", label: "🌐 Públicos", title: "Grupos públicos", admin: false },
@@ -40,7 +42,9 @@ export default function App() {
 
   const [tab, setTab] = useState<TabId>(() => {
     const hash = (location.hash || "").slice(1) as TabId;
-    return ["me", "top", "public", "groups", "users"].includes(hash) ? hash : "me";
+    if (["play", "me", "top", "public", "groups", "users"].includes(hash)) return hash;
+    // Deep-linked into a game (startapp=<code>) → land on the play tab.
+    return getWebApp()?.initDataUnsafe?.start_param ? "play" : "me";
   });
 
   // Keep URL hash in sync so refreshing inside the WebApp keeps the tab.
@@ -90,6 +94,7 @@ export default function App() {
         </nav>
       </header>
 
+      {tab === "play" && <GameTab youId={me.data.telegram.id} />}
       {tab === "me" && <MeTab me={me.data} />}
       {tab === "top" && <TopTab />}
       {tab === "public" && <PublicTab />}

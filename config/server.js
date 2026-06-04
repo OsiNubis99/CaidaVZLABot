@@ -1,3 +1,4 @@
+const http = require("http");
 const bot = require("./bot");
 const db = require("./db");
 const env = require("./env");
@@ -5,6 +6,7 @@ const logger = require("./logger");
 const express = require("express");
 const dashboardAuth = require("../services/dashboardAuth");
 const dashboardApi = require("../services/dashboardApi");
+const wsServer = require("../services/realtime/wsServer");
 
 const app = express();
 
@@ -56,7 +58,18 @@ app.post(`/bot${env.token}`, (req, res) => {
   bot.processUpdate(req.body);
 });
 
-app.listen(env.port, () => {
+// Share one http.Server between Express and socket.io so the realtime WS
+// layer rides the same port (3000 → loopback :3010 → nginx). The WS server
+// is gated on the dashboard being enabled (same DASHBOARD_BASE_URL switch).
+const server = http.createServer(app);
+
+if (dashboardAuth.isEnabled()) {
+  wsServer.attach(server);
+} else {
+  logger.info("realtime ws disabled (set DASHBOARD_BASE_URL to enable)");
+}
+
+server.listen(env.port, () => {
   logger.info({ port: env.port }, "express server listening");
 });
 

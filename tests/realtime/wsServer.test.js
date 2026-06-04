@@ -1,0 +1,195 @@
+// Set a deterministic bot token BEFORE requiring anything that pulls in
+// config/env (which captures process.env at module load). Vitest isolates
+// the module registry per test file, so this token is scoped to this file.
+process.env.TELEGRAM_TOKEN = "TEST:wsServer-token";
+process.env.DASHBOARD_BASE_URL = "https://example.test/caidavzlabot";
+
+const crypto = require("crypto");
+const http = require("http");
+const { io: ioClient } = require("socket.io-client");
+
+const wsServer = require("../../services/realtime/wsServer");
+const sessionStore = require("../../services/realtime/sessionStore");
+const protocol = require("../../services/realtime/protocol");
+
+const { C2S, S2C } = protocol;
+
+/** Build a valid Telegram initData query-string signed with the test token,
+ *  matching the algorithm in dashboardAuth.verifyInitData. */
+function makeInitData(user, startParam) {
+  const params = new URLSearchParams();
+  params.set("auth_date", String(Math.floor(Date.now() / 1000)));
+  params.set("user", JSON.stringify(user));
+  if (startParam) params.set("start_param", startParam);
+  const dataCheckString = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+  const secretKey = crypto
+    .createHmac("sha256", "WebAppData")
+    .update(process.env.TELEGRAM_TOKEN)
+    .digest();
+  const hash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+  params.set("hash", hash);
+  return params.toString();
+}
+
+let server;
+let io;
+let port;
+const openSockets = new Set();
+
+function connect(initData) {
+  const sock = ioClient(`http://127.0.0.1:${port}`, {
+    auth: { initData },
+    transports: ["websocket"],
+    forceNew: true,
+    reconnection: false,
+  });
+  openSockets.add(sock);
+  sock.on("disconnect", () => openSockets.delete(sock));
+  return sock;
+}
+
+/** Resolve on the first matching event, reject on a timeout/error. */
+function waitFor(socket, event, ms = 2000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`timeout waiting for ${event}`)), ms);
+    socket.once(event, (payload) => {
+      clearTimeout(timer);
+      resolve(payload);
+    });
+  });
+}
+
+describe("wsServer (socket.io integration)", () => {
+  beforeAll(async () => {
+    server = http.createServer();
+    io = wsServer.attach(server);
+    await new Promise((res) => server.listen(0, "127.0.0.1", res));
+    port = server.address().port;
+  });
+
+  afterAll(async () => {
+    for (const s of openSockets) s.disconnect();
+    openSockets.clear();
+    // Close socket.io (terminates server-side sockets) then the http server.
+    await new Promise((res) => io.close(res));
+    await new Promise((res) => server.close(res));
+  });
+
+  beforeEach(() => sessionStore._clear());
+
+  it("rejects a handshake with invalid initData", async () => {
+    const sock = connect("garbage-not-signed");
+    try {
+      const err = await waitFor(sock, "connect_error");
+      expect(String(err.message)).toMatch(/unauthorized/);
+    } finally {
+      sock.disconnect();
+    }
+  });
+
+  it("accepts a valid handshake and creates a session", async () => {
+    const sock = connect(makeInitData({ id: 100, first_name: "Host" }));
+    try {
+      await waitFor(sock, "connect");
+      // Listen for the post-create state broadcast BEFORE emitting so the
+      // synchronous server-side emit can't race ahead of the listener.
+      const statePromise = waitFor(sock, S2C.SESSION_STATE);
+      const created = await new Promise((res) => sock.emit(C2S.SESSION_CREATE, {}, res));
+      expect(created.code).toMatch(/^CAIDA-[A-Z2-9]{4}$/);
+      const state = await statePromise;
+      expect(state.state.status).toBe("lobby");
+      expect(state.state.seats[0].name).toBe("Host");
+    } finally {
+      sock.disconnect();
+    }
+  });
+
+  it("a second client joins by code and both see the updated lobby", async () => {
+    const host = connect(makeInitData({ id: 200, first_name: "Host" }));
+    await waitFor(host, "connect");
+    const hostInitState = waitFor(host, S2C.SESSION_STATE);
+    const { code } = await new Promise((res) => host.emit(C2S.SESSION_CREATE, {}, res));
+    await hostInitState;
+
+    const guest = connect(makeInitData({ id: 201, first_name: "Guest" }));
+    await waitFor(guest, "connect");
+    // Register both listeners BEFORE emitting: the join handler broadcasts
+    // synchronously to host + guest, so a listener attached after emit could
+    // miss the event.
+    const hostUpdate = waitFor(host, S2C.SESSION_STATE);
+    const guestUpdate = waitFor(guest, S2C.SESSION_STATE);
+    guest.emit(C2S.SESSION_JOIN, { code });
+    const guestState = await guestUpdate;
+    const hostState = await hostUpdate;
+
+    expect(guestState.state.seats.length).toBe(2);
+    expect(hostState.state.seats.length).toBe(2);
+    // Per-viewer projection: each sees their own seat in `you`.
+    expect(guestState.state.you.seat).toBe(1);
+    expect(hostState.state.you.seat).toBe(0);
+
+    host.disconnect();
+    guest.disconnect();
+  });
+
+  it("errors on joining an unknown code", async () => {
+    const sock = connect(makeInitData({ id: 300, first_name: "X" }));
+    await waitFor(sock, "connect");
+    sock.emit(C2S.SESSION_JOIN, { code: "CAIDA-NOPE" });
+    const err = await waitFor(sock, S2C.SESSION_ERROR);
+    expect(err.code).toBe("session_not_found");
+    sock.disconnect();
+  });
+
+  it("host adds CPUs, starts, and the table reaches playing", async () => {
+    const host = connect(makeInitData({ id: 400, first_name: "Host" }));
+    await waitFor(host, "connect");
+    // Each action broadcasts state synchronously; emit-with-ack-callback for
+    // create, and for the rest pre-register the state listener before emit.
+    const initState = waitFor(host, S2C.SESSION_STATE);
+    await new Promise((res) => host.emit(C2S.SESSION_CREATE, {}, res));
+    await initState;
+
+    // Fill with 3 CPUs so a start() + CPU auto-step chain can run.
+    for (let i = 0; i < 3; i++) {
+      const st = waitFor(host, S2C.SESSION_STATE);
+      host.emit(C2S.SESSION_ADD_CPU, { difficulty: "easy" });
+      const seats = (await st).state.seats.length;
+      expect(seats).toBe(i + 2);
+    }
+
+    const playingState = waitFor(host, S2C.SESSION_STATE);
+    host.emit(C2S.SESSION_START, {});
+    const playing = await playingState;
+    expect(playing.state.status).toBe("playing");
+    // The host is seated and gets their own view (a startBy picker or cards).
+    expect(playing.state.you.seat).toBe(0);
+
+    host.disconnect();
+  });
+
+  it("a non-host cannot add a CPU", async () => {
+    const host = connect(makeInitData({ id: 500, first_name: "Host" }));
+    await waitFor(host, "connect");
+    const initState = waitFor(host, S2C.SESSION_STATE);
+    const { code } = await new Promise((res) => host.emit(C2S.SESSION_CREATE, {}, res));
+    await initState;
+
+    const guest = connect(makeInitData({ id: 501, first_name: "Guest" }));
+    await waitFor(guest, "connect");
+    const guestState = waitFor(guest, S2C.SESSION_STATE);
+    guest.emit(C2S.SESSION_JOIN, { code });
+    await guestState;
+
+    const errPromise = waitFor(guest, S2C.SESSION_ERROR);
+    guest.emit(C2S.SESSION_ADD_CPU, { difficulty: "pro" });
+    const err = await errPromise;
+    expect(err.code).toBe("not_host");
+
+    host.disconnect();
+    guest.disconnect();
+  });
+});

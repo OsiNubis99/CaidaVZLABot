@@ -17,8 +17,14 @@ interface Haptic {
   impactOccurred?: (style: "light" | "medium" | "heavy") => void;
 }
 
+interface InitDataUnsafe {
+  start_param?: string;
+  user?: { id: number; first_name?: string; last_name?: string; username?: string };
+}
+
 interface WebApp {
   initData: string;
+  initDataUnsafe?: InitDataUnsafe;
   themeParams: ThemeParams;
   HapticFeedback?: Haptic;
   ready: () => void;
@@ -40,6 +46,13 @@ export function getWebApp(): WebApp | null {
 export function initData(): string {
   const tg = getWebApp();
   return tg?.initData || "";
+}
+
+/** The `startapp` deep-link parameter, if the WebApp was opened via
+ *  `t.me/<bot>/app?startapp=<code>`. Empty string when absent. */
+export function startParam(): string {
+  const tg = getWebApp();
+  return tg?.initDataUnsafe?.start_param || "";
 }
 
 export function applyTheme() {
