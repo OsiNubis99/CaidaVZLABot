@@ -40,7 +40,11 @@ let port;
 const openSockets = new Set();
 
 function connect(initData) {
+  // The server mounts socket.io under DASHBOARD_PATH (default /dashboard)
+  // so it rides the nginx-proxied prefix; the client must use the same path.
+  const env = require("../../config/env");
   const sock = ioClient(`http://127.0.0.1:${port}`, {
+    path: `${env.dashboard_path}/socket.io/`,
     auth: { initData },
     transports: ["websocket"],
     forceNew: true,

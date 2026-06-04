@@ -17,6 +17,7 @@ const sessionStore = require("./sessionStore");
 const serializeForClient = require("./serializeForClient");
 const turnLoop = require("./turnLoop");
 const dashboardAuth = require("../dashboardAuth");
+const env = require("../../config/env");
 const logger = require("../../config/logger");
 
 const { C2S, S2C } = protocol;
@@ -279,8 +280,13 @@ function normalizeCode(code) {
 function attach(server) {
   if (io) return io;
   io = new Server(server, {
-    // The WebApp is same-origin behind nginx; CORS stays closed. socket.io
-    // mounts at the default /socket.io/ path which nginx proxies through.
+    // The WebApp is served under DASHBOARD_PATH (e.g. /caidavzlabot), and
+    // nginx only proxies that prefix to this process — the default root
+    // /socket.io/ would hit nginx's catch-all instead. Mount socket.io
+    // UNDER the same prefix so the handshake rides the dashboard location.
+    // The client mirrors this by deriving the path from its page URL.
+    path: `${env.dashboard_path}/socket.io/`,
+    // Same-origin behind nginx; CORS stays closed.
     serveClient: false,
   });
 

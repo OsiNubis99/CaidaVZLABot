@@ -42,9 +42,14 @@ export class GameSocket {
     }
 
     this.emitConn("connecting");
-    // Same-origin connection. socket.io infers the URL from the page when no
-    // URL is passed, so the build works under any nginx path prefix.
+    // Same-origin connection. The WebApp is served under a path prefix
+    // (e.g. /caidavzlabot/) that nginx proxies to the bot; the server mounts
+    // socket.io at `<prefix>/socket.io/`. Derive that prefix from our own
+    // page URL so the build stays prefix-agnostic: strip the trailing
+    // filename to get the directory, then append socket.io/.
+    const dir = window.location.pathname.replace(/[^/]*$/, "");
     this.socket = io({
+      path: `${dir}socket.io/`,
       auth: { initData: initData() },
       transports: ["websocket", "polling"],
       reconnection: true,
