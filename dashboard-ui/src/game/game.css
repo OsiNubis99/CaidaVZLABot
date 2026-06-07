@@ -99,8 +99,14 @@
 
 .pcard.is-clickable { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
 .pcard.is-playable { box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); }
-.pcard.is-clickable:hover,
-.pcard.is-clickable:focus-visible { transform: translateY(-8px); outline: none; }
+/* Lift only on true hover devices — on touch :hover sticks after a tap and
+   leaves one hand card raised above the rest. Touch gets a brief :active lift. */
+@media (hover: hover) {
+  .pcard.is-clickable:hover,
+  .pcard.is-clickable:focus-visible { transform: translateY(-8px); outline: none; }
+}
+.pcard.is-clickable:active { transform: translateY(-4px); }
+.pcard.is-clickable:focus { outline: none; }
 .pcard.is-highlighted {
   box-shadow: var(--turn-glow);
   border-color: var(--accent);
@@ -127,12 +133,16 @@
 .table-screen {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-height: calc(100dvh - 168px);
+  gap: 8px;
+  /* Own a fixed box that fits inside the Telegram WebView (header+tabs ≈ 150px)
+     and never scrolls — the mesa flexes to absorb slack (e.g. the canto bar). */
+  height: calc(100dvh - 150px);
+  min-height: 380px;
+  overflow: hidden;
 }
-.table-screen .mesa { flex: 1 1 auto; justify-content: center; }
-.table-screen .mesa-felt { flex: 1 1 auto; min-height: 150px; }
-.table-screen .table-bottom { margin-top: auto; }
+.table-screen .mesa { flex: 1 1 auto; min-height: 0; justify-content: center; }
+.table-screen .mesa-felt { flex: 1 1 auto; min-height: 0; }
+.table-screen .table-bottom { margin-top: auto; flex: 0 0 auto; }
 .table-topbar {
   display: flex;
   align-items: center;
@@ -239,7 +249,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 12px;
+  padding: 10px;
 }
 .mesa-empty { color: var(--text-muted); font-size: 13px; }
 
@@ -248,24 +258,48 @@
 .mesa-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 7px;
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6px;
   width: 100%;
-  max-width: 440px;
+  max-width: 420px;
+  margin: 0 auto;
+  /* Width gives the natural size; aspect-ratio (5 cols : 2 rows of card ratio)
+     sets the height. max-height ties it to the flexible felt so the mesa shrinks
+     when the canto bar appears instead of pushing the hand off-screen. */
+  aspect-ratio: 1040 / 638;
+  max-height: 100%;
 }
-.mesa-cell {
-  position: relative;
-  aspect-ratio: 208 / 319;
-}
+/* Every cell is an identical grid track, so filled and empty cells line up
+   exactly (the old aspect-ratio-per-cell drifted when the <img> drove height). */
+.mesa-cell { position: relative; min-width: 0; min-height: 0; }
 .mesa-cell-empty {
   border-radius: 8px;
   border: 1px dashed var(--border);
   background: rgba(255, 255, 255, 0.025);
 }
-/* In the grid, cards fill their cell (overrides the fixed pcard-* sizes). */
-.mesa-cell .pcard,
+/* The card absolutely fills its track and keeps its own ratio (contain), so it
+   never distorts and never drives the track height. drop-shadow follows the
+   contained card shape (a box-shadow would frame the whole track). */
+.mesa-cell .pcard {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  box-shadow: none;
+}
 .mesa-cell .pcard-img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+.mesa-cell .pcard.is-highlighted {
+  box-shadow: none;
+  border-color: transparent;
+}
+.mesa-cell .pcard.is-highlighted .pcard-img {
+  filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 7px var(--accent));
 }
 /* `both` keeps a staggered card at the "from" (hidden) state during its delay
    so a deck deal drops card by card instead of all flashing then animating. */
@@ -400,7 +434,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 7px 12px;
   border-radius: var(--radius);
   background: linear-gradient(90deg, rgba(47, 129, 247, 0.18), var(--bg-card));
   border: 1px solid var(--accent);
