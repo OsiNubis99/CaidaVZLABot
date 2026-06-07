@@ -316,4 +316,61 @@ describe("wsServer (socket.io integration)", () => {
       sessionSockets.delete(code);
     });
   });
+
+  // ── host reconfigures from the lobby ─────────────────────────────────────
+  describe("lobby config", () => {
+    const { handlers, sessionSockets } = wsServer._internal;
+
+    function fakeSocket(code, userId, name) {
+      const emitted = [];
+      const socket = {
+        emitted,
+        data: { code, user: { id: userId, first_name: name } },
+        emit: (event, payload) => emitted.push([event, payload]),
+      };
+      sessionSockets.set(code, new Set([socket]));
+      return socket;
+    }
+
+    it("lets the host change the rules and broadcasts the new config", () => {
+      const session = sessionStore.create({ userId: 970, name: "Host" });
+      const code = session.code;
+      const host = fakeSocket(code, 970, "Host");
+
+      handlers[C2S.SESSION_CONFIG](host, { config: { points: 30, mata_canto: "on" } });
+
+      expect(session.config.points).toBe(30);
+      expect(session.config.mata_canto).toBe("on");
+      expect(session.game.config.points).toBe(30);
+      const last = host.emitted[host.emitted.length - 1];
+      expect(last[0]).toBe(S2C.SESSION_STATE);
+      expect(last[1].state.config.points).toBe(30);
+      sessionSockets.delete(code);
+    });
+
+    it("clamps out-of-range values via sanitizeConfig", () => {
+      const session = sessionStore.create({ userId: 971, name: "Host" });
+      const code = session.code;
+      const host = fakeSocket(code, 971, "Host");
+
+      handlers[C2S.SESSION_CONFIG](host, { config: { points: 9999, type: "hack" } });
+
+      expect(session.config.points).toBe(100); // clamped
+      expect(session.config.type).toBe("individual"); // bad enum dropped → default kept
+      sessionSockets.delete(code);
+    });
+
+    it("rejects a non-host config change", () => {
+      const session = sessionStore.create({ userId: 980, name: "Host" });
+      session.addHuman({ userId: 981, name: "Guest" });
+      const code = session.code;
+      const guest = fakeSocket(code, 981, "Guest");
+
+      expect(() =>
+        handlers[C2S.SESSION_CONFIG](guest, { config: { points: 30 } }),
+      ).toThrow(/anfitrión/i);
+      expect(session.config.points).toBe(24);
+      sessionSockets.delete(code);
+    });
+  });
 });

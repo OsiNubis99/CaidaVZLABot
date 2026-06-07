@@ -517,14 +517,20 @@
 .prelobby-join .input { flex: 1; text-transform: uppercase; }
 .prelobby-configure { width: 100%; padding: 11px; font-size: 14px; margin-top: 8px; }
 
-/* read-only rules summary on the lobby roster */
+/* rules summary on the lobby roster (+ host's edit button) */
 .lobby-config {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 12.5px;
-  padding: 6px 10px;
+  padding: 6px 8px 6px 10px;
   border-radius: var(--radius);
   background: var(--bg-elevated);
   border: 1px solid var(--border);
 }
+.lobby-config > .muted { flex: 1; min-width: 0; }
+.lobby-config-edit { flex: 0 0 auto; padding: 4px 12px; font-size: 12px; }
 
 /* ─── create-table config form ─── */
 .cfg-card { display: flex; flex-direction: column; }

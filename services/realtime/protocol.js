@@ -12,6 +12,8 @@ const C2S = Object.freeze({
   SESSION_REMOVE_CPU: "session:removeCpu",
   SESSION_START: "session:start",
   SESSION_REMATCH: "session:rematch",
+  // Host updates the table config from the lobby (before the deck is dealt).
+  SESSION_CONFIG: "session:config",
   // Re-attach the socket to whatever active table this user is still seated at
   // (e.g. after closing/reopening the app or a network blip). No-op if none.
   SESSION_RESUME: "session:resume",

@@ -63,6 +63,7 @@ export interface GameStore extends StoreState {
   start: () => void;
   rematch: () => void;
   resume: () => void;
+  setConfig: (config: GameConfig) => void;
   leave: () => void;
   // Game actions
   play: (cardIndex: number) => void;
@@ -141,6 +142,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       start: () => gameSocket.send(C2S.SESSION_START, {}),
       rematch: () => gameSocket.send(C2S.SESSION_REMATCH, {}),
       resume: () => gameSocket.send(C2S.SESSION_RESUME, {}),
+      setConfig: (config) => gameSocket.send(C2S.SESSION_CONFIG, { config }),
       leave: () => {
         gameSocket.send(C2S.SESSION_LEAVE, {});
         dispatchRef.current({ type: "reset" });

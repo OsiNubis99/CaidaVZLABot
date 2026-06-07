@@ -9,6 +9,7 @@ export const C2S = {
   SESSION_REMOVE_CPU: "session:removeCpu",
   SESSION_START: "session:start",
   SESSION_REMATCH: "session:rematch",
+  SESSION_CONFIG: "session:config",
   SESSION_RESUME: "session:resume",
   ACTION_PLAY: "action:play",
   ACTION_SING: "action:sing",

@@ -339,4 +339,34 @@ describe("sessionStore", () => {
       expect(() => s.rematch()).toThrow(/no terminó/);
     });
   });
+
+  describe("setConfig", () => {
+    it("merges a partial over the current config and shares it with the engine", () => {
+      const s = new GameSession({ code: "CAIDA-CF1", host: { userId: "1", name: "A" } });
+      expect(s.config.points).toBe(24); // Clásico default
+      s.setConfig({ points: 30, mata_canto: "on" });
+      expect(s.config.points).toBe(30);
+      expect(s.config.mata_canto).toBe("on");
+      expect(s.config.mesa).toBe(4); // untouched default preserved
+      // The engine reads the same config object at shuffle/play time.
+      expect(s.game.config.points).toBe(30);
+      expect(s.game.config.mata_canto).toBe("on");
+    });
+
+    it("can revert a field back to a default on a later edit", () => {
+      const s = new GameSession({ code: "CAIDA-CF2", host: { userId: "1", name: "A" } });
+      s.setConfig({ points: 30 });
+      expect(s.config.points).toBe(30);
+      s.setConfig({ points: 24 });
+      expect(s.config.points).toBe(24);
+    });
+
+    it("is refused once the deck is dealt", () => {
+      const s = new GameSession({ code: "CAIDA-CF3", host: { userId: "1", name: "A" } });
+      s.addCpu("easy");
+      patchDeck(s);
+      s.start();
+      expect(() => s.setConfig({ points: 30 })).toThrow(/ya empezó/i);
+    });
+  });
 });

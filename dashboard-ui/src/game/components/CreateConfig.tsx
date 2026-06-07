@@ -1,10 +1,25 @@
 import { useState } from "react";
 import type { GameConfig, OnOff } from "../types";
-import { CLASICO, CANTO_FIELDS, diffFromClasico } from "../configDefaults";
+import { CLASICO, CANTO_FIELDS } from "../configDefaults";
 
 interface Props {
-  onCreate: (config: GameConfig) => void;
+  /** Seed values (the current table config when editing); defaults to Clásico. */
+  initial?: GameConfig;
+  title?: string;
+  submitLabel?: string;
+  onSubmit: (config: GameConfig) => void;
   onCancel: () => void;
+}
+
+/** The full set of managed fields with the form's current values — sent as-is
+ *  so editing can also revert a field back to its Clásico default (a diff would
+ *  silently drop reverted fields). The backend sanitizes + clamps. */
+function managedConfig(cfg: GameConfig): GameConfig {
+  const out: GameConfig = {};
+  for (const k of Object.keys(CLASICO) as (keyof typeof CLASICO)[]) {
+    out[k] = cfg[k] as never;
+  }
+  return out;
 }
 
 /** A compact +/- numeric stepper. */
@@ -93,8 +108,14 @@ function Toggle({
 /** Create-table config form: pick the same rules the chat `/configurar` exposes.
  *  Seeds from the Clásico preset; only changed fields are sent (the rest keep
  *  the backend defaults). */
-export function CreateConfig({ onCreate, onCancel }: Props) {
-  const [cfg, setCfg] = useState<GameConfig>({ ...CLASICO });
+export function CreateConfig({
+  initial,
+  title = "Configurar mesa",
+  submitLabel = "Crear mesa",
+  onSubmit,
+  onCancel,
+}: Props) {
+  const [cfg, setCfg] = useState<GameConfig>({ ...CLASICO, ...(initial || {}) });
   const [advanced, setAdvanced] = useState(false);
 
   const set = <K extends keyof GameConfig>(key: K, value: GameConfig[K]) =>
@@ -105,7 +126,7 @@ export function CreateConfig({ onCreate, onCancel }: Props) {
 
   return (
     <div className="prelobby-card cfg-card">
-      <h3>Configurar mesa</h3>
+      <h3>{title}</h3>
 
       <Stepper
         label="Puntos para ganar"
@@ -210,9 +231,9 @@ export function CreateConfig({ onCreate, onCancel }: Props) {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => onCreate(diffFromClasico(cfg))}
+          onClick={() => onSubmit(managedConfig(cfg))}
         >
-          Crear mesa
+          {submitLabel}
         </button>
       </div>
     </div>

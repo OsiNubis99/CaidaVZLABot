@@ -237,6 +237,13 @@ const handlers = {
     broadcastState(session);
   },
 
+  [C2S.SESSION_CONFIG](socket, payload = {}) {
+    const session = requireSession(socket);
+    requireHost(session, socket);
+    session.setConfig(sanitizeConfig(payload.config));
+    broadcastState(session);
+  },
+
   // Reopen / reconnect: drop the socket back into the user's active table.
   // A mid-game disconnect keeps the seat, so closing and reopening the app
   // (or recovering from a network blip) resumes the same game. No-op when the

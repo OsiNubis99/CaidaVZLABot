@@ -22,12 +22,31 @@ interface Props {
  *  exists (`state` non-null), shows the seat roster + host controls. */
 export function Lobby({ state, youId }: Props) {
   const game = useGame();
+  const [editingConfig, setEditingConfig] = useState(false);
 
   if (!state) return <PreLobby />;
 
   // Host is seat 0 (per spec). We can't see rivals' userIds, but the viewer is
   // the host iff they occupy seat 0.
   const isHost = youId != null && state.you.seat === 0;
+
+  // Host editing the rules from the lobby (the usual place to configure).
+  if (editingConfig && isHost) {
+    return (
+      <div className="lobby">
+        <CreateConfig
+          initial={state.config}
+          title={`Configurar mesa ${state.code}`}
+          submitLabel="Guardar"
+          onCancel={() => setEditingConfig(false)}
+          onSubmit={(config) => {
+            setEditingConfig(false);
+            game.setConfig(config);
+          }}
+        />
+      </div>
+    );
+  }
 
   const filled = state.seats.length;
   const canStart = isHost && filled >= 2;
@@ -56,8 +75,17 @@ export function Lobby({ state, youId }: Props) {
         </button>
       </div>
 
-      <div className="lobby-config muted" title="Reglas de la mesa">
-        ⚙️ {configSummary(state.config)}
+      <div className="lobby-config" title="Reglas de la mesa">
+        <span className="muted">⚙️ {configSummary(state.config)}</span>
+        {isHost && (
+          <button
+            type="button"
+            className="btn lobby-config-edit"
+            onClick={() => setEditingConfig(true)}
+          >
+            Configurar
+          </button>
+        )}
       </div>
 
       <div className="lobby-seats">
@@ -140,8 +168,9 @@ function PreLobby() {
     return (
       <div className="lobby lobby-pre">
         <CreateConfig
+          submitLabel="Crear mesa"
           onCancel={() => setConfiguring(false)}
-          onCreate={(config) => {
+          onSubmit={(config) => {
             setConfiguring(false);
             game.createSession(config);
           }}

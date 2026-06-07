@@ -162,6 +162,19 @@ class GameSession {
   }
 
   /**
+   * Replace the table config from the lobby (host-only). Lobby-only — once the
+   * deck is dealt the rules are locked. The partial is merged over the current
+   * config and revalidated through Config, then shared with the engine (which
+   * reads it at shuffle/play time, so a lobby change just takes effect at start).
+   * @param {Object} partial - Already-sanitized config fields.
+   */
+  setConfig(partial) {
+    this._assertLobby();
+    this.config = new Config({ ...this.config, ...(partial || {}) });
+    this.game.config = this.config;
+  }
+
+  /**
    * Deal the first deck. Host + lobby + ≥2 seats only. Calls game.shuffle()
    * which leaves the dealer holding the Start_By sentinel; whoever sits at
    * the dealer seat then picks direction via play() (the protocol models
