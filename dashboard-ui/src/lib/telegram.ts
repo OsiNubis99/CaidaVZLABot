@@ -39,6 +39,9 @@ interface WebApp {
   safeAreaInset?: SafeAreaInset;
   contentSafeAreaInset?: SafeAreaInset;
   requestFullscreen?: () => void;
+  // Stop Telegram from reading a vertical swipe as "minimize/close" so inner
+  // content can scroll (Bot API 7.7+).
+  disableVerticalSwipes?: () => void;
   isVersionAtLeast?: (version: string) => boolean;
   ready: () => void;
   expand: () => void;
@@ -109,6 +112,10 @@ export function ready() {
   // whether or not it actually goes fullscreen.
   try {
     if (typeof tg?.requestFullscreen === "function") tg.requestFullscreen();
+  } catch { /* tolerate */ }
+  // Let inner content scroll without Telegram hijacking the swipe to minimize.
+  try {
+    if (typeof tg?.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
   } catch { /* tolerate */ }
   try {
     tg?.onEvent?.("themeChanged", applyTheme);
