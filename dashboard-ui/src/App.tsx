@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "./api";
 import { getWebApp } from "./lib/telegram";
@@ -10,7 +10,13 @@ import { GroupsTab } from "./tabs/GroupsTab";
 import { UsersTab } from "./tabs/UsersTab";
 import { GameTab } from "./game/GameTab";
 
-type TabId = "play" | "me" | "top" | "public" | "groups" | "users";
+// Lazy: keeps Chart.js out of the main bundle — only admins who open Stats
+// download it.
+const StatsTab = lazy(() =>
+  import("./tabs/StatsTab").then((m) => ({ default: m.StatsTab })),
+);
+
+type TabId = "play" | "me" | "top" | "public" | "groups" | "users" | "stats";
 
 interface TabMeta {
   id: TabId;
@@ -26,6 +32,7 @@ const TABS: TabMeta[] = [
   { id: "public", label: "🌐 Públicos", title: "Grupos públicos", admin: false },
   { id: "groups", label: "📦 Grupos", title: "Grupos (admin)", admin: true },
   { id: "users", label: "👥 Usuarios", title: "Usuarios (admin)", admin: true },
+  { id: "stats", label: "📊 Stats", title: "Estadísticas (admin)", admin: true },
 ];
 
 export default function App() {
@@ -42,7 +49,7 @@ export default function App() {
 
   const [tab, setTab] = useState<TabId>(() => {
     const hash = (location.hash || "").slice(1) as TabId;
-    if (["play", "me", "top", "public", "groups", "users"].includes(hash)) return hash;
+    if (["play", "me", "top", "public", "groups", "users", "stats"].includes(hash)) return hash;
     // Deep-linked into a game (startapp=<code>) → land on the play tab.
     return getWebApp()?.initDataUnsafe?.start_param ? "play" : "me";
   });
@@ -100,6 +107,13 @@ export default function App() {
       {tab === "public" && <PublicTab />}
       {tab === "groups" && me.data.role === "admin" && <GroupsTab />}
       {tab === "users" && me.data.role === "admin" && <UsersTab />}
+      {tab === "stats" && me.data.role === "admin" && (
+        <Suspense
+          fallback={<p className="muted" style={{ padding: 16 }}>Cargando…</p>}
+        >
+          <StatsTab />
+        </Suspense>
+      )}
     </main>
   );
 }

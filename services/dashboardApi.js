@@ -288,6 +288,17 @@ function build(bot) {
     }
   });
 
+  // ── Stats (admin) — aggregations for the dashboard charts ──────────────
+  router.use("/api/stats", auth.requireAdmin);
+  router.get("/api/stats", async (req, res) => {
+    try {
+      res.json(await UserController.stats());
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/stats failed");
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
   // Static SPA. Anyone landing here without initData will get 401 from
   // the API on first fetch, and the SPA shows a "open me in Telegram"
   // banner. We don't gate the static files themselves so the SPA can

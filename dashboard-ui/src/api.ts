@@ -5,6 +5,7 @@ import type {
   GroupRow,
   PublicGroup,
   Paged,
+  StatsResponse,
 } from "./types";
 
 // Relative — works under /dashboard/ in dev and /caidavzlabot/ in
@@ -104,3 +105,5 @@ export const deleteGroup = (id: string) =>
 
 export const setUserBanned = (id: string, value: boolean) =>
   call<UserRow>("POST", `users/${encodeURIComponent(id)}/banned`, { value });
+
+export const stats = () => call<StatsResponse>("GET", "stats");

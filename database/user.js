@@ -100,6 +100,63 @@ module.exports = {
   },
 
   /**
+   * Aggregations for the admin "Stats" dashboard tab. One round-trip per
+   * dataset; all coerced to plain numbers (pg returns SUM/bigint as strings).
+   * Human stats exclude the synthetic CPU rows (id_user LIKE 'cpu%'); real
+   * Telegram ids are numeric so they never collide with that prefix.
+   * @returns {Promise<{cantos: Object, trivilin: Array, cpu: Array}>}
+   */
+  async stats() {
+    const CANTOS = [
+      "ronda", "chiguire", "patrulla", "vigia", "registro",
+      "maguaro", "registrico", "casa_chica", "casa_grande", "trivilin",
+    ];
+
+    const sumSelect = CANTOS.map((c) => `COALESCE(SUM(${c}),0) AS ${c}`).join(", ");
+    const cantosR = await database.query(
+      `SELECT ${sumSelect} FROM public.user WHERE id_user NOT LIKE 'cpu%'`,
+    );
+    const row = cantosR.rows[0] || {};
+    const cantos = {};
+    for (const c of CANTOS) cantos[c] = Number(row[c]) || 0;
+
+    const trivR = await database.query(
+      `SELECT id_user, first_name, last_name, username, trivilin
+       FROM public.user
+       WHERE trivilin > 0 AND id_user NOT LIKE 'cpu%' AND COALESCE(is_banned, false) = false
+       ORDER BY trivilin DESC
+       LIMIT 10`,
+    );
+    const trivilin = trivR.rows.map((r) => ({
+      name:
+        (r.username && "@" + r.username) ||
+        [r.first_name, r.last_name].filter(Boolean).join(" ") ||
+        String(r.id_user),
+      trivilin: Number(r.trivilin) || 0,
+    }));
+
+    const cpuR = await database.query(
+      `SELECT id_user, first_name, finished, win, win_custom
+       FROM public.user
+       WHERE id_user IN ('cpu_easy', 'cpu_medium', 'cpu_pro')
+       ORDER BY id_user`,
+    );
+    const cpu = cpuR.rows.map((r) => {
+      const finished = Number(r.finished) || 0;
+      const wins = (Number(r.win) || 0) + (Number(r.win_custom) || 0);
+      return {
+        id_user: r.id_user,
+        label: r.first_name || r.id_user,
+        finished,
+        wins,
+        winRate: finished > 0 ? wins / finished : 0,
+      };
+    });
+
+    return { cantos, trivilin, cpu };
+  },
+
+  /**
    * Set notify_on_turn preference.
    */
   async setNotifyOnTurn(id_user, enabled) {

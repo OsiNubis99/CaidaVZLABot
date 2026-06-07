@@ -81,3 +81,26 @@ export interface MeResponse {
   telegram: TelegramUser;
   user: UserRow | null;
 }
+
+// ─── Stats (admin) ──────────────────────────────────────────────────────
+/** Global totals per canto type, summed across human players. */
+export type CantoTotals = Record<string, number>;
+
+export interface TrivilinEntry {
+  name: string;
+  trivilin: number;
+}
+
+export interface CpuStat {
+  id_user: string;
+  label: string;
+  finished: number;
+  wins: number;
+  winRate: number; // 0..1
+}
+
+export interface StatsResponse {
+  cantos: CantoTotals;
+  trivilin: TrivilinEntry[];
+  cpu: CpuStat[];
+}

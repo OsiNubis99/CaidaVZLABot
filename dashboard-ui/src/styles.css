@@ -111,6 +111,9 @@ main { max-width: 1200px; margin: 0 auto; }
   margin-bottom: var(--gap);
 }
 .card-title { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+/* Stats charts: maintainAspectRatio:false needs a sized container. */
+.stats-chart { position: relative; height: 280px; }
+.card-title .muted { font-weight: 400; }
 .sing-row {
   display: flex;
   justify-content: space-between;
