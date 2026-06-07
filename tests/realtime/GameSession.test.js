@@ -309,4 +309,34 @@ describe("sessionStore", () => {
       expect(s.lastDeal).toBeNull();
     });
   });
+
+  describe("rematch", () => {
+    it("restarts the same seats from a finished game", () => {
+      const cfg = new Config({ ...game_modes[1], mata_mesa: "off" });
+      cfg.points = 10; // dealer's pegar-en-mesa wins at deal time
+      const s = new GameSession({ code: "CAIDA-RM", host: { userId: "1", name: "A" }, config: cfg });
+      s.addCpu("medium");
+      patchDeck(s);
+      s.start(4);
+      expect(s.status).toBe("finished");
+
+      const seatsBefore = s.seats.map((x) => ({ userId: x.userId, kind: x.kind }));
+      s.rematch();
+
+      expect(s.status).toBe("lobby");
+      expect(s.winner).toBeNull();
+      expect(s.lastDeal).toBeNull();
+      expect(s.seats.map((x) => ({ userId: x.userId, kind: x.kind }))).toEqual(seatsBefore);
+      expect(s.game.users.length).toBe(2);
+      expect(s.game.decks).toBe(0); // a brand-new engine
+      expect(() => s.start()).not.toThrow();
+      expect(s.status).toBe("playing");
+    });
+
+    it("is refused before the game finished", () => {
+      const s = new GameSession({ code: "CAIDA-RM2", host: { userId: "1", name: "A" } });
+      s.addCpu("easy");
+      expect(() => s.rematch()).toThrow(/no terminó/);
+    });
+  });
 });

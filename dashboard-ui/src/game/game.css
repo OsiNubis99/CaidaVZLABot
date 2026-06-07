@@ -276,6 +276,18 @@
   100% { transform: translateY(-20px) scale(1); opacity: 0; }
 }
 .mesa-caption { font-size: 12px; }
+
+/* Always-visible "última carta jugada" strip between the mesa and the hand. */
+.lastcard-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.lastcard-strip .pcard { flex: 0 0 auto; }
 .mesa-flash {
   position: absolute;
   inset: 0;
@@ -482,6 +494,14 @@
 }
 .endgame-name { flex: 1; font-weight: 500; }
 .endgame-pts { font-weight: 700; }
+.endgame-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.endgame-rematch { padding: 10px 24px; font-size: 15px; }
 .endgame-leave { padding: 10px 24px; }
 
 /* ─── animations ─── */

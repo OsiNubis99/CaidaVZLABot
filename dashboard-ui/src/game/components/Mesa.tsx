@@ -104,11 +104,6 @@ export function Mesa({ table, lastCardPlayed, lastEvent, lastDeal }: Props) {
           </div>
         )}
       </div>
-      {lastCardPlayed && (
-        <div className="mesa-caption muted">
-          Última: {lastCardPlayed.value} de {lastCardPlayed.type}
-        </div>
-      )}
     </div>
   );
 }

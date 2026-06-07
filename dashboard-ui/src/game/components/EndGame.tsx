@@ -3,11 +3,13 @@ import type { Winner } from "../types";
 interface Props {
   winner: Winner | null;
   youSeat: number | null;
+  isHost: boolean;
+  onRematch: () => void;
   onLeave: () => void;
 }
 
 /** Final standings screen shown when status === "finished". */
-export function EndGame({ winner, youSeat, onLeave }: Props) {
+export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) {
   const standings = winner?.standings ?? [];
   const youWon = winner?.seat != null && winner.seat === youSeat;
   const winnerName =
@@ -45,9 +47,18 @@ export function EndGame({ winner, youSeat, onLeave }: Props) {
         ))}
       </ol>
 
-      <button type="button" className="btn btn-primary endgame-leave" onClick={onLeave}>
-        Volver al lobby
-      </button>
+      <div className="endgame-actions">
+        {isHost ? (
+          <button type="button" className="btn btn-primary endgame-rematch" onClick={onRematch}>
+            🔄 Revancha
+          </button>
+        ) : (
+          <span className="muted">Esperando al host para la revancha…</span>
+        )}
+        <button type="button" className="btn endgame-leave" onClick={onLeave}>
+          Salir
+        </button>
+      </div>
     </div>
   );
 }

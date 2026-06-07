@@ -7,6 +7,7 @@ import { Hand } from "../components/Hand";
 import { Opponent } from "../components/Opponent";
 import { CantoPicker } from "../components/CantoPicker";
 import { EndGame } from "../components/EndGame";
+import { PlayingCard } from "../components/PlayingCard";
 
 interface Props {
   state: GameState;
@@ -15,7 +16,7 @@ interface Props {
 /** The card table: rivals across the top, mesa in the center, your hand at the
  *  bottom. Reads the per-viewer GameState; emits actions via the store. */
 export function Table({ state }: Props) {
-  const { play, sing, leave } = useGame();
+  const { play, sing, leave, rematch } = useGame();
 
   const yourSeat = state.you.seat;
   const isYourTurn = yourSeat != null && state.turnSeat === yourSeat;
@@ -35,7 +36,13 @@ export function Table({ state }: Props) {
 
   if (state.status === "finished") {
     return (
-      <EndGame winner={state.winner ?? null} youSeat={yourSeat} onLeave={leave} />
+      <EndGame
+        winner={state.winner ?? null}
+        youSeat={yourSeat}
+        isHost={yourSeat === 0}
+        onRematch={rematch}
+        onLeave={leave}
+      />
     );
   }
 
@@ -71,6 +78,21 @@ export function Table({ state }: Props) {
         lastEvent={state.lastEvent}
         lastDeal={state.lastDeal ?? null}
       />
+
+      {/* Last played card — always visible between the mesa and your hand. */}
+      <div className="lastcard-strip">
+        <span className="muted">Última</span>
+        {state.lastCardPlayed ? (
+          <>
+            <PlayingCard card={state.lastCardPlayed} size="sm" />
+            <span className="muted">
+              {state.lastCardPlayed.value} de {state.lastCardPlayed.type}
+            </span>
+          </>
+        ) : (
+          <span className="muted">—</span>
+        )}
+      </div>
 
       <div className="table-bottom">
         {/* Your own status: points, cards taken this hand, turn, canto. */}

@@ -11,6 +11,7 @@ const C2S = Object.freeze({
   SESSION_ADD_CPU: "session:addCpu",
   SESSION_REMOVE_CPU: "session:removeCpu",
   SESSION_START: "session:start",
+  SESSION_REMATCH: "session:rematch",
   ACTION_PLAY: "action:play",
   ACTION_SING: "action:sing",
   SESSION_LEAVE: "session:leave",

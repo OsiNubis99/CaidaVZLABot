@@ -61,6 +61,7 @@ export interface GameStore extends StoreState {
   addCpu: (difficulty: CpuDifficulty) => void;
   removeCpu: (seatIndex: number) => void;
   start: () => void;
+  rematch: () => void;
   leave: () => void;
   // Game actions
   play: (cardIndex: number) => void;
@@ -137,6 +138,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       removeCpu: (seatIndex) =>
         gameSocket.send(C2S.SESSION_REMOVE_CPU, { seatIndex }),
       start: () => gameSocket.send(C2S.SESSION_START, {}),
+      rematch: () => gameSocket.send(C2S.SESSION_REMATCH, {}),
       leave: () => {
         gameSocket.send(C2S.SESSION_LEAVE, {});
         dispatchRef.current({ type: "reset" });

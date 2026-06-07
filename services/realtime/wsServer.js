@@ -232,6 +232,14 @@ const handlers = {
     settle(session);
   },
 
+  [C2S.SESSION_REMATCH](socket) {
+    const session = requireSession(socket);
+    requireHost(session, socket);
+    session.rematch();
+    // Back in the lobby with the same seats; the host starts again.
+    broadcastState(session);
+  },
+
   [C2S.ACTION_PLAY](socket, payload = {}) {
     const session = requireSession(socket);
     session.play(socket.data.user.id, payload.cardIndex);

@@ -169,6 +169,34 @@ class GameSession {
   }
 
   /**
+   * Restart the same table after a finished game: a fresh engine instance
+   * with the SAME seats, back in the lobby so the host can start again. No
+   * re-create, no re-join — players keep their seats.
+   */
+  rematch() {
+    if (this.status !== "finished") {
+      throw sessionError("not_finished", "La partida no terminó");
+    }
+    this.game = new Game(this.code, this.config);
+    for (const seat of this.seats) {
+      this.game.join(
+        new User({
+          id_user: seat.userId,
+          first_name: seat.name,
+          last_name: "",
+          username: null,
+          is_banned: false,
+          cpu_difficulty: seat.kind === "cpu" ? seat.difficulty : null,
+        }),
+      );
+    }
+    this.status = "lobby";
+    this.lastEvent = null;
+    this.lastDeal = null;
+    this.winner = null;
+  }
+
+  /**
    * Apply a play for `viewerUserId`. Two cases:
    *   - startBy state: the dealer's "hand" is the sentinel → `arg` is the
    *     direction (1 or 4) and we deal the deck.
