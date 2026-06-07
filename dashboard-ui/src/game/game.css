@@ -477,6 +477,84 @@
 .prelobby-sep span { padding: 0 12px; }
 .prelobby-join { display: flex; gap: 8px; }
 .prelobby-join .input { flex: 1; text-transform: uppercase; }
+.prelobby-configure { width: 100%; padding: 11px; font-size: 14px; margin-top: 8px; }
+
+/* read-only rules summary on the lobby roster */
+.lobby-config {
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+/* ─── create-table config form ─── */
+.cfg-card { display: flex; flex-direction: column; }
+.cfg-card h3 { margin: 0 0 10px; }
+.cfg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cfg-label { font-size: 14px; }
+.cfg-hint { font-size: 12px; margin: 2px 0 0; }
+.cfg-stepper { display: flex; align-items: center; gap: 8px; }
+.cfg-step {
+  width: 34px; height: 34px;
+  padding: 0;
+  font-size: 18px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cfg-step:disabled { opacity: 0.4; cursor: not-allowed; }
+.cfg-value {
+  min-width: 42px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cfg-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cfg-seg-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cfg-seg-btn.is-on { background: var(--accent); color: var(--accent-text); }
+.cfg-advanced-toggle {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 13px;
+  text-align: left;
+}
+.cfg-advanced { margin-top: 6px; }
+.cfg-canto-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+  margin-top: 4px;
+}
+.cfg-canto-grid .cfg-row { padding: 6px 0; }
+.cfg-canto-grid .cfg-label { font-size: 13px; }
+.cfg-canto-grid .cfg-step { width: 30px; height: 30px; font-size: 16px; }
+.cfg-canto-grid .cfg-value { min-width: 30px; }
+.cfg-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.cfg-actions .btn { flex: 1; padding: 11px; }
 
 /* ─── endgame ─── */
 .endgame { display: flex; flex-direction: column; gap: 16px; align-items: center; }

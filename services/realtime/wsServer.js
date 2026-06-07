@@ -14,6 +14,7 @@
 const { Server } = require("socket.io");
 const protocol = require("./protocol");
 const sessionStore = require("./sessionStore");
+const { sanitizeConfig } = require("./configSanitize");
 const serializeForClient = require("./serializeForClient");
 const turnLoop = require("./turnLoop");
 const dashboardAuth = require("../dashboardAuth");
@@ -175,7 +176,7 @@ const handlers = {
     const user = socket.data.user;
     const session = sessionStore.create(
       { userId: user.id, name: displayName(user) },
-      { config: payload.config },
+      { config: sanitizeConfig(payload.config) },
     );
     trackSocket(socket, session.code);
     // Reply with the code via the ack callback (the spec's "responds { code }")

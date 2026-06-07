@@ -1,8 +1,23 @@
 const Game = require("../../class/Game");
 const User = require("../../class/User");
 const Config = require("../../class/Config");
+const game_modes = require("../../lang/game_modes_es");
 
 const MAX_SEATS = 4;
+
+/** Build a validated Config from whatever the caller passed:
+ *  - a Config instance → used as-is
+ *  - a partial plain object (e.g. the WebApp create form) → merged over the
+ *    Clásico preset so missing fields keep their defaults and the result is
+ *    run through Config's normalization
+ *  - nothing → Clásico defaults */
+function toConfig(config) {
+  if (config instanceof Config) return config;
+  if (config && typeof config === "object") {
+    return new Config({ ...game_modes[1], ...config });
+  }
+  return new Config(game_modes[1]);
+}
 const STARTBY_SENTINEL = "Start_By";
 const CPU_LABELS = { easy: "🤖 Fácil", medium: "🤖 Medio", pro: "🤖 Pro" };
 
@@ -29,7 +44,7 @@ class GameSession {
     if (!host || host.userId == null) throw new Error("GameSession requires a host { userId, name }");
     this.code = code;
     this.status = "lobby";
-    this.config = config || new Config(require("../../lang/game_modes_es")[1]);
+    this.config = toConfig(config);
     this.game = new Game(code, this.config);
     this.seats = [];
     this.hostUserId = String(host.userId);

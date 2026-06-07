@@ -15,13 +15,30 @@ export type SessionStatus = "lobby" | "playing" | "finished";
 
 export type CpuDifficulty = "easy" | "medium" | "pro";
 
-/** Engine config projected verbatim (`{ ...game.config }`). Only the fields the
- *  UI reads are typed; the rest is allowed via the index signature. */
+export type OnOff = "on" | "off";
+
+/** Engine config projected verbatim (`{ ...game.config }`). The fields the
+ *  create form and the UI read are typed; the rest is allowed via the index
+ *  signature. Bounds are enforced server-side (services/realtime/configSanitize). */
 export interface GameConfig {
-  points?: number;
   game_mode?: number;
-  mata_mesa?: string;
+  points?: number;
+  mesa?: number;
   type?: "individual" | "parejas";
+  caida_continua?: OnOff;
+  mata_canto?: OnOff;
+  mata_mesa?: OnOff;
+  caida?: number;
+  ronda?: number;
+  chiguire?: number;
+  patrulla?: number;
+  vigia?: number;
+  registro?: number;
+  maguaro?: number;
+  registrico?: number;
+  casa_chica?: number;
+  casa_grande?: number;
+  trivilin?: number;
   [key: string]: unknown;
 }
 

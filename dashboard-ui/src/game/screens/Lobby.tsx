@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { GameState, CpuDifficulty } from "../types";
 import { useGame } from "../store";
 import { openTelegramLink } from "../../lib/telegram";
+import { CreateConfig } from "../components/CreateConfig";
+import { configSummary } from "../configDefaults";
 
 const BOT = "CaidaVZLABot";
 const DIFFS: { id: CpuDifficulty; label: string }[] = [
@@ -52,6 +54,10 @@ export function Lobby({ state, youId }: Props) {
         >
           🔗 Invitar
         </button>
+      </div>
+
+      <div className="lobby-config muted" title="Reglas de la mesa">
+        ⚙️ {configSummary(state.config)}
       </div>
 
       <div className="lobby-seats">
@@ -124,10 +130,25 @@ export function Lobby({ state, youId }: Props) {
   );
 }
 
-/** No session yet: create one or join by code. */
+/** No session yet: create one (with optional config) or join by code. */
 function PreLobby() {
   const game = useGame();
   const [code, setCode] = useState("");
+  const [configuring, setConfiguring] = useState(false);
+
+  if (configuring) {
+    return (
+      <div className="lobby lobby-pre">
+        <CreateConfig
+          onCancel={() => setConfiguring(false)}
+          onCreate={(config) => {
+            setConfiguring(false);
+            game.createSession(config);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="lobby lobby-pre">
@@ -142,7 +163,14 @@ function PreLobby() {
           className="btn btn-primary prelobby-create"
           onClick={() => game.createSession()}
         >
-          Crear mesa
+          Crear mesa rápida
+        </button>
+        <button
+          type="button"
+          className="btn prelobby-configure"
+          onClick={() => setConfiguring(true)}
+        >
+          ⚙️ Crear con configuración
         </button>
 
         <div className="prelobby-sep">
