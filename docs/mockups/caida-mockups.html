@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Caída — direcciones visuales</title>
+<style>
+  :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0b0d12; color: #e8edf4; padding: 28px 18px 60px; }
+  h1 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .sub { text-align: center; color: #8b93a3; font-size: 13px; margin-bottom: 28px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 34px 26px; justify-content: center; align-items: flex-start; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .label { font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+  .label small { display:block; font-weight:400; color:#8b93a3; font-size:11px; margin-top:2px; }
+
+  /* phone frame */
+  .phone {
+    width: 300px; height: 640px; border-radius: 42px; padding: 11px;
+    background: #1c1f27; box-shadow: 0 0 0 2px #2b2f3a, 0 24px 60px rgba(0,0,0,.55);
+    position: relative;
+  }
+  .phone::before { /* notch */
+    content:""; position:absolute; top:11px; left:50%; transform:translateX(-50%);
+    width:120px; height:24px; background:#1c1f27; border-radius:0 0 16px 16px; z-index:5;
+  }
+  .screen { width:100%; height:100%; border-radius:32px; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+
+  /* ---- shared table structure (re-skinned per theme) ---- */
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:30px 16px 8px; font-size:11px; }
+  .pill { padding:3px 10px; border-radius:999px; font-weight:600; font-size:10px; }
+  .opps { display:flex; justify-content:space-around; padding:6px 10px 0; }
+  .opp { display:flex; flex-direction:column; align-items:center; gap:4px; width:30%; }
+  .avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; position:relative; }
+  .opp.turn .avatar::after { content:""; position:absolute; inset:-4px; border-radius:50%; }
+  .fan { display:flex; }
+  .fan .mini { width:15px; height:21px; border-radius:3px; margin-left:-7px; }
+  .opp-name { font-size:10px; font-weight:600; max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .opp-meta { font-size:9px; opacity:.75; }
+  .canto-tag { font-size:8px; padding:1px 6px; border-radius:999px; font-weight:700; }
+
+  .mesa-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:6px 14px; }
+  .mesa-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; opacity:.6; }
+  .mesa { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; width:100%; }
+  .slot { aspect-ratio:5/7; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+  .last { font-size:10px; opacity:.8; }
+
+  .hand-area { padding:10px 14px 18px; display:flex; flex-direction:column; align-items:center; gap:9px; }
+  .turn-pill { font-size:11px; font-weight:700; padding:5px 14px; border-radius:999px; }
+  .hand { display:flex; justify-content:center; }
+  .card { width:60px; height:84px; border-radius:9px; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:6px; font-weight:800; }
+  .hand .card { margin-left:-14px; }
+  .hand .card:first-child { margin-left:0; }
+  .card .rank { font-size:18px; line-height:1; }
+  .card .suit { font-size:15px; align-self:flex-end; }
+  .card.lift { transform:translateY(-12px); }
+  .actions { display:flex; gap:8px; }
+  .btn { font-size:11px; font-weight:700; padding:7px 14px; border-radius:10px; border:none; }
+
+  /* mini card faces inside mesa */
+  .mc { font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; }
+  .mc .r { font-size:13px; line-height:1; }
+  .mc .s { font-size:11px; }
+
+  /* suit colors (shared) */
+  .oro{color:#caa011}.copa{color:#c0392b}.espada{color:#2563b8}.basto{color:#1f9d57}
+
+  /* ============ THEME 1 · Fieltro clásico ============ */
+  .t-felt .screen{ background:radial-gradient(120% 90% at 50% 30%, #1f7a4d 0%, #14603b 55%, #0c3f27 100%); color:#f3ecd8; }
+  .t-felt .topbar{ color:#e8dcb6; }
+  .t-felt .pill{ background:rgba(0,0,0,.28); color:#f0e6c8; border:1px solid rgba(240,230,200,.25); }
+  .t-felt .avatar{ background:#0e4d30; color:#f0e6c8; border:2px solid #caa84e; }
+  .t-felt .opp.turn .avatar::after{ box-shadow:0 0 0 2px #f4d780, 0 0 14px #f4d780; }
+  .t-felt .fan .mini{ background:linear-gradient(#7a1f1f,#561414); border:1px solid #caa84e; }
+  .t-felt .canto-tag{ background:#caa84e; color:#3a2c00; }
+  .t-felt .slot{ background:rgba(0,0,0,.18); box-shadow:inset 0 0 0 1px rgba(240,230,200,.12); }
+  .t-felt .slot.filled{ background:#f6efdc; box-shadow:0 3px 8px rgba(0,0,0,.4); }
+  .t-felt .turn-pill{ background:#f4d780; color:#42330a; box-shadow:0 0 16px rgba(244,215,128,.5); }
+  .t-felt .card{ background:linear-gradient(#fbf6e7,#efe6cc); box-shadow:0 6px 14px rgba(0,0,0,.45); border:1px solid #d8c89a; }
+  .t-felt .btn.primary{ background:#caa84e; color:#33270a; }
+  .t-felt .btn.ghost{ background:rgba(255,255,255,.12); color:#f3ecd8; }
+
+  /* ============ THEME 2 · Oscuro neón ============ */
+  .t-neon .screen{ background:linear-gradient(160deg,#0a0e1a 0%,#0d1326 60%,#0a0e1a 100%); color:#dbe4ff; }
+  .t-neon .topbar{ color:#7d8bb5; }
+  .t-neon .pill{ background:rgba(86,108,255,.12); color:#9db0ff; border:1px solid rgba(120,140,255,.3); }
+  .t-neon .avatar{ background:#141b30; color:#9db0ff; border:1px solid #2b3a66; }
+  .t-neon .opp.turn .avatar::after{ box-shadow:0 0 0 2px #38e0ff, 0 0 18px #38e0ff; }
+  .t-neon .fan .mini{ background:linear-gradient(#19233f,#101830); border:1px solid #2b3a66; }
+  .t-neon .canto-tag{ background:linear-gradient(90deg,#ff43c0,#7b5cff); color:#fff; }
+  .t-neon .slot{ background:rgba(255,255,255,.03); box-shadow:inset 0 0 0 1px rgba(120,140,255,.14); }
+  .t-neon .slot.filled{ background:#0f1733; box-shadow:0 0 0 1px #38e0ff, 0 0 14px rgba(56,224,255,.35); }
+  .t-neon .turn-pill{ background:transparent; color:#38e0ff; border:1px solid #38e0ff; box-shadow:0 0 16px rgba(56,224,255,.4); }
+  .t-neon .card{ background:linear-gradient(#161f3a,#0f1730); border:1px solid #2b3a66; box-shadow:0 0 0 1px rgba(120,140,255,.1), 0 8px 20px rgba(0,0,0,.6); }
+  .t-neon .card .rank,.t-neon .card .suit{ filter:drop-shadow(0 0 5px currentColor); }
+  .t-neon .btn.primary{ background:linear-gradient(90deg,#38e0ff,#7b5cff); color:#06101f; }
+  .t-neon .btn.ghost{ background:rgba(255,255,255,.06); color:#9db0ff; border:1px solid #2b3a66; }
+  .t-neon .mc .r,.t-neon .mc .s{ filter:drop-shadow(0 0 4px currentColor); }
+
+  /* ============ THEME 3 · Madera cálida ============ */
+  .t-wood .screen{ background:linear-gradient(150deg,#5a3a1f,#3f2713 60%,#2c1a0c); color:#f3e4cf; }
+  .t-wood .screen::before{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(115deg, rgba(0,0,0,.06) 0 6px, transparent 6px 14px); pointer-events:none; }
+  .t-wood .topbar{ color:#e7c89c; position:relative; }
+  .t-wood .pill{ background:rgba(0,0,0,.3); color:#eccfa0; border:1px solid rgba(230,190,140,.3); }
+  .t-wood .avatar{ background:#4a2e16; color:#eccfa0; border:2px solid #b07a3a; }
+  .t-wood .opp.turn .avatar::after{ box-shadow:0 0 0 2px #e8a14b, 0 0 14px #e8a14b; }
+  .t-wood .fan .mini{ background:linear-gradient(#6b2a1a,#491a0f); border:1px solid #b07a3a; }
+  .t-wood .canto-tag{ background:#e8a14b; color:#3a1d00; }
+  .t-wood .mesa-wrap,.t-wood .opps,.t-wood .hand-area{ position:relative; }
+  .t-wood .slot{ background:rgba(0,0,0,.2); box-shadow:inset 0 0 0 1px rgba(230,190,140,.14); }
+  .t-wood .slot.filled{ background:#f6ecd6; box-shadow:0 4px 10px rgba(0,0,0,.5); }
+  .t-wood .turn-pill{ background:#e8a14b; color:#3a1d00; box-shadow:0 4px 12px rgba(0,0,0,.4); }
+  .t-wood .card{ background:linear-gradient(#fbf3df,#f0e3c4); border:1px solid #d8bf8e; box-shadow:0 7px 16px rgba(0,0,0,.5); }
+  .t-wood .btn.primary{ background:#e8a14b; color:#3a1d00; }
+  .t-wood .btn.ghost{ background:rgba(255,255,255,.1); color:#f3e4cf; }
+
+  /* ============ THEME 4 · Telegram flat ============ */
+  .t-flat .screen{ background:#0f1620; color:#e7ecf3; }
+  .t-flat .topbar{ color:#7e8a9c; }
+  .t-flat .pill{ background:#1b2533; color:#8fa6c4; }
+  .t-flat .avatar{ background:#1b2533; color:#8fa6c4; }
+  .t-flat .opp.turn .avatar::after{ box-shadow:0 0 0 2px #3aa0ff; }
+  .t-flat .fan .mini{ background:#243247; }
+  .t-flat .canto-tag{ background:#2b7fff; color:#fff; }
+  .t-flat .mesa{ background:#13507a22; }
+  .t-flat .slot{ background:#16202d; box-shadow:inset 0 0 0 1px #232f3f; }
+  .t-flat .slot.filled{ background:#f4f7fb; }
+  .t-flat .turn-pill{ background:#2b7fff; color:#fff; }
+  .t-flat .card{ background:#f4f7fb; color:#15202e; box-shadow:0 4px 10px rgba(0,0,0,.4); }
+  .t-flat .btn.primary{ background:#2b7fff; color:#fff; }
+  .t-flat .btn.ghost{ background:#1b2533; color:#8fa6c4; }
+  .t-flat .card .oro{color:#b8890a}.t-flat .card .copa{color:#c0392b}.t-flat .card .espada{color:#1f6fd6}.t-flat .card .basto{color:#179257}
+</style>
+</head>
+<body>
+<h1>Caída — 4 direcciones visuales</h1>
+<div class="sub">Mismo estado de partida (tu turno · 4 jugadores · mesa en juego), re-skineado. Pantalla ~teléfono.</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+  // Spanish-deck suit glyphs.
+  const SUIT = {
+    oro:   { g:"🪙", c:"oro" },
+    copa:  { g:"🍷", c:"copa" },
+    espada:{ g:"⚔️", c:"espada" },
+    basto: { g:"🌿", c:"basto" },
+  };
+  // mesa: a few placed cards (position-indexed, 10 slots → show 5 visible row)
+  const mesa = [
+    {r:"4", s:"oro"}, null, {r:"7", s:"espada"}, null, {r:"S", s:"copa"},
+  ];
+  const hand = [ {r:"3", s:"basto"}, {r:"R", s:"oro", lift:true}, {r:"5", s:"copa"} ];
+  const opps = [
+    { n:"Mafeer", av:"M", cards:3, pts:18, canto:null, turn:false },
+    { n:"CPU Pro", av:"🤖", cards:2, pts:22, canto:"Patrulla", turn:false },
+    { n:"Daniel", av:"D", cards:3, pts:12, canto:null, turn:false },
+  ];
+
+  function mini(c){ return `<div class="mc"><span class="r ${c.s}">${c.r}</span><span class="s ${c.s}">${SUIT[c.s].g}</span></div>`; }
+  function card(c){
+    return `<div class="card ${c.lift?'lift':''}">
+      <span class="rank ${c.s}">${c.r}</span>
+      <span class="suit ${c.s}">${SUIT[c.s].g}</span>
+    </div>`;
+  }
+
+  function phone(theme){
+    const mesaHtml = mesa.map(c => `<div class="slot ${c?'filled':''}">${c?mini(c):''}</div>`).join("");
+    const oppsHtml = opps.map(o => `
+      <div class="opp ${o.turn?'turn':''}">
+        <div class="avatar">${o.av}</div>
+        <div class="fan">${'<div class="mini"></div>'.repeat(o.cards)}</div>
+        <div class="opp-name">${o.n}</div>
+        <div class="opp-meta">${o.pts} pts</div>
+        ${o.canto?`<div class="canto-tag">${o.canto}</div>`:''}
+      </div>`).join("");
+    return `
+    <div class="phone ${theme}">
+      <div class="screen">
+        <div class="topbar">
+          <span class="pill">CAÍDA · 24 pts</span>
+          <span class="pill">Sala 7K2P</span>
+        </div>
+        <div class="opps">${oppsHtml}</div>
+        <div class="mesa-wrap">
+          <div class="mesa-label">Mesa</div>
+          <div class="mesa">${mesaHtml}</div>
+          <div class="last">🎴 Última: 7 de Espada</div>
+        </div>
+        <div class="hand-area">
+          <div class="turn-pill">👉 Tu turno</div>
+          <div class="hand">${hand.map(card).join("")}</div>
+          <div class="actions">
+            <button class="btn primary">Cantar Registro</button>
+            <button class="btn ghost">Salir</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  const themes = [
+    ["t-felt","Fieltro clásico","verde casino · oro · cartas crema"],
+    ["t-neon","Oscuro neón","negro · glows cian/magenta · glassy"],
+    ["t-wood","Madera cálida","mesa de madera · pergamino · criollo"],
+    ["t-flat","Telegram flat","limpio · azul · se adapta al theme"],
+  ];
+  // ?d=<theme> renders just one design (big), for per-design screenshots.
+  const only = new URLSearchParams(location.search).get("d");
+  const shown = only ? themes.filter(t => t[0] === only) : themes;
+  if (only) document.body.style.padding = "40px";
+  document.getElementById("grid").innerHTML = shown.map(([cls,name,desc]) => `
+    <div class="item">
+      <div class="phone-host">${phone(cls)}</div>
+      <div class="label">${name}<small>${desc}</small></div>
+    </div>`).join("");
+</script>
+</body>
+</html>

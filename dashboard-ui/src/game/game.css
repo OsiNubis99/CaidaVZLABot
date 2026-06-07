@@ -1,20 +1,19 @@
 /*
- * Card-table styling for the "🎮 Jugar" tab. Builds on the dashboard CSS vars
- * (--bg, --accent, …) so it follows the Telegram theme, and adds a felt table,
- * playing cards, and lightweight play animations.
+ * Card-table styling for the "🎮 Jugar" tab. "Telegram flat" direction: a
+ * clean, theme-aware surface built on the dashboard CSS vars (--bg, --accent,
+ * --bg-card, …) so the whole table follows the user's Telegram light/dark
+ * theme. No felt, no textures — flat panels, crisp cards, soft accents.
  */
 
 :root {
-  --felt: #1f6b3a;
-  --felt-edge: #14502b;
-  --card-face: #fbfcfd;
-  --card-ink: #1a1f29;
-  --card-back: linear-gradient(135deg, #3a4a86 0%, #2a3566 100%);
-  --suit-red: #d23b3b;
-  --suit-gold: #c79a1e;
-  --suit-green: #2e8b57;
-  --suit-dark: #2b3550;
-  --turn-glow: 0 0 0 2px var(--accent), 0 0 16px rgba(47, 129, 247, 0.5);
+  --card-face: #f4f7fb;
+  --card-ink: #15202e;
+  --card-back: linear-gradient(135deg, #2b3550 0%, #1d2640 100%);
+  --suit-red: #c0392b;
+  --suit-gold: #b8890a;
+  --suit-green: #179257;
+  --suit-dark: #1f6fd6;
+  --turn-glow: 0 0 0 2px var(--accent), 0 0 14px rgba(43, 127, 255, 0.45);
 }
 
 /* ─── panel + connection ─── */
@@ -203,15 +202,19 @@
   width: 100%;
   min-height: 120px;
   border-radius: 16px;
-  background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-edge) 100%);
-  border: 3px solid rgba(0, 0, 0, 0.25);
-  box-shadow: inset 0 2px 16px rgba(0, 0, 0, 0.45);
+  /* Flat themed table: a slightly raised panel with a faint blue wash at the
+     top so it reads as "the table" without any felt texture. */
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(43, 127, 255, 0.07), transparent 62%),
+    var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 10px 26px rgba(0, 0, 0, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px 12px;
 }
-.mesa-empty { color: rgba(255, 255, 255, 0.55); font-size: 13px; }
+.mesa-empty { color: var(--text-muted); font-size: 13px; }
 .mesa-cards {
   display: flex;
   flex-wrap: wrap;
