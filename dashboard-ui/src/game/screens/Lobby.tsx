@@ -54,7 +54,7 @@ export function Lobby({ state, youId }: Props) {
   // the bot has a Main Mini App enabled; the code in the text is the fallback
   // (friend opens the bot → 🎮 Jugar → Unirme → pega el código).
   const deepLink = `https://t.me/${BOT}?startapp=${state.code}`;
-  const inviteText = `¡Unite a mi mesa de Caída! 🎴\nCódigo: ${state.code}`;
+  const inviteText = `¡Únete a mi mesa de Caída! 🎴\nCódigo: ${state.code}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
     deepLink,
   )}&text=${encodeURIComponent(inviteText)}`;
@@ -152,7 +152,7 @@ export function Lobby({ state, youId }: Props) {
       </div>
 
       {!canStart && isHost && (
-        <p className="muted lobby-hint">Necesitás al menos 2 jugadores para empezar.</p>
+        <p className="muted lobby-hint">Necesitas al menos 2 jugadores para empezar.</p>
       )}
     </div>
   );
@@ -184,7 +184,7 @@ function PreLobby() {
       <div className="prelobby-card">
         <h3>Jugar Caída</h3>
         <p className="muted">
-          Creá una mesa e invitá amigos (o llená con CPUs), o unite a una mesa
+          Crea una mesa e invita amigos (o llénala con CPUs), o únete a una mesa
           con su código.
         </p>
         <button

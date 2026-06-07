@@ -113,7 +113,7 @@ function Loading({ message, kind = "ok" }: { message: string; kind?: "ok" | "err
       <p>{message}</p>
       {kind === "err" && (
         <p className="muted">
-          Tomá screenshot y mandalo en @CaidaVZLANews.
+          Toma un screenshot y mándalo a @CaidaVZLANews.
         </p>
       )}
     </div>
@@ -123,10 +123,10 @@ function Loading({ message, kind = "ok" }: { message: string; kind?: "ok" | "err
 function OutsideTelegram() {
   return (
     <div className="banner" style={{ margin: "24px auto" }}>
-      <h2>Abrime desde Telegram</h2>
+      <h2>Ábreme desde Telegram</h2>
       <p>
-        Esta es una Telegram Web App. Buscá <strong>@CaidaVZLABot</strong> en
-        Telegram y abrí la app desde el menú del bot.
+        Esta es una Telegram Web App. Busca <strong>@CaidaVZLABot</strong> en
+        Telegram y abre la app desde el menú del bot.
       </p>
     </div>
   );

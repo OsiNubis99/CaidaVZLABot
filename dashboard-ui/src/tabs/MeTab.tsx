@@ -52,7 +52,7 @@ export function MeTab({ me }: { me: MeResponse }) {
       <div className="card">
         <div className="card-title">Cantos (vivas / total)</div>
         {finished === 0 ? (
-          <p className="muted">Aún no has cantado nada — jugá una partida primero.</p>
+          <p className="muted">Aún no has cantado nada — juega una partida primero.</p>
         ) : (
           SINGS.map(([k, label]) => {
             const total = Number(u[k]) || 0;

@@ -40,7 +40,7 @@ export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) 
             <span className="endgame-pos">{i + 1}</span>
             <span className="endgame-name">
               {s.name}
-              {s.seat === youSeat && <span className="muted"> (vos)</span>}
+              {s.seat === youSeat && <span className="muted"> (tú)</span>}
             </span>
             <span className="endgame-pts">{s.points} pts</span>
           </li>

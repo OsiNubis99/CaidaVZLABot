@@ -12,7 +12,7 @@ export function CantoPicker({ canSing, onSing }: Props) {
   return (
     <div className="canto-picker">
       <div className="canto-picker-info">
-        <span className="canto-picker-label">Podés cantar</span>
+        <span className="canto-picker-label">Puedes cantar</span>
         <span className="canto-picker-name">
           {canSing.name} · {canSing.value} pts
         </span>

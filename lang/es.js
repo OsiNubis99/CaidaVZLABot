@@ -76,13 +76,13 @@ module.exports = {
   user_is_already_joined_other_group: "Ya estas unido a otra partida",
   salir_not_in_game: "No estás en ninguna partida.",
   salir_in_progress:
-    "La partida ya empezó, no podés salirte. Pedile a un admin que use /reiniciar.",
-  salir_left: "Saliste de la partida. Ya podés /unirse en otro grupo.",
+    "La partida ya empezó, no puedes salirte. Pídele a un admin que use /reiniciar.",
+  salir_left: "Saliste de la partida. Ya puedes /unirse en otro grupo.",
   game_expired:
     "⏰ Esta partida fue cancelada automáticamente por exceder el tiempo máximo configurado. Pueden /unirse a una nueva.",
   unir_bot_prompt:
     "🤖 *Agregar bot a la partida*\n\n" +
-    "Elegí dificultad:\n" +
+    "Elige la dificultad:\n" +
     "• *Fácil*: juega cartas al azar (siempre canta).\n" +
     "• *Medio*: prioriza caídas, mesa limpia y máx cartas. Ve la mesa.\n" +
     "• *Pro*: un verdadero reto.",
@@ -90,8 +90,8 @@ module.exports = {
   unir_bot_running: "La partida ya empezó. No se pueden agregar bots ahora.",
   salir_bot_empty: "No hay bots en la partida.",
   salir_bot_running:
-    "La partida ya empezó. No se pueden retirar bots ahora — esperá a que termine o pedile a un admin que use /reiniciar.",
-  salir_bot_prompt: "Tocá el bot que querés retirar:",
+    "La partida ya empezó. No se pueden retirar bots ahora — espera a que termine o pídele a un admin que use /reiniciar.",
+  salir_bot_prompt: "Toca el bot que quieres retirar:",
   user_is_not_admin: "Este comando solo debe ser usado por un #admin.",
   user_unbanned: "Usuario Desbloqueado.",
 

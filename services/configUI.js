@@ -253,7 +253,7 @@ async function pointsView(chatId) {
   return {
     message:
       "🔢 *Puntos & multiplicadores*\n\n" +
-      `Tocá cada valor para ajustar con −/+ steppers.`,
+      `Toca cada valor para ajustar con −/+ steppers.`,
     options: { parse_mode: "Markdown", reply_markup: pointsKeyboard(state.config) },
   };
 }

@@ -17,7 +17,7 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
   if (isStartBy(hand)) {
     return (
       <div className="hand hand-startby">
-        <div className="hand-prompt">¿Por dónde repartís?</div>
+        <div className="hand-prompt">¿Por dónde repartes?</div>
         <div className="startby-choices">
           {/* On the Start_By hand the play payload is the direction VALUE
               (1 or 4), not a card index — GameSession.play reads it as
@@ -67,9 +67,9 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
       <div className="hand-hint muted">
         {isYourTurn
           ? caidaPosition != null && cards.some((c) => c.position === caidaPosition)
-            ? "Tu turno — ¡tenés caída disponible!"
-            : "Tu turno — tocá una carta para jugar"
-          : "Esperá tu turno"}
+            ? "Tu turno — ¡tienes caída disponible!"
+            : "Tu turno — toca una carta para jugar"
+          : "Espera tu turno"}
       </div>
     </div>
   );

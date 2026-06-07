@@ -15,7 +15,7 @@ export const mockPlaying: GameState = {
   status: "playing",
   config: { points: 24, game_mode: 1, mata_mesa: "on", type: "individual" },
   seats: [
-    { index: 0, kind: "human", name: "Vos", connected: true, cardCount: 3, points: 12, took: 4, sang: null, color: "🔴" },
+    { index: 0, kind: "human", name: "Tú", connected: true, cardCount: 3, points: 12, took: 4, sang: null, color: "🔴" },
     { index: 1, kind: "cpu", name: "🤖 Medio", connected: true, difficulty: "medium", cardCount: 3, points: 8, took: 2, sang: "Patrulla", color: "🔵" },
     { index: 2, kind: "cpu", name: "🤖 Pro", connected: true, difficulty: "pro", cardCount: 2, points: 15, took: 6, sang: null, color: "🟢" },
     { index: 3, kind: "human", name: "Andrés", connected: false, cardCount: 3, points: 5, took: 1, sang: null, color: "🟡" },
@@ -38,7 +38,7 @@ export const mockLobby: GameState = {
   status: "lobby",
   config: { points: 24, game_mode: 1, type: "individual" },
   seats: [
-    { index: 0, kind: "human", name: "Vos", connected: true, cardCount: 0, points: 0, took: 0, sang: null, color: "" },
+    { index: 0, kind: "human", name: "Tú", connected: true, cardCount: 0, points: 0, took: 0, sang: null, color: "" },
     { index: 1, kind: "cpu", name: "🤖 Fácil", connected: true, difficulty: "easy", cardCount: 0, points: 0, took: 0, sang: null, color: "" },
   ],
   table: Array(10).fill(null),
@@ -57,7 +57,7 @@ export const mockFinished: GameState = {
     seat: 2,
     standings: [
       { seat: 2, name: "🤖 Pro", points: 24 },
-      { seat: 0, name: "Vos", points: 18 },
+      { seat: 0, name: "Tú", points: 18 },
       { seat: 1, name: "🤖 Medio", points: 12 },
       { seat: 3, name: "Andrés", points: 7 },
     ],

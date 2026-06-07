@@ -450,7 +450,7 @@ module.exports = {
     if (group.decks > 0) {
       return {
         ok: false,
-        msg: "La partida ya empezó. Esperá a que termine o pedile a un admin que use /reiniciar.",
+        msg: "La partida ya empezó. Espera a que termine o pídele a un admin que use /reiniciar.",
       };
     }
     const target = cpus[seat - 1];
