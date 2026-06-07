@@ -102,6 +102,41 @@ class Game {
   }
 
   /**
+   * MessageEntity that mentions the current player by user_id so a player
+   * WITHOUT a public @username still gets pinged on their turn — a plain
+   * first_name in the text doesn't notify them, but a `text_mention` does.
+   *
+   * Returns null when the mention is unneeded or impossible: the player has a
+   * username (the @mention already pings), is a CPU, has no numeric Telegram
+   * id, or the turn line isn't present in `text`.
+   *
+   * Telegram entity offsets are UTF-16 code units — the same unit as JS string
+   * indices — so the position is read straight off the rendered text via
+   * lastIndexOf (the turn line is always `ig_next_label + name`); no manual
+   * offset threading through the concatenations is needed.
+   *
+   * @param {String} text - The rendered status message about to be sent.
+   * @returns {Object|null} a Telegram MessageEntity, or null.
+   */
+  turnMentionEntity(text) {
+    const u = this.users[this.player];
+    if (!u || u.username || u.cpu_difficulty) return null;
+    const id = Number(u.id_user);
+    if (!Number.isInteger(id) || id <= 0) return null;
+    const name = u.first_name;
+    if (!name) return null;
+    const label = this._lang().ig_next_label;
+    const idx = String(text || "").lastIndexOf(label + name);
+    if (idx < 0) return null;
+    return {
+      type: "text_mention",
+      offset: idx + label.length,
+      length: name.length,
+      user: { id, first_name: name },
+    };
+  }
+
+  /**
    * Whether the current game is actually being played as parejas. A
    * group may have config.type === "parejas" saved, but parejas only
    * makes sense with exactly 4 users — with 2 or 3 the game must fall

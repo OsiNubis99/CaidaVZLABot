@@ -38,6 +38,37 @@ function clearSkipTimer(chatId) {
   }
 }
 
+// Keep only entities whose range fits inside `textLen`. A photo caption is
+// truncated at 1024 chars, which can cut the mentioned name off the end — drop
+// the entity in that case rather than send Telegram an out-of-range offset.
+function clampEntities(entities, textLen) {
+  if (!Array.isArray(entities)) return [];
+  return entities.filter(
+    (e) => e && e.offset >= 0 && e.offset + e.length <= textLen,
+  );
+}
+
+// Send a game-response object (photo-with-caption or plain text) and carry any
+// text_mention entities so a username-less player gets pinged on their turn
+// (entities for text, caption_entities for a photo).
+async function sendGameResponse(chatId, response) {
+  if (response.photo) {
+    const opts = { reply_markup: response.options && response.options.reply_markup };
+    const full = response.message || "";
+    if (full.trim()) {
+      opts.caption = full.length > 1024 ? full.slice(0, 1021) + "..." : full;
+      const ents = clampEntities(response.entities, opts.caption.length);
+      if (ents.length) opts.caption_entities = ents;
+    }
+    await bot.sendPhoto(chatId, response.photo, opts);
+  } else {
+    const opts = { ...(response.options || {}) };
+    const ents = clampEntities(response.entities, (response.message || "").length);
+    if (ents.length) opts.entities = ents;
+    await bot.sendMessage(chatId, response.message, opts);
+  }
+}
+
 function scheduleSkip(response) {
   if (!response || !response.chat_id) return;
   const chatId = response.chat_id;
@@ -52,14 +83,7 @@ function scheduleSkip(response) {
       const result = await game.autoSkipTurn(chatId, expectedUserId);
       if (!result) return;
       await bot.sendMessage(chatId, "⏰ Tiempo agotado — turno saltado.");
-      if (result.photo) {
-        await bot.sendPhoto(chatId, result.photo, {
-          caption: (result.message || "").slice(0, 1024),
-          reply_markup: result.options && result.options.reply_markup,
-        });
-      } else {
-        await bot.sendMessage(chatId, result.message, result.options);
-      }
+      await sendGameResponse(chatId, result);
       await maybeDmNextTurn(result);
       scheduleSkip(result);
     } catch (err) {
@@ -202,20 +226,7 @@ bot.on(
     if (response.audio) {
       await audio.play(bot, response.chat_id, response.audio);
     }
-    if (response.photo) {
-      const opts = {
-        reply_markup: response.options && response.options.reply_markup,
-      };
-      if (response.message && response.message.trim()) {
-        opts.caption =
-          response.message.length > 1024
-            ? response.message.slice(0, 1021) + "..."
-            : response.message;
-      }
-      await bot.sendPhoto(response.chat_id, response.photo, opts);
-    } else {
-      await bot.sendMessage(response.chat_id, response.message, response.options);
-    }
+    await sendGameResponse(response.chat_id, response);
     await maybeDmNextTurn(response);
     scheduleSkip(response);
     scheduleCpuTurn(response);
@@ -278,20 +289,7 @@ async function cpuStep(chatId) {
     if (result.audio) {
       await audio.play(bot, result.chat_id, result.audio);
     }
-    if (result.photo) {
-      const opts = {
-        reply_markup: result.options && result.options.reply_markup,
-      };
-      if (result.message && result.message.trim()) {
-        opts.caption =
-          result.message.length > 1024
-            ? result.message.slice(0, 1021) + "..."
-            : result.message;
-      }
-      await bot.sendPhoto(result.chat_id, result.photo, opts);
-    } else {
-      await bot.sendMessage(result.chat_id, result.message, result.options);
-    }
+    await sendGameResponse(result.chat_id, result);
   } catch (err) {
     logger.warn({ err: err.message, chatId }, "CPU autoplay send failed");
   }

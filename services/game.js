@@ -56,6 +56,13 @@ function attachNextTurn(group, finished, response, chatIdHint) {
     turnTimeoutSeconds: timeout,
   };
   if (chatIdHint && !out.chat_id) out.chat_id = chatIdHint;
+  // Ping a username-less "next" player via a text_mention. Only on a regular
+  // turn (the Start_By 1/4 pick has no turn line) and against the exact text
+  // that will be sent, so the offset is valid.
+  if (!isStartByState && typeof out.message === "string") {
+    const ent = group.turnMentionEntity(out.message);
+    if (ent) out.entities = [ent];
+  }
   return out;
 }
 
