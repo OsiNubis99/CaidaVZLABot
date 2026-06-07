@@ -21,21 +21,29 @@ export function GameTab({ youId }: Props) {
 }
 
 function GameFlow({ youId }: Props) {
-  const { state, conn, error, clearError, joinSession, reconnect } = useGame();
+  const { state, conn, error, clearError, joinSession, resume, reconnect } =
+    useGame();
   const toast = useToast();
   const autoJoined = useRef(false);
+  const prevConn = useRef(conn);
 
-  // Auto-join a deep-linked session (t.me/<bot>/app?startapp=<code>) exactly
-  // once, after the socket is connected.
+  // On every transition INTO connected (first open + each reconnect): if we
+  // arrived via a deep link (?startapp=<code>) join that table once; otherwise
+  // ask the server to drop us back into our active game. The resume is a no-op
+  // when we aren't seated anywhere, and idempotent, so it also recovers a
+  // mid-game socket blip (closing/reopening the app, network drop).
   useEffect(() => {
-    if (autoJoined.current) return;
-    if (conn !== "connected") return;
+    const was = prevConn.current;
+    prevConn.current = conn;
+    if (conn !== "connected" || was === "connected") return;
     const code = startParam();
-    if (code && !state) {
+    if (code && !state && !autoJoined.current) {
       autoJoined.current = true;
       joinSession(code);
+      return;
     }
-  }, [conn, state, joinSession]);
+    resume();
+  }, [conn, state, joinSession, resume]);
 
   // Surface server errors as toasts, then clear so they don't re-fire.
   useEffect(() => {

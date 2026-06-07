@@ -237,6 +237,23 @@ const handlers = {
     broadcastState(session);
   },
 
+  // Reopen / reconnect: drop the socket back into the user's active table.
+  // A mid-game disconnect keeps the seat, so closing and reopening the app
+  // (or recovering from a network blip) resumes the same game. No-op when the
+  // user isn't seated anywhere — the client just stays on the create/join view.
+  [C2S.SESSION_RESUME](socket) {
+    const user = socket.data.user;
+    const session = sessionStore.findByUser(user.id);
+    if (!session) return;
+    const seat = session.seatOf(user.id);
+    if (seat && seat.kind === "human") seat.connected = true;
+    trackSocket(socket, session.code);
+    broadcastState(session);
+    // Re-arm the turn loop so a player who was being auto-skipped picks their
+    // turn back up cleanly (state-only refresh; no engine behavior change).
+    if (session.status === "playing") turnLoop.drive(session, broadcastOrFinish);
+  },
+
   [C2S.ACTION_PLAY](socket, payload = {}) {
     const session = requireSession(socket);
     session.play(socket.data.user.id, payload.cardIndex);

@@ -264,4 +264,56 @@ describe("wsServer (socket.io integration)", () => {
       expect(sessionStore.get(code)).toBe(null);
     });
   });
+
+  // ── resume on reopen / reconnect ─────────────────────────────────────────
+  describe("resume lifecycle", () => {
+    const { handlers, sessionSockets } = wsServer._internal;
+
+    /** A reopened client: a brand-new socket with no session tracked yet. */
+    function freshSocket(userId, name) {
+      const emitted = [];
+      return {
+        emitted,
+        data: { code: null, user: { id: userId, first_name: name } },
+        emit: (event, payload) => emitted.push([event, payload]),
+      };
+    }
+
+    it("re-attaches a reopened socket to the user's active table", () => {
+      const session = sessionStore.create({ userId: 940, name: "Host" });
+      session.addCpu("medium");
+      const code = session.code;
+      // Simulate a mid-game disconnect: seat kept, marked disconnected.
+      const seat = session.seatOf(940);
+      seat.connected = false;
+
+      const reopened = freshSocket(940, "Host");
+      handlers[C2S.SESSION_RESUME](reopened);
+
+      expect(reopened.data.code).toBe(code); // tracked back into the table
+      expect(seat.connected).toBe(true); // marked connected again
+      expect(reopened.emitted.some(([e]) => e === S2C.SESSION_STATE)).toBe(true);
+      sessionSockets.delete(code);
+    });
+
+    it("is a no-op when the user isn't seated anywhere", () => {
+      const stranger = freshSocket(950, "Nadie");
+      handlers[C2S.SESSION_RESUME](stranger);
+      expect(stranger.data.code).toBe(null);
+      expect(stranger.emitted.length).toBe(0);
+    });
+
+    it("does not resume a finished table", () => {
+      const session = sessionStore.create({ userId: 960, name: "Host" });
+      session.status = "finished";
+      const code = session.code;
+      const reopened = freshSocket(960, "Host");
+
+      handlers[C2S.SESSION_RESUME](reopened);
+
+      expect(reopened.data.code).toBe(null);
+      expect(reopened.emitted.length).toBe(0);
+      sessionSockets.delete(code);
+    });
+  });
 });

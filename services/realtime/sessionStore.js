@@ -60,6 +60,23 @@ function get(code) {
   return sessions.get(code) || null;
 }
 
+/**
+ * Find the active (non-finished) session this user is still seated at, so a
+ * reopened/reconnected client can be dropped back into it. A mid-game
+ * disconnect keeps the seat (GameSession.leave marks it disconnected), so this
+ * resolves the in-progress table; a finished one is skipped (nothing to resume).
+ * @param {string|number} userId
+ * @returns {GameSession|null}
+ */
+function findByUser(userId) {
+  const id = String(userId);
+  for (const session of sessions.values()) {
+    if (session.status === "finished") continue;
+    if (session.seatOf(id)) return session;
+  }
+  return null;
+}
+
 /** Drop a session from the store. @returns {boolean} whether it existed. */
 function remove(code) {
   return sessions.delete(code);
@@ -90,6 +107,7 @@ function _clear() {
 module.exports = {
   create,
   get,
+  findByUser,
   remove,
   join,
   _clear,
