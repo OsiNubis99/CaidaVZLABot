@@ -196,4 +196,72 @@ describe("wsServer (socket.io integration)", () => {
     host.disconnect();
     guest.disconnect();
   });
+
+  // ── rematch after a finished game (regression: "No estás en una sesión") ──
+  // finishGame used to untrack sockets + drop the session, so SESSION_REMATCH
+  // failed requireSession. Now a finished table stays alive for the rematch.
+  describe("rematch lifecycle", () => {
+    const { handlers, handleLeave, sessionSockets } = wsServer._internal;
+
+    function fakeSocket(code, userId, name) {
+      const emitted = [];
+      const socket = {
+        emitted,
+        data: { code, user: { id: userId, first_name: name } },
+        emit: (event, payload) => emitted.push([event, payload]),
+      };
+      sessionSockets.set(code, new Set([socket]));
+      return socket;
+    }
+
+    it("keeps a finished session alive so the host can rematch", () => {
+      const session = sessionStore.create({ userId: 900, name: "Host" });
+      session.addCpu("medium");
+      session.status = "finished";
+      session.winner = { seat: 1, standings: [] };
+      const code = session.code;
+      const host = fakeSocket(code, 900, "Host");
+
+      handlers[C2S.SESSION_REMATCH](host);
+
+      expect(session.status).toBe("lobby");
+      expect(sessionStore.get(code)).toBe(session); // not dropped
+      expect(host.emitted.some(([e]) => e === S2C.SESSION_STATE)).toBe(true);
+      sessionSockets.delete(code);
+    });
+
+    it("rejects a non-host rematch and leaves the session finished", () => {
+      const session = sessionStore.create({ userId: 910, name: "Host" });
+      session.addHuman({ userId: 911, name: "Guest" });
+      session.status = "finished";
+      const code = session.code;
+      const guest = fakeSocket(code, 911, "Guest");
+
+      expect(() => handlers[C2S.SESSION_REMATCH](guest)).toThrow(/anfitrión/i);
+      expect(session.status).toBe("finished");
+      sessionSockets.delete(code);
+    });
+
+    it("drops a finished table when the host leaves it", () => {
+      const session = sessionStore.create({ userId: 920, name: "Host" });
+      session.status = "finished";
+      const code = session.code;
+      const host = fakeSocket(code, 920, "Host");
+
+      handleLeave(host);
+      expect(sessionStore.get(code)).toBe(null);
+    });
+
+    it("drops a finished table once the last viewer leaves", () => {
+      const session = sessionStore.create({ userId: 930, name: "Host" });
+      session.addHuman({ userId: 931, name: "Guest" });
+      session.status = "finished";
+      const code = session.code;
+      // Guest is the only tracked socket; their leave empties the table.
+      const guest = fakeSocket(code, 931, "Guest");
+
+      handleLeave(guest);
+      expect(sessionStore.get(code)).toBe(null);
+    });
+  });
 });

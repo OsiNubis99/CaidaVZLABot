@@ -141,8 +141,10 @@ function settle(session) {
   }
 }
 
-/** Emit session:ended with the winner and clear timers; keep the session in
- *  the store briefly is unnecessary — drop it so the code frees up. */
+/** Emit session:ended with the winner and clear the turn timers. The session
+ *  and its sockets are kept ALIVE so the host can offer a rematch
+ *  (SESSION_REMATCH); handleLeave drops a finished table once it's empty or the
+ *  host leaves it (there's no in-memory session reaper). */
 function finishGame(session) {
   turnLoop.clear(session.code);
   const winner = session.winner || null;
@@ -155,12 +157,6 @@ function finishGame(session) {
       });
     }
   }
-  // Leave sockets connected (the client may show an end screen) but free the
-  // session + its socket set: a finished game can't be acted on.
-  if (set) {
-    for (const socket of [...set]) untrackSocket(socket);
-  }
-  sessionStore.remove(session.code);
 }
 
 // ── C2S handlers ──────────────────────────────────────────────────────────
@@ -267,6 +263,26 @@ function handleLeave(socket) {
   untrackSocket(socket);
   if (!session) return;
   const user = socket.data.user;
+
+  // A finished table only lingers to offer a rematch. Drop it when the host
+  // leaves (rematch is host-only) or when nobody is left on the result screen;
+  // a non-host who leaves just frees their seat from the next rematch.
+  if (session.status === "finished") {
+    const remaining = sessionSockets.get(code);
+    const empty = !remaining || remaining.size === 0;
+    const hostLeft = String(user.id) === session.hostUserId;
+    if (hostLeft && !empty) {
+      endSession(session, "host_left");
+    } else if (empty) {
+      turnLoop.clear(code);
+      sessionStore.remove(code);
+    } else {
+      session.leave(user.id);
+      broadcastState(session);
+    }
+    return;
+  }
+
   const result = session.leave(user.id);
   if (result.closed) {
     endSession(session, result.reason || "host_left");
