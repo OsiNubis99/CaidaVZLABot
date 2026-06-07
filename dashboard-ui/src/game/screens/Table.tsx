@@ -103,6 +103,7 @@ export function Table({ state }: Props) {
         table={state.table}
         lastCardPlayed={state.lastCardPlayed}
         lastEvent={state.lastEvent}
+        lastDeal={state.lastDeal ?? null}
       />
 
       <div className="table-bottom">

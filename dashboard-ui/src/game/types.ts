@@ -71,6 +71,23 @@ export interface LastEvent {
   card: Card | null;
 }
 
+/** One dealt card of a deck-start "pegar en mesa", in draw order. */
+export interface DealCard {
+  value: number;
+  type: Suit | null;
+  position: number;
+  pegado: number;
+}
+
+/** Deck-start deal for the pegar-en-mesa animation: the draw-order sequence
+ *  plus per-card pegado. `id` increments per deal so the client animates each
+ *  one exactly once. Null except on the broadcast right after a deal. */
+export interface LastDeal {
+  id: number;
+  direction: 1 | 4;
+  seq: DealCard[];
+}
+
 export interface StandingEntry {
   seat: number;
   name: string;
@@ -95,6 +112,7 @@ export interface GameState {
   lastHand: boolean;
   you: You;
   lastEvent: LastEvent | null;
+  lastDeal?: LastDeal | null;
   winner?: Winner | null;
 }
 

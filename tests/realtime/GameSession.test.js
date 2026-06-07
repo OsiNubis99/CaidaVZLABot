@@ -269,4 +269,44 @@ describe("sessionStore", () => {
     expect(sessionStore.get("CAIDA-S1")).toBe(a);
     expect(sessionStore.get("CAIDA-S2")).toBe(b);
   });
+
+  describe("lastDeal (pegar-en-mesa animation data)", () => {
+    // Deck crafted so a startBy=4 deal draws mesa values 5,3,2,6 (Card n →
+    // value floor(n/4)+1): 16→5, 8→3, 4→2, 20→6. Only 3 and 2 match the
+    // descending prediction 4,3,2,1 → pegado 3 and 2 (total 5).
+    const PARTIAL = [16, 11, 10, 8, 38, 19, 4, 25, 18, 20];
+
+    it("records draw order, suits, and per-card pegado", () => {
+      const s = new GameSession({ code: "CAIDA-DEAL", host: { userId: "1", name: "A" } });
+      s.addCpu("easy");
+      patchDeck(s, PARTIAL);
+      s.start(4);
+
+      expect(s.lastDeal).toBeTruthy();
+      expect(s.lastDeal.direction).toBe(4);
+      expect(s.lastDeal.seq.map((c) => c.value)).toEqual([5, 3, 2, 6]);
+      expect(s.lastDeal.seq.map((c) => c.pegado)).toEqual([0, 3, 2, 0]);
+      expect(s.lastDeal.seq.every((c) => typeof c.type === "string")).toBe(true);
+      expect(s.lastDeal.seq.map((c) => c.position)).toEqual([4, 2, 1, 5]);
+    });
+
+    it("full 4→3→2→1 match pegs every card", () => {
+      const s = new GameSession({ code: "CAIDA-DEAL2", host: { userId: "1", name: "A" } });
+      s.addCpu("easy");
+      patchDeck(s); // FIXED_DECK deals 4,3,2,1 on a direction-4 start
+      s.start(4);
+      expect(s.lastDeal.seq.map((c) => c.value)).toEqual([4, 3, 2, 1]);
+      expect(s.lastDeal.seq.map((c) => c.pegado)).toEqual([4, 3, 2, 1]);
+    });
+
+    it("clears on the next play", () => {
+      const s = new GameSession({ code: "CAIDA-DEAL3", host: { userId: "1", name: "A" } });
+      s.addCpu("easy");
+      patchDeck(s, PARTIAL);
+      s.start(4);
+      expect(s.lastDeal).toBeTruthy();
+      s.play("1", 0); // human seat 0 plays → deal animation is over
+      expect(s.lastDeal).toBeNull();
+    });
+  });
 });

@@ -1,21 +1,24 @@
 import { useEffect, useRef } from "react";
-import type { Card, LastEvent } from "../types";
+import type { Card, LastEvent, LastDeal } from "../types";
 import { PlayingCard } from "./PlayingCard";
 
 interface Props {
   table: (Card | null)[];
   lastCardPlayed: Card | null;
   lastEvent: LastEvent | null;
+  lastDeal?: LastDeal | null;
 }
+
+const STAGGER_MS = 150;
 
 function sameCard(a: Card | null, b: Card | null): boolean {
   return !!a && !!b && a.value === b.value && a.type === b.type;
 }
 
-/** The central mesa: shows the placed cards. Cards that are newly on the table
- *  this render animate in one-by-one (staggered) so a deck deal "drops" card by
- *  card instead of all at once. The last played card is highlighted. */
-export function Mesa({ table, lastCardPlayed, lastEvent }: Props) {
+/** The central mesa. New cards animate in one-by-one. On a deck-start deal the
+ *  stagger follows the real draw order and pegar-en-mesa cards pop a "+N" as
+ *  they land (synced to each drop). The last played card is highlighted. */
+export function Mesa({ table, lastCardPlayed, lastEvent, lastDeal }: Props) {
   const flash =
     lastEvent && (lastEvent.kind === "caida" || lastEvent.kind === "mata_mesa")
       ? "caida"
@@ -23,8 +26,7 @@ export function Mesa({ table, lastCardPlayed, lastEvent }: Props) {
         ? "limpia"
         : null;
 
-  // Track which positions were already on the table last render so only the
-  // freshly-dealt ones animate, and they stagger in board order.
+  // Board-order diff: which positions are newly on the table (for normal plays).
   const prevPositions = useRef<Set<number>>(new Set());
   const filledPositions = table
     .map((c, i) => (c ? i : -1))
@@ -34,8 +36,31 @@ export function Mesa({ table, lastCardPlayed, lastEvent }: Props) {
     prevPositions.current = new Set(filledPositions);
   });
 
+  // A deck-start deal animates by draw order, with +N pegado popups, once per
+  // deal id. position → { order, pegado }.
+  const prevDealId = useRef<number | null>(null);
+  const isFreshDeal = !!lastDeal && lastDeal.id !== prevDealId.current;
+  useEffect(() => {
+    if (lastDeal) prevDealId.current = lastDeal.id;
+  }, [lastDeal]);
+
+  const dealByPos = new Map<number, { order: number; pegado: number }>();
+  if (isFreshDeal && lastDeal) {
+    lastDeal.seq.forEach((c, i) =>
+      dealByPos.set(c.position, { order: i, pegado: c.pegado }),
+    );
+  }
+
+  function delayFor(pos: number): number {
+    if (isFreshDeal) {
+      const d = dealByPos.get(pos);
+      return d ? d.order * STAGGER_MS : 0;
+    }
+    const idx = newlyAdded.indexOf(pos);
+    return idx >= 0 ? idx * STAGGER_MS : 0;
+  }
+
   const placed = filledPositions.length;
-  const STAGGER_MS = 130;
 
   return (
     <div className="mesa">
@@ -52,8 +77,8 @@ export function Mesa({ table, lastCardPlayed, lastEvent }: Props) {
           <div className="mesa-cards">
             {table.map((card, pos) => {
               if (!card) return null;
-              const dealOrder = newlyAdded.indexOf(pos);
-              const delay = dealOrder >= 0 ? dealOrder * STAGGER_MS : 0;
+              const delay = delayFor(pos);
+              const pegado = isFreshDeal ? (dealByPos.get(pos)?.pegado ?? 0) : 0;
               return (
                 <div
                   className="mesa-slot"
@@ -65,6 +90,14 @@ export function Mesa({ table, lastCardPlayed, lastEvent }: Props) {
                     size="md"
                     highlighted={sameCard(card, lastCardPlayed)}
                   />
+                  {pegado > 0 && (
+                    <span
+                      className="pegado-pop"
+                      style={{ animationDelay: `${delay + 110}ms` }}
+                    >
+                      +{pegado}
+                    </span>
+                  )}
                 </div>
               );
             })}

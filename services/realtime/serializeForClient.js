@@ -133,6 +133,9 @@ function serializeForClient(session, viewerUserId) {
   state.lastHand = !!game.last_hand;
   state.you = buildYou(session, game, viewerUserId, startBy);
   state.lastEvent = session.lastEvent || null;
+  // Deck-start deal sequence (draw order + per-card pegado) for the client's
+  // "pegar en mesa" animation. Null except on the broadcast right after a deal.
+  state.lastDeal = session.lastDeal || null;
 
   if (session.status === "finished") {
     state.winner = session.winner || null;

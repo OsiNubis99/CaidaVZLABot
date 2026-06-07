@@ -36,6 +36,11 @@ class GameSession {
     // Transient hint for serializeForClient → lastEvent, refreshed on every
     // play. null between plays.
     this.lastEvent = null;
+    // Set on a deck-start deal: the draw-order sequence + per-card pegado, so
+    // the client can animate the "pegar en mesa" card by card with +N popups.
+    // Cleared on the next play. `id` lets the client animate each deal once.
+    this.lastDeal = null;
+    this._dealSeq = 0;
     // Final standings, set when the engine reports a win (status finished).
     this.winner = null;
 
@@ -188,6 +193,8 @@ class GameSession {
     if (!current || String(current.id_user) !== id) {
       throw sessionError("not_your_turn", "No es tu turno");
     }
+    // The pegar-en-mesa animation belongs only to the deal broadcast.
+    this.lastDeal = null;
     const result = game.play_card(id, arg);
     return this._afterEngineResult(result, game.player, "play");
   }
@@ -198,6 +205,7 @@ class GameSession {
    */
   sing(viewerUserId) {
     this._assertPlaying();
+    this.lastDeal = null;
     const id = String(viewerUserId);
     const seat = this.seatOf(id);
     if (!seat) throw sessionError("not_seated", "No estás en la mesa");
@@ -256,7 +264,38 @@ class GameSession {
     const dealerIdx = this.game.users.length - 1;
     const result = this.game.handing_out_cards(startBy);
     this.lastEvent = null;
+    this.lastDeal = this._computeLastDeal(startBy);
     return this._afterEngineResult(result, dealerIdx, "play");
+  }
+
+  /**
+   * Reconstruct the deck-start deal for client animation. The engine doesn't
+   * change — we read what it already produced: `game.table_order` is the
+   * draw-order values (e.g. "5 -> 3 -> 2 -> 6"), and a card "pega" when its
+   * value matches the predicted sequence step (4→3→2→1 for startBy 4, else
+   * 1→2→3→4). Suits come from the mesa (a dealt value V sits at position V-1).
+   * Purely additive: no behavior change, just exposing the order + pegado.
+   */
+  _computeLastDeal(startBy) {
+    const game = this.game;
+    const drawValues = String(game.table_order || "")
+      .split(/[^0-9]+/)
+      .filter((s) => s.length)
+      .map(Number);
+    if (drawValues.length === 0) return null;
+    const desc = startBy === 4;
+    const seq = drawValues.map((value, i) => {
+      const predicted = desc ? startBy - i : startBy + i;
+      const onTable = game.table[value - 1];
+      return {
+        value,
+        type: onTable ? onTable.type : null,
+        position: value - 1,
+        pegado: value === predicted ? predicted : 0,
+      };
+    });
+    this._dealSeq += 1;
+    return { id: this._dealSeq, direction: startBy, seq };
   }
 
   /**

@@ -250,7 +250,31 @@
 }
 /* `both` keeps a staggered card at the "from" (hidden) state during its delay
    so a deck deal drops card by card instead of all flashing then animating. */
-.mesa-slot { animation: deal-in 0.24s ease-out both; }
+.mesa-slot { position: relative; animation: deal-in 0.24s ease-out both; }
+
+/* "+N" pegado popup: floats up off a card that pegó en mesa, timed to its drop. */
+.pegado-pop {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  background: var(--ok, #3fb950);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 3;
+  animation: pegado-float 1.2s ease-out both;
+}
+@keyframes pegado-float {
+  0% { transform: translateY(8px) scale(0.5); opacity: 0; }
+  18% { transform: translateY(0) scale(1.2); opacity: 1; }
+  55% { transform: translateY(-3px) scale(1); opacity: 1; }
+  100% { transform: translateY(-20px) scale(1); opacity: 0; }
+}
 .mesa-caption { font-size: 12px; }
 .mesa-flash {
   position: absolute;
