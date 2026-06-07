@@ -121,7 +121,18 @@
 }
 
 /* ─── table screen ─── */
-.table-screen { display: flex; flex-direction: column; gap: 12px; }
+/* Fill the viewport below the app header/tabs so the mesa can grow and the
+   hand pins to the very bottom (margin-top:auto on .table-bottom). dvh tracks
+   the real visible height inside the Telegram WebView. */
+.table-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: calc(100dvh - 168px);
+}
+.table-screen .mesa { flex: 1 1 auto; justify-content: center; }
+.table-screen .mesa-felt { flex: 1 1 auto; min-height: 150px; }
+.table-screen .table-bottom { margin-top: auto; }
 .table-topbar {
   display: flex;
   align-items: center;

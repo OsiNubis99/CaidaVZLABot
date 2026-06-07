@@ -29,7 +29,14 @@ export function Lobby({ state, youId }: Props) {
 
   const filled = state.seats.length;
   const canStart = isHost && filled >= 2;
-  const shareLink = `https://t.me/${BOT}/app?startapp=${state.code}`;
+  // Deep link into this table. Opens the WebApp with start_param=<code> when
+  // the bot has a Main Mini App enabled; the code in the text is the fallback
+  // (friend opens the bot → 🎮 Jugar → Unirme → pega el código).
+  const deepLink = `https://t.me/${BOT}?startapp=${state.code}`;
+  const inviteText = `¡Unite a mi mesa de Caída! 🎴\nCódigo: ${state.code}`;
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
+    deepLink,
+  )}&text=${encodeURIComponent(inviteText)}`;
 
   return (
     <div className="lobby">
@@ -40,8 +47,8 @@ export function Lobby({ state, youId }: Props) {
         </div>
         <button
           type="button"
-          className="btn"
-          onClick={() => openTelegramLink(shareLink)}
+          className="btn btn-primary"
+          onClick={() => openTelegramLink(shareUrl)}
         >
           🔗 Invitar
         </button>
