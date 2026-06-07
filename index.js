@@ -482,7 +482,9 @@ bot.on(
 //**                   Admins Commands                   */
 
 bot.onText(
-  /\/message (.*)/,
+  // [\s\S]+ (not .*) so a multi-line broadcast is captured whole — `.` stops
+  // at the first newline without the s flag.
+  /^\/message ([\s\S]+)/,
   safe("/message", async (msg, match) => {
     if (!admin.is_admin(msg.from.id)) {
       await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person, {
