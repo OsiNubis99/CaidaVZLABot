@@ -51,7 +51,12 @@ export class GameSocket {
     this.socket = io({
       path: `${dir}socket.io/`,
       auth: { initData: initData() },
-      transports: ["websocket", "polling"],
+      // Polling FIRST, then transparently upgrade to websocket. This connects
+      // even when the proxy hasn't been configured to pass WS upgrades (it
+      // just stays on long-polling); once nginx forwards Upgrade/Connection
+      // the client upgrades to native WS on its own. Forcing websocket-first
+      // shows "Sin conexión" whenever the upgrade is blocked.
+      transports: ["polling", "websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 800,
