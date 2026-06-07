@@ -1,7 +1,6 @@
 import { useMemo } from "react";
-import type { GameState, Seat, LastEvent } from "../types";
+import type { GameState } from "../types";
 import { isStartBy } from "../types";
-import { rankName } from "../cards";
 import { useGame } from "../store";
 import { Mesa } from "../components/Mesa";
 import { Hand } from "../components/Hand";
@@ -11,28 +10,6 @@ import { EndGame } from "../components/EndGame";
 
 interface Props {
   state: GameState;
-}
-
-/** Human-readable line for the latest game event (jugó / cantó / caída / …). */
-function eventMessage(ev: LastEvent | null, seats: Seat[]): string | null {
-  if (!ev) return null;
-  const seat = seats.find((s) => s.index === ev.seat);
-  const who = seat?.name ?? "Alguien";
-  const card = ev.card ? `${rankName(ev.card.value)} de ${ev.card.type}` : null;
-  switch (ev.kind) {
-    case "caida":
-      return `⚡ ¡Caída de ${who}!`;
-    case "mata_mesa":
-      return `🔄 ${who} mató la mesa`;
-    case "mesa_limpia":
-      return `✨ ${who} hizo mesa limpia`;
-    case "canto":
-      return `🎵 ${who} cantó${seat?.sang ? ` ${seat.sang}` : ""}`;
-    case "play":
-      return card ? `${who} jugó ${card}` : null;
-    default:
-      return null;
-  }
 }
 
 /** The card table: rivals across the top, mesa in the center, your hand at the
@@ -67,8 +44,6 @@ export function Table({ state }: Props) {
       ? state.seats.find((s) => s.index === state.turnSeat)?.name
       : null;
 
-  const eventMsg = eventMessage(state.lastEvent, state.seats);
-
   return (
     <div className="table-screen">
       <div className="table-topbar">
@@ -90,11 +65,6 @@ export function Table({ state }: Props) {
         ))}
       </div>
 
-      {/* Notification line: re-keyed on the message so it re-animates on change. */}
-      <div className="event-line" key={eventMsg ?? "none"}>
-        {eventMsg ?? " "}
-      </div>
-
       <Mesa
         table={state.table}
         lastCardPlayed={state.lastCardPlayed}
@@ -112,7 +82,6 @@ export function Table({ state }: Props) {
             </span>
             <span className="you-stat" title="Tus puntos">⭐ {you.points} pts</span>
             <span className="you-stat" title="Tomaste esta mano">🂠 {you.took}</span>
-            <span className="you-stat" title="Cartas en mano">🖐 {you.cardCount}</span>
             {you.sang && <span className="you-canto">🎵 {you.sang}</span>}
             {isYourTurn && <span className="you-turn">Tu turno</span>}
           </div>

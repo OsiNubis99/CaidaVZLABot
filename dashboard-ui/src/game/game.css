@@ -289,9 +289,13 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   border-radius: 13px;
+  /* Above the placed cards: the .mesa-slot cards are position:relative and
+     paint after the (DOM-earlier) flash, so without this the caída flash sits
+     behind a full mesa. */
+  z-index: 10;
   animation: flash-pop 0.9s ease-out forwards;
 }
-.mesa-flash-caida { background: rgba(210, 59, 59, 0.35); }
+.mesa-flash-caida { background: rgba(210, 59, 59, 0.5); }
 .mesa-flash-limpia { background: rgba(47, 129, 247, 0.3); }
 
 /* ─── event notification line ─── */

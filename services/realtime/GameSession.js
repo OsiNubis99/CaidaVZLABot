@@ -195,8 +195,11 @@ class GameSession {
     }
     // The pegar-en-mesa animation belongs only to the deal broadcast.
     this.lastDeal = null;
+    // Resolve the actor's seat BEFORE the play (game.player advances inside
+    // play_card, so reading it after would name the wrong player).
+    const actorSeat = this.seatOf(id) ? this.seatOf(id).index : null;
     const result = game.play_card(id, arg);
-    return this._afterEngineResult(result, game.player, "play");
+    return this._afterEngineResult(result, actorSeat, "play");
   }
 
   /**
@@ -261,11 +264,11 @@ class GameSession {
 
   /** Deal a brand-new deck in the chosen direction and fold the result. */
   _deal(startBy) {
-    const dealerIdx = this.game.users.length - 1;
+    const dealerSeat = this._seatIndexForGameIndex(this.game.users.length - 1);
     const result = this.game.handing_out_cards(startBy);
     this.lastEvent = null;
     this.lastDeal = this._computeLastDeal(startBy);
-    return this._afterEngineResult(result, dealerIdx, "play");
+    return this._afterEngineResult(result, dealerSeat, "play");
   }
 
   /**
@@ -303,9 +306,13 @@ class GameSession {
    * status + lastEvent. The engine returns a `{finished, response}` object
    * on a win and a plain string otherwise.
    */
-  _afterEngineResult(result, actorIndex, defaultKind) {
+  // `actorSeat` is a seat INDEX, resolved by the caller BEFORE the engine ran.
+  // It must be pre-resolved because play_card advances game.player and may
+  // rotate users[] at a mano boundary — reading the actor after the fact would
+  // attribute the event to the wrong seat (the "I played → it says the bot"
+  // bug).
+  _afterEngineResult(result, actorSeat, defaultKind) {
     const game = this.game;
-    const seat = this._seatIndexForGameIndex(actorIndex);
     const card = game.last_card_played
       ? { value: game.last_card_played.value, type: game.last_card_played.type, position: game.last_card_played.position }
       : null;
@@ -313,7 +320,7 @@ class GameSession {
     let kind = defaultKind;
     if (game._lastCaida) kind = "caida";
     else if (game._lastCleanTable) kind = "mesa_limpia";
-    this.lastEvent = { kind, seat, card };
+    this.lastEvent = { kind, seat: actorSeat, card };
 
     if (result && typeof result === "object" && result.finished) {
       this.status = "finished";
