@@ -4,6 +4,7 @@ const env = require("../config/env");
 const logger = require("../config/logger");
 const message = require("../templates/message");
 const { GroupController, UserController } = require("../database");
+const { resolveGroupLink } = require("./groupLink");
 
 function is_admin(id) {
 	return env.admin_ids.includes(String(id));
@@ -95,12 +96,10 @@ module.exports = {
 		for (const group of list) {
 			reply += "\n";
 			reply += "\n\t" + group.name;
-			try {
-				reply += "\nlink: " + (await bot.exportChatInviteLink(group.id_group));
-			} catch (err) {
-				logger.warn({ err: err.message, group_id: group.id_group }, "exportChatInviteLink failed");
-				reply += "\n(link no disponible: " + err.message + ")";
-			}
+			// Public groups → their t.me/<username> link; private ones → an invite
+			// link if the bot is admin. null when neither is available.
+			const link = await resolveGroupLink(bot, group.id_group);
+			reply += link ? "\nlink: " + link : "\n(link no disponible)";
 		}
 		return reply;
 	},

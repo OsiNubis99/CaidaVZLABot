@@ -31,6 +31,7 @@ const express = require("express");
 const env = require("../config/env");
 const logger = require("../config/logger");
 const { GroupController, UserController } = require("../database");
+const { resolveGroupLink } = require("./groupLink");
 const auth = require("./dashboardAuth");
 
 const PUBLIC_DIR = path.join(__dirname, "..", "public", "dashboard");
@@ -131,20 +132,13 @@ function build(bot) {
       // Try to attach invite link, best-effort. Failure here is
       // common (bot not admin, group private, etc.) — we just omit.
       const rows = await Promise.all(
-        groups.map(async (g) => {
-          let invite = null;
-          try {
-            invite = await bot.exportChatInviteLink(g.id_group);
-          } catch {
-            /* swallow — surface as null */
-          }
-          return {
-            id_group: g.id_group,
-            name: g.name,
-            games_played: g.games_played || 0,
-            invite,
-          };
-        }),
+        groups.map(async (g) => ({
+          id_group: g.id_group,
+          name: g.name,
+          games_played: g.games_played || 0,
+          // Public → t.me/<username>; private → invite link if bot is admin.
+          invite: await resolveGroupLink(bot, g.id_group),
+        })),
       );
       res.json({ rows });
     } catch (err) {
