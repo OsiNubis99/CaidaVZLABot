@@ -60,6 +60,7 @@ function serialize(game) {
       cards: (u.cards || []).map(cardToNumber),
       sing: {
         active: u.sing && u.sing.active,
+        killed: u.sing && u.sing.killed,
         value: u.sing && u.sing.value,
         name: u.sing && u.sing.name,
         dbName: u.sing && u.sing.dbName,
@@ -108,6 +109,7 @@ function deserialize(data) {
     const sing = new Sings([]);
     if (u.sing) {
       sing.active = !!u.sing.active;
+      sing.killed = !!u.sing.killed;
       sing.value = u.sing.value || 0;
       sing.name = u.sing.name || "No cantó";
       sing.dbName = u.sing.dbName;

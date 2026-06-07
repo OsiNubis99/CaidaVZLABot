@@ -98,6 +98,11 @@ function serializeForClient(session, viewerUserId) {
       user.sing && user.sing.active && user.sing.name && user.sing.name !== "No cantó"
         ? user.sing.name
         : null;
+    // A declared canto killed by a caída (mata_canto) — shown struck/dead.
+    base.sangDead =
+      user.sing && user.sing.killed && user.sing.name && user.sing.name !== "No cantó"
+        ? user.sing.name
+        : null;
     // color only meaningful in individual mode; parejas leaves it "".
     base.color = game.isParejasMode() ? "" : user.color || "";
     return base;

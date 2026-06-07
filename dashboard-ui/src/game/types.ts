@@ -36,6 +36,7 @@ export interface Seat {
   points: number;
   took: number;
   sang: string | null;
+  sangDead?: string | null;
   color: string;
 }
 

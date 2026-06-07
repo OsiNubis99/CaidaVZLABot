@@ -469,8 +469,10 @@ class Game {
                 this._dealerSyncCandidate = null; // consumed even if flag off
               }
               if (this.config.mata_canto == "on") {
-                if (this.users[this.last_player()].sing.active)
+                if (this.users[this.last_player()].sing.active) {
                   response += resp.sing_killed;
+                  this.users[this.last_player()].sing.killed = true;
+                }
                 this.users[this.last_player()].sing.active = false;
               }
             }

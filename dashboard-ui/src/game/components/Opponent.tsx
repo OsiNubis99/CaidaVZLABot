@@ -54,6 +54,11 @@ export function Opponent({ seat, isTurn, isDealer }: Props) {
             🎵 {seat.sang}
           </span>
         )}
+        {seat.sangDead && (
+          <span className="canto-dead" title="Canto muerto (lo mató una caída)">
+            💀 <s>{seat.sangDead}</s>
+          </span>
+        )}
       </div>
 
       {isTurn && <div className="opp-turnbar" />}

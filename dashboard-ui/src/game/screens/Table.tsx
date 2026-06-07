@@ -105,6 +105,11 @@ export function Table({ state }: Props) {
             <span className="you-stat" title="Tus puntos">⭐ {you.points} pts</span>
             <span className="you-stat" title="Tomaste esta mano">🂠 {you.took}</span>
             {you.sang && <span className="you-canto">🎵 {you.sang}</span>}
+            {you.sangDead && (
+              <span className="canto-dead" title="Canto muerto">
+                💀 <s>{you.sangDead}</s>
+              </span>
+            )}
             {isYourTurn && <span className="you-turn">Tu turno</span>}
           </div>
         )}

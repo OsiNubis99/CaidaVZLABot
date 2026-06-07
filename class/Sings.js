@@ -9,6 +9,9 @@ class Sings {
    */
   constructor(cards, config) {
     this.active = false;
+    // True when a declared canto was killed by a caída (mata_canto). Display
+    // only — lets a client mark the canto as dead; no scoring effect.
+    this.killed = false;
     this.value = 0;
     this.name = "No cantó";
     if (cards.length == 3) {

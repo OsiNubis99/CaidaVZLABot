@@ -212,6 +212,8 @@
   color: var(--text-muted);
 }
 .opp-canto { color: var(--accent); font-weight: 600; }
+.canto-dead { color: var(--danger); font-weight: 600; opacity: 0.85; }
+.canto-dead s { text-decoration: line-through; }
 .opp-turnbar {
   position: absolute;
   left: 0; right: 0; bottom: -1px;
@@ -240,13 +242,30 @@
   padding: 16px 12px;
 }
 .mesa-empty { color: var(--text-muted); font-size: 13px; }
-.mesa-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  align-items: center;
-  max-width: 100%;
+
+/* 2 rows × 5 columns, position-indexed like the chat-mode mesa. Cards fill
+   their cell (bigger than the old fixed flex layout). */
+.mesa-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+  width: 100%;
+  max-width: 440px;
+}
+.mesa-cell {
+  position: relative;
+  aspect-ratio: 208 / 319;
+}
+.mesa-cell-empty {
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: rgba(255, 255, 255, 0.025);
+}
+/* In the grid, cards fill their cell (overrides the fixed pcard-* sizes). */
+.mesa-cell .pcard,
+.mesa-cell .pcard-img {
+  width: 100%;
+  height: 100%;
 }
 /* `both` keeps a staggered card at the "from" (hidden) state during its delay
    so a deck deal drops card by card instead of all flashing then animating. */

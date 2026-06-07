@@ -60,8 +60,8 @@ export function Mesa({ table, lastCardPlayed, lastEvent, lastDeal }: Props) {
     return idx >= 0 ? idx * STAGGER_MS : 0;
   }
 
-  const placed = filledPositions.length;
-
+  // Fixed 10-position grid (2 rows × 5, like the chat-mode mesa). Each cell is
+  // a card or an empty placeholder, kept in position order.
   return (
     <div className="mesa">
       <div className="mesa-felt">
@@ -71,38 +71,36 @@ export function Mesa({ table, lastCardPlayed, lastEvent, lastDeal }: Props) {
           </div>
         )}
 
-        {placed === 0 ? (
-          <div className="mesa-empty">Mesa vacía</div>
-        ) : (
-          <div className="mesa-cards">
-            {table.map((card, pos) => {
-              if (!card) return null;
-              const delay = delayFor(pos);
-              const pegado = isFreshDeal ? (dealByPos.get(pos)?.pegado ?? 0) : 0;
-              return (
-                <div
-                  className="mesa-slot"
-                  key={`${pos}-${card.value}-${card.type}`}
-                  style={delay ? { animationDelay: `${delay}ms` } : undefined}
-                >
-                  <PlayingCard
-                    card={card}
-                    size="md"
-                    highlighted={sameCard(card, lastCardPlayed)}
-                  />
-                  {pegado > 0 && (
-                    <span
-                      className="pegado-pop"
-                      style={{ animationDelay: `${delay + 110}ms` }}
-                    >
-                      +{pegado}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <div className="mesa-grid">
+          {table.map((card, pos) => {
+            if (!card) {
+              return <div className="mesa-cell mesa-cell-empty" key={pos} />;
+            }
+            const delay = delayFor(pos);
+            const pegado = isFreshDeal ? (dealByPos.get(pos)?.pegado ?? 0) : 0;
+            return (
+              <div
+                className="mesa-cell mesa-slot"
+                key={`${pos}-${card.value}-${card.type}`}
+                style={delay ? { animationDelay: `${delay}ms` } : undefined}
+              >
+                <PlayingCard
+                  card={card}
+                  size="md"
+                  highlighted={sameCard(card, lastCardPlayed)}
+                />
+                {pegado > 0 && (
+                  <span
+                    className="pegado-pop"
+                    style={{ animationDelay: `${delay + 110}ms` }}
+                  >
+                    +{pegado}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
