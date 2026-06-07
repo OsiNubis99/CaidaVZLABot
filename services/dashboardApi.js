@@ -34,6 +34,7 @@ const { GroupController, UserController } = require("../database");
 const auth = require("./dashboardAuth");
 
 const PUBLIC_DIR = path.join(__dirname, "..", "public", "dashboard");
+const CARDS_DIR = path.join(__dirname, "..", "public", "cards");
 
 function clampPage(v) {
   const n = parseInt(v, 10);
@@ -71,6 +72,19 @@ function build(bot) {
   router.get("/login.html", (req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, "login.html"));
   });
+
+  // Real Spanish-deck card images (sliced from the deck at build time).
+  // Served PUBLIC and unauthenticated on purpose: <img> tags can't send
+  // the X-Telegram-Init-Data header, and these are just game art, not data.
+  // Long cache — the files are immutable per deploy.
+  router.use(
+    "/cards",
+    express.static(CARDS_DIR, {
+      maxAge: "7d",
+      immutable: true,
+      index: false,
+    }),
+  );
 
   router.use("/api", auth.requireAuth);
 

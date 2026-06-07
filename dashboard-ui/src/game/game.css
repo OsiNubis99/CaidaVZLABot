@@ -52,9 +52,23 @@
   flex: 0 0 auto;
   padding: 0;
 }
-.pcard-sm { width: 34px; height: 48px; font-size: 11px; }
-.pcard-md { width: 48px; height: 68px; font-size: 14px; }
-.pcard-lg { width: 60px; height: 86px; font-size: 17px; }
+/* Box sizes track the real card art ratio (208×319 ≈ 0.652) so the <img>
+   fills edge-to-edge with no cropping of the pips. */
+.pcard-sm { width: 31px; height: 48px; font-size: 11px; }
+.pcard-md { width: 44px; height: 68px; font-size: 14px; }
+.pcard-lg { width: 56px; height: 86px; font-size: 17px; }
+
+/* Real card image fills the box; it carries its own face + border, so the
+   wrapper drops its tinted border/background when an image is present. */
+.pcard.has-img { background: transparent; border-color: transparent; }
+.pcard-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+  -webkit-user-drag: none;
+}
 
 .pcard-center {
   font-size: 1.7em;

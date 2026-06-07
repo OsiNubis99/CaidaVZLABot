@@ -22,6 +22,26 @@ export function suitMeta(type: Suit): SuitMeta {
   return SUITS[type] ?? { glyph: "?", cls: "", label: type };
 }
 
+/**
+ * Base URL for the real Spanish-deck card images the bot serves at
+ * `<dashboard-path>/cards/`. Derived from the page URL so it works under any
+ * nginx prefix (same trick as the socket path). Files are `<value>-<type>.png`
+ * (e.g. 7-Espada.png) plus back.png.
+ */
+export const CARDS_BASE: string = (() => {
+  try {
+    return window.location.pathname.replace(/[^/]*$/, "") + "cards/";
+  } catch {
+    return "cards/";
+  }
+})();
+
+export function cardImgUrl(value: number, type: Suit): string {
+  return `${CARDS_BASE}${value}-${type}.png`;
+}
+
+export const cardBackUrl: string = `${CARDS_BASE}back.png`;
+
 /** Spanish-deck rank labels. Values jump 7 → 10/11/12 (sota/caballo/rey). */
 export function rankLabel(value: number): string {
   switch (value) {
