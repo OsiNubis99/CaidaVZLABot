@@ -14,14 +14,10 @@ interface Props {
 }
 
 /** Human-readable line for the latest game event (jugó / cantó / caída / …). */
-function eventMessage(
-  ev: LastEvent | null,
-  seats: Seat[],
-  youSeat: number | null,
-): string | null {
+function eventMessage(ev: LastEvent | null, seats: Seat[]): string | null {
   if (!ev) return null;
   const seat = seats.find((s) => s.index === ev.seat);
-  const who = ev.seat === youSeat ? "Vos" : (seat?.name ?? "Alguien");
+  const who = seat?.name ?? "Alguien";
   const card = ev.card ? `${rankName(ev.card.value)} de ${ev.card.type}` : null;
   switch (ev.kind) {
     case "caida":
@@ -71,7 +67,7 @@ export function Table({ state }: Props) {
       ? state.seats.find((s) => s.index === state.turnSeat)?.name
       : null;
 
-  const eventMsg = eventMessage(state.lastEvent, state.seats, yourSeat);
+  const eventMsg = eventMessage(state.lastEvent, state.seats);
 
   return (
     <div className="table-screen">
@@ -112,7 +108,7 @@ export function Table({ state }: Props) {
           <div className={`you-bar ${isYourTurn ? "is-turn" : ""}`}>
             <span className="you-id">
               {you.color && <span className="you-color">{you.color}</span>}
-              Vos
+              {you.name}
             </span>
             <span className="you-stat" title="Tus puntos">⭐ {you.points} pts</span>
             <span className="you-stat" title="Tomaste esta mano">🂠 {you.took}</span>

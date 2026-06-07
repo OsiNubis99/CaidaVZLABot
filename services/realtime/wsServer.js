@@ -164,11 +164,17 @@ function finishGame(session) {
 
 // ── C2S handlers ──────────────────────────────────────────────────────────
 
+/** Seat display name for a human: @username when set, else first_name. */
+function displayName(u) {
+  if (u && u.username) return "@" + u.username;
+  return (u && u.first_name) || "Jugador";
+}
+
 const handlers = {
   [C2S.SESSION_CREATE](socket, payload = {}, ack) {
     const user = socket.data.user;
     const session = sessionStore.create(
-      { userId: user.id, name: user.first_name },
+      { userId: user.id, name: displayName(user) },
       { config: payload.config },
     );
     trackSocket(socket, session.code);
@@ -200,7 +206,7 @@ const handlers = {
         return;
       }
     }
-    const session = sessionStore.join(code, { userId: user.id, name: user.first_name });
+    const session = sessionStore.join(code, { userId: user.id, name: displayName(user) });
     trackSocket(socket, code);
     broadcastState(session);
   },
