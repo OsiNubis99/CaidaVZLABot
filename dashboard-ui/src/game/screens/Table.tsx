@@ -112,7 +112,7 @@ export function Table({ state }: Props) {
                   🎵 <s>{you.sangDead}</s> 💀
                 </span>
               ) : (
-                <span className="rail-stat" title="Tu canto">🎵 {you.sang || "—"}</span>
+                <span className="rail-canto" title="Tu canto">🎵 {you.sang || "—"}</span>
               )}
             </div>
           )}

@@ -404,16 +404,21 @@
 
 /* compact vertical status: color · points · took · canto (no name/turn) */
 .you-rail {
-  flex: 0 0 66px;
+  /* Proportional: narrower + smaller text on small phones so the cards keep
+     room, capped on big phones. */
+  flex: 0 0 clamp(56px, 16vw, 68px);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: clamp(11px, 3.2vw, 12.5px);
 }
-.you-rail .rail-color { font-size: 14px; line-height: 1; }
+.you-rail .rail-color { font-size: 1.15em; line-height: 1; }
 .you-rail .rail-stat { color: var(--text-muted); white-space: nowrap; }
 .you-rail .rail-stat small { font-size: 0.82em; }
-.you-rail .canto-dead { white-space: nowrap; }
+/* Canto can be a long word (Casa Grande, Registrico) → let it wrap instead of
+   widening/clipping the rail. */
+.you-rail .rail-canto { color: var(--text-muted); word-break: break-word; }
+.you-rail .canto-dead { word-break: break-word; }
 
 /* the hand fills the remaining width; cards never overflow (they flex-shrink) */
 .hand-area { flex: 1; min-width: 0; }
@@ -426,7 +431,7 @@
 }
 .hand-cards {
   display: flex;
-  gap: 9px;
+  gap: clamp(6px, 2vw, 9px);
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -437,7 +442,7 @@
 .hand-cards .pcard {
   flex: 1 1 0;
   min-width: 0;
-  max-width: 104px;
+  max-width: 92px;
   width: auto;
   height: auto;
   aspect-ratio: 208 / 319;
