@@ -4,6 +4,16 @@ Telegram bot del juego de cartas Caída. Repo simple en GitHub (`OsiNubis99/Caid
 
 **Antes de cualquier cambio, leer `docs/context.md`** para arquitectura, decisiones técnicas y el dominio del juego.
 
+## Huly (tareas)
+
+- `Huly: workspace codeaver`
+- `Huly: proyecto CVB`
+- **Asignación:** proyecto de un solo dev (Andres). Al crear o cerrar CUALQUIER
+  tarea, asignarla siempre a **`Andres Hurtado`** — el MCP de Huly no asigna al
+  creador por default, hay que pasar `assignee: "Andres Hurtado"` explícitamente
+  en `create_issue`/`batch_create_issues` (y en `update_issue` si quedó sin
+  asignar).
+
 Documentación específica adicional:
 - `docs/context.md` — arquitectura completa, decisiones de juego, dominio
 - `docs/dashboard.md` — web admin dashboard (auth, endpoints, deploy)
