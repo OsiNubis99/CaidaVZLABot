@@ -36,7 +36,10 @@ function GameFlow({ youId }: Props) {
     const was = prevConn.current;
     prevConn.current = conn;
     if (conn !== "connected" || was === "connected") return;
-    const code = startParam();
+    const raw = startParam();
+    // "play"/"app"/"open" are generic "just open the app" deep links (the
+    // /msg-app broadcast button), not a table code — don't try to join.
+    const code = raw && !/^(play|app|open)$/i.test(raw) ? raw : "";
     if (code && !state && !autoJoined.current) {
       autoJoined.current = true;
       joinSession(code);

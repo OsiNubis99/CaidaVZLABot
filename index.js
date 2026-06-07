@@ -481,6 +481,35 @@ bot.on(
 
 //**                   Admins Commands                   */
 
+// Direct link to the Main Mini App's "Jugar" view. ?startapp=play lands on the
+// play tab without trying to join a table (the SPA treats "play" as a sentinel,
+// not a session code). A URL button is used (not web_app) so it works in groups
+// too — web_app inline buttons are private-chat only.
+const APP_PLAY_LINK = "https://t.me/CaidaVZLABot?startapp=play";
+
+/** Broadcast `text` to every group, optionally with an extra inline-keyboard row. */
+async function broadcastToGroups(msg, text, extraRows = []) {
+  const groups = await admin.all_groups(RequestDTO.fromTelegram(msg));
+  const options = extraRows.length
+    ? { reply_markup: { inline_keyboard: extraRows } }
+    : undefined;
+  for (const group of groups) {
+    try {
+      const sent = await bot.sendMessage(group.id_group, text, options);
+      logger.info(
+        { group_id: group.id_group, group_name: group.name, text_len: sent.text.length },
+        "broadcast sent",
+      );
+    } catch (err) {
+      logger.warn(
+        { err: err.message, group_id: group.id_group, group_name: group.name },
+        "broadcast failed; removing group",
+      );
+      await admin.force_remove_group(msg.from.id, group.id_group);
+    }
+  }
+}
+
 bot.onText(
   // [\s\S]+ (not .*) so a multi-line broadcast is captured whole — `.` stops
   // at the first newline without the s flag.
@@ -492,22 +521,23 @@ bot.onText(
       });
       return;
     }
-    const groups = await admin.all_groups(RequestDTO.fromTelegram(msg));
-    for (const group of groups) {
-      try {
-        const sent = await bot.sendMessage(group.id_group, match[1]);
-        logger.info(
-          { group_id: group.id_group, group_name: group.name, text_len: sent.text.length },
-          "broadcast sent",
-        );
-      } catch (err) {
-        logger.warn(
-          { err: err.message, group_id: group.id_group, group_name: group.name },
-          "broadcast failed; removing group",
-        );
-        await admin.force_remove_group(msg.from.id, group.id_group);
-      }
+    await broadcastToGroups(msg, match[1]);
+  }),
+);
+
+// Same as /message but appends a "▶️ Abrir la app" button to every broadcast.
+bot.onText(
+  /^\/msg[-_]?app\s+([\s\S]+)/i,
+  safe("/msg-app", async (msg, match) => {
+    if (!admin.is_admin(msg.from.id)) {
+      await bot.sendMessage(msg.chat.id, langForMsg(msg).no_admin_person, {
+        reply_to_message_id: msg.message_id,
+      });
+      return;
     }
+    await broadcastToGroups(msg, match[1], [
+      [{ text: "▶️ Abrir la app", url: APP_PLAY_LINK }],
+    ]);
   }),
 );
 
