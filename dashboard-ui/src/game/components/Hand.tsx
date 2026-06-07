@@ -47,7 +47,7 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
   }
 
   return (
-    <div className={`hand ${isYourTurn ? "hand-active" : ""}`}>
+    <div className="hand">
       <div className="hand-cards">
         {cards.map((card: Card, i) => {
           const isCaida = caidaPosition != null && card.position === caidaPosition;

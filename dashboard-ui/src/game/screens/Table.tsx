@@ -95,31 +95,36 @@ export function Table({ state }: Props) {
       </div>
 
       <div className="table-bottom">
-        {/* Your own status: points, cards taken this hand, turn, canto. */}
-        {you && (
-          <div className={`you-bar ${isYourTurn ? "is-turn" : ""}`}>
-            <span className="you-id">
-              {you.color && <span className="you-color">{you.color}</span>}
-              {you.name}
-            </span>
-            <span className="you-stat" title="Tus puntos">⭐ {you.points} pts</span>
-            <span className="you-stat" title="Tomaste esta mano">🂠 {you.took}</span>
-            {you.sang && <span className="you-canto">🎵 {you.sang}</span>}
-            {you.sangDead && (
-              <span className="canto-dead" title="Canto muerto">
-                💀 <s>{you.sangDead}</s>
-              </span>
-            )}
-            {isYourTurn && <span className="you-turn">Tu turno</span>}
-          </div>
-        )}
         <CantoPicker canSing={state.you.canSing} onSing={sing} />
-        <Hand
-          hand={state.you.hand}
-          isYourTurn={isYourTurn || isStartBy(state.you.hand)}
-          caidaPosition={caidaPosition}
-          onPlay={play}
-        />
+        {/* Status rail (left) + your hand (right). Turn is shown by the row glow
+            + the top pill, so the rail carries no name/turn — just your stats. */}
+        <div className={`play-row ${isYourTurn ? "is-turn" : ""}`}>
+          {you && (
+            <div className="you-rail">
+              {you.color && <span className="rail-color">{you.color}</span>}
+              <span className="rail-stat" title="Tus puntos">
+                ⭐ {you.points}
+                <small> pts</small>
+              </span>
+              <span className="rail-stat" title="Tomaste esta mano">🂠 {you.took}</span>
+              {you.sangDead ? (
+                <span className="canto-dead" title="Canto muerto (lo mató una caída)">
+                  🎵 <s>{you.sangDead}</s> 💀
+                </span>
+              ) : (
+                <span className="rail-stat" title="Tu canto">🎵 {you.sang || "—"}</span>
+              )}
+            </div>
+          )}
+          <div className="hand-area">
+            <Hand
+              hand={state.you.hand}
+              isYourTurn={isYourTurn || isStartBy(state.you.hand)}
+              caidaPosition={caidaPosition}
+              onPlay={play}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
