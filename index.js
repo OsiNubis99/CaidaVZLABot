@@ -853,34 +853,11 @@ bot.setMyCommands([
   { command: "historial", description: "Resumen de la última partida del grupo" },
 ]);
 
-// Set the persistent menu button (📎 next to the input in DMs with
-// the bot) to open the Telegram Web App.
-//
-// Cache-busting note: Telegram's iOS WebView caches the WebApp URL
-// aggressively per cache-key. Appending ?v=<bootTimestamp> means every
-// bot deploy gets a fresh cache-key, so users see the new SPA without
-// having to clear app cache or kill Telegram. The query string is
-// inert on our end (Express ignores it).
-//
-// Quirk: node-telegram-bot-api only auto-JSON-stringifies a handful of
-// fields (reply_markup, entities, ...). menu_button is NOT one of them
-// — pass it stringified manually or Telegram silently drops the call.
-if (env.dashboard_base_url) {
-  const base = env.dashboard_base_url.endsWith("/")
-    ? env.dashboard_base_url
-    : env.dashboard_base_url + "/";
-  const webAppUrl = `${base}?v=${Date.now()}`;
-  bot
-    .setChatMenuButton({
-      menu_button: JSON.stringify({
-        type: "web_app",
-        text: "📊 Mi cuenta",
-        web_app: { url: webAppUrl },
-      }),
-    })
-    .then(() => logger.info({ url: webAppUrl }, "chat menu button set"))
-    .catch((err) => logger.warn({ err: err.message }, "setChatMenuButton failed"));
-}
+// The WebApp is launched through the bot's Main Mini App (configured in
+// BotFather): it supplies the menu-button launcher AND the shareable
+// t.me/<bot>?startapp=<code> invite deep links. No setChatMenuButton here —
+// the SPA shell is served no-cache (dashboardApi) so deploys still propagate
+// without the old ?v= cache-buster.
 
 // Prune the events table once a day so it doesn't grow forever.
 setInterval(

@@ -135,9 +135,13 @@
   flex-direction: column;
   gap: 8px;
   /* Own a fixed box that fits inside the Telegram WebView (header+tabs ≈ 150px)
-     and never scrolls — the mesa flexes to absorb slack (e.g. the canto bar). */
-  height: calc(100dvh - 150px);
-  min-height: 380px;
+     and never scrolls — the mesa flexes to absorb slack (e.g. the canto bar).
+     In fullscreen, also subtract the notch/controls (top) and home-indicator
+     (bottom) insets so the hand never hides under Telegram's chrome. */
+  height: calc(
+    100dvh - 150px - var(--tg-top-inset, 0px) - var(--tg-bottom-inset, 0px)
+  );
+  min-height: 360px;
   overflow: hidden;
 }
 .table-screen .mesa { flex: 1 1 auto; min-height: 0; justify-content: center; }

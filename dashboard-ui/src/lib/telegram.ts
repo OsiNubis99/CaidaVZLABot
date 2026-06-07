@@ -22,11 +22,24 @@ interface InitDataUnsafe {
   user?: { id: number; first_name?: string; last_name?: string; username?: string };
 }
 
+interface SafeAreaInset {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
 interface WebApp {
   initData: string;
   initDataUnsafe?: InitDataUnsafe;
   themeParams: ThemeParams;
   HapticFeedback?: Haptic;
+  // Fullscreen + safe areas (Bot API 8.0+). Absent on older clients.
+  isFullscreen?: boolean;
+  safeAreaInset?: SafeAreaInset;
+  contentSafeAreaInset?: SafeAreaInset;
+  requestFullscreen?: () => void;
+  isVersionAtLeast?: (version: string) => boolean;
   ready: () => void;
   expand: () => void;
   openTelegramLink: (url: string) => void;
@@ -70,13 +83,39 @@ export function applyTheme() {
   set("--link", p.link_color);
 }
 
+/** Push Telegram's safe-area + content-safe-area insets into CSS vars so the
+ *  layout can clear the notch and Telegram's floating controls in fullscreen.
+ *  The content inset is measured from the device safe area, so the usable top
+ *  offset is the sum of both. Falls back to 0 on clients without the API. */
+export function applyInsets() {
+  const tg = getWebApp();
+  const root = document.documentElement;
+  const safe = tg?.safeAreaInset || {};
+  const content = tg?.contentSafeAreaInset || {};
+  const top = (safe.top || 0) + (content.top || 0);
+  const bottom = (safe.bottom || 0) + (content.bottom || 0);
+  root.style.setProperty("--tg-top-inset", `${top}px`);
+  root.style.setProperty("--tg-bottom-inset", `${bottom}px`);
+}
+
 export function ready() {
   const tg = getWebApp();
   try { tg?.ready(); } catch { /* tolerate */ }
   try { tg?.expand(); } catch { /* tolerate */ }
   applyTheme();
+  applyInsets();
+  // Open immersive ("like an app"). No-op on clients that don't support it
+  // (fullscreenFailed on desktop/older); insets keep the layout correct
+  // whether or not it actually goes fullscreen.
+  try {
+    if (typeof tg?.requestFullscreen === "function") tg.requestFullscreen();
+  } catch { /* tolerate */ }
   try {
     tg?.onEvent?.("themeChanged", applyTheme);
+    tg?.onEvent?.("safeAreaChanged", applyInsets);
+    tg?.onEvent?.("contentSafeAreaChanged", applyInsets);
+    tg?.onEvent?.("fullscreenChanged", applyInsets);
+    tg?.onEvent?.("viewportChanged", applyInsets);
   } catch { /* tolerate */ }
 }
 

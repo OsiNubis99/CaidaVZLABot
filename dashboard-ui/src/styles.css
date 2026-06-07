@@ -42,6 +42,9 @@ code { background: var(--bg-elevated); padding: 1px 6px; border-radius: 4px; fon
   position: sticky;
   top: 0;
   z-index: 10;
+  /* In fullscreen the WebView runs under the notch + Telegram's floating
+     controls; reserve that space so the title/tabs aren't hidden. 0 otherwise. */
+  padding-top: var(--tg-top-inset, 0px);
 }
 .topbar-inner {
   padding: 14px 16px 6px;
@@ -74,6 +77,11 @@ code { background: var(--bg-elevated); padding: 1px 6px; border-radius: 4px; fon
 /* ─── layout ─── */
 main { max-width: 1200px; margin: 0 auto; }
 .tab-panel { padding: 16px; }
+/* Non-game tabs scroll their own content; clear the fullscreen home-indicator.
+   The game panel sizes its own box (table-screen already subtracts the inset). */
+.tab-panel:not(.game-panel) {
+  padding-bottom: calc(16px + var(--tg-bottom-inset, 0px));
+}
 
 /* ─── KPI cards (mi cuenta) ─── */
 .cards-row {

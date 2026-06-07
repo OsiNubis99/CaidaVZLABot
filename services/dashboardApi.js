@@ -298,7 +298,23 @@ function build(bot) {
   // the API on first fetch, and the SPA shows a "open me in Telegram"
   // banner. We don't gate the static files themselves so the SPA can
   // render and surface the proper error UX.
-  router.use(express.static(PUBLIC_DIR, { index: "index.html" }));
+  //
+  // Cache policy: the HTML shell is served must-revalidate so a deploy reaches
+  // every client (incl. iOS Telegram WebViews) without the old ?v= buster;
+  // Vite content-hashes asset filenames, so those are cached hard + immutable.
+  router.use(
+    express.static(PUBLIC_DIR, {
+      index: "index.html",
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, must-revalidate");
+        } else if (/-[A-Za-z0-9_-]{8,}\.(js|css|woff2?|png|svg|jpe?g|gif)$/i.test(filePath)) {
+          // Vite content-hashed asset (e.g. index-DIa6VZqf.js).
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    }),
+  );
 
   return router;
 }
