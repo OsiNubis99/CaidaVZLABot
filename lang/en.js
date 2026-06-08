@@ -27,6 +27,8 @@ module.exports = {
   game_no_started_title: "Game has not started yet.",
   group_added: "Group added.",
   group_invalid: "Group is not valid. Use /list_groups to list public groups.",
+  public_group_needs_link:
+    "This group is set to public but I can't generate an invite link. Make me an admin (with permission to invite users) or give the group a public @username, then try /unirse again.",
   no_active_game: "There is no active game in this group. Use /unirse to create one.",
   group_removed: "Group removed from allowed list",
   how_config:

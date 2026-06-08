@@ -32,6 +32,8 @@ module.exports = {
   game_no_started_title: "El juego aun no empieza.",
   group_added: "Grupo agregado.",
   group_invalid: "Grupo no valido. Usa /list_groups listar los grupos publicos.",
+  public_group_needs_link:
+    "Este grupo está marcado como público pero no tengo cómo generar un link de invitación. Hazme administrador (con permiso para invitar) o dale al grupo un @username público, y vuelve a intentar /unirse.",
   no_active_game: "No hay una partida activa en este grupo. Usa /unirse para crear una.",
   group_removed: "Grupo removido de la lista de permitidos",
   how_config:

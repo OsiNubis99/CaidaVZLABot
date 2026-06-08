@@ -18,6 +18,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const UserDTO = require("../class/UserDTO");
 const RequestDTO = require("../class/RequestDTO");
 const { GroupController, UserController } = require("../database");
+const { resolveGroupLink } = require("./groupLink");
 
 /**
  * Resolve the user-facing language table for the given request or user.
@@ -34,6 +35,31 @@ function langOf(ctx) {
   else if (ctx && ctx.id_user) chatId = users[ctx.id_user];
   const g = chatId ? games[chatId] : null;
   return getLang(g && g.config && g.config.locale);
+}
+
+/**
+ * Reachability gate for PUBLIC groups, validated on /unirse only. A public
+ * group is advertised in the public list, so it must be joinable — it needs a
+ * shareable link: either a public @username link or an invite link the bot can
+ * export (which requires bot-admin with can_invite_users). Resolved + cached on
+ * the group row. Private/unregistered groups (the default) skip this entirely.
+ *
+ * @param {RequestDTO} req
+ * @returns {Promise<null | {error: String} | {link: String}>}
+ *   null = no gate (private/unregistered); {error} = block /unirse; {link} = ok.
+ */
+async function ensurePublicGroupLink(req) {
+  const idGroup = req.group.id_group;
+  const raw = await GroupController.getOneByIdRaw(idGroup);
+  if (!raw || !raw.public) return null;
+  // Late require: the bot instance, to avoid a load-order cycle at module load.
+  const bot = require("../config/server");
+  const link = await resolveGroupLink(bot, idGroup);
+  if (!link) return { error: langOf(req).public_group_needs_link };
+  await GroupController.setInviteLink(idGroup, link).catch((err) =>
+    logger.warn({ err: err.message, id_group: idGroup }, "setInviteLink failed"),
+  );
+  return { link };
 }
 
 // Attach next-turn metadata so the index handler can fire an opt-in DM
@@ -326,6 +352,10 @@ module.exports = {
     const L = langOf(req);
     let user = new User(await UserController.add(req.user));
     if (!user.is_banned) {
+      // Public groups must be reachable (a shareable link) or /unirse is
+      // blocked with an explainer. No-op for private/unregistered groups.
+      const gate = await ensurePublicGroupLink(req);
+      if (gate && gate.error) return message.reply(gate.error, req.message_id);
       /**
        * @type {Game}
        */

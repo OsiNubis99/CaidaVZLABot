@@ -12,6 +12,9 @@ module.exports = {
       message: message,
       options: {
         reply_to_message_id: message_id,
+        // Telegram 400s ("message to be replied not found") when the command
+        // message was deleted before we answer; this tells it to send anyway.
+        allow_sending_without_reply: true,
       },
     };
   },

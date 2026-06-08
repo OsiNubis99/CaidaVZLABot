@@ -45,6 +45,18 @@ module.exports = {
   },
 
   /**
+   * Cache the resolved shareable link for a (public) group.
+   * @param {String} id_group
+   * @param {String|null} link
+   */
+  async setInviteLink(id_group, link) {
+    await database.query(
+      "UPDATE public.group SET invite_link = $2 WHERE id_group = $1",
+      [id_group, link],
+    );
+  },
+
+  /**
    * Rename a group.
    */
   async rename(id_group, name) {

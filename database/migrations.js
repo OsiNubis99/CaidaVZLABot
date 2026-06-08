@@ -47,6 +47,10 @@ const STATEMENTS = [
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS locale text DEFAULT 'es'`,
   `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS turn_timeout_seconds int DEFAULT 0`,
 
+  // shareable link for public groups, resolved + cached on /unirse (public
+  // @username link, or a bot-admin invite link).
+  `ALTER TABLE public.group ADD COLUMN IF NOT EXISTS invite_link text`,
+
   // canto sticker file_id cache. Generated alongside the card sticker
   // pack and uploaded by the same bootstrap flow.
   `CREATE TABLE IF NOT EXISTS public.canto_stickers (
