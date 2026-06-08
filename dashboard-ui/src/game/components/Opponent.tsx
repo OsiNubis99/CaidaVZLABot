@@ -1,4 +1,5 @@
 import type { Seat } from "../types";
+import { t } from "../../lib/i18n";
 import { CardBack } from "./PlayingCard";
 
 interface Props {
@@ -26,16 +27,16 @@ export function Opponent({ seat, isTurn, isDealer }: Props) {
       <div className="opp-head">
         {seat.color && <span className="opp-color">{seat.color}</span>}
         <span className="opp-name">{seat.name}</span>
-        {cpu && <span className="badge cpu">CPU</span>}
-        {isDealer && <span className="opp-dealer" title="Reparte">🃏</span>}
+        {cpu && <span className="badge cpu">{t("opp.cpu")}</span>}
+        {isDealer && <span className="opp-dealer" title={t("opp.dealer")}>🃏</span>}
         {offline && (
-          <span className="opp-status" title="Desconectado">
+          <span className="opp-status" title={t("opp.offline")}>
             🔌
           </span>
         )}
       </div>
 
-      <div className="opp-cards" aria-label={`${seat.cardCount} cartas`}>
+      <div className="opp-cards" aria-label={t("opp.cardCount", { n: seat.cardCount })}>
         {Array.from({ length: Math.min(seat.cardCount, 3) }).map((_, i) => (
           <CardBack key={i} size="sm" />
         ))}
@@ -43,19 +44,19 @@ export function Opponent({ seat, isTurn, isDealer }: Props) {
       </div>
 
       <div className="opp-meta">
-        <span className="opp-stat" title="Puntos">
+        <span className="opp-stat" title={t("opp.points")}>
           ⭐ {seat.points}
         </span>
-        <span className="opp-stat" title="Tomó esta mano">
+        <span className="opp-stat" title={t("opp.took")}>
           🂠 {seat.took}
         </span>
         {seat.sang && (
-          <span className="opp-canto" title="Cantó">
+          <span className="opp-canto" title={t("opp.sang")}>
             🎵 {seat.sang}
           </span>
         )}
         {seat.sangDead && (
-          <span className="canto-dead" title="Canto muerto (lo mató una caída)">
+          <span className="canto-dead" title={t("opp.deadCanto")}>
             💀 <s>{seat.sangDead}</s>
           </span>
         )}

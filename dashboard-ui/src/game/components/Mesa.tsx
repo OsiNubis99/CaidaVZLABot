@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Card, LastEvent, LastDeal } from "../types";
+import { t } from "../../lib/i18n";
 import { PlayingCard } from "./PlayingCard";
 
 interface Props {
@@ -67,7 +68,7 @@ export function Mesa({ table, lastCardPlayed, lastEvent, lastDeal }: Props) {
       <div className="mesa-felt">
         {flash && (
           <div className={`mesa-flash mesa-flash-${flash}`}>
-            {flash === "caida" ? "¡Caída!" : "Mesa limpia"}
+            {flash === "caida" ? t("mesa.caida") : t("mesa.clean")}
           </div>
         )}
 

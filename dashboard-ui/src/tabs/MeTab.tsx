@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "../api";
 import { useToast } from "../components/Toast";
+import { t } from "../lib/i18n";
 import { winRate, caidaRatio, fmtPct, fmtRate } from "../lib/format";
 import type { MeResponse, UserRow } from "../types";
 
@@ -25,7 +26,7 @@ export function MeTab({ me }: { me: MeResponse }) {
   const notify = useMutation({
     mutationFn: (value: boolean) => api.setMyNotify(value),
     onSuccess: (data) => {
-      toast(data.notify_on_turn ? "Notificaciones activadas" : "Notificaciones desactivadas");
+      toast(data.notify_on_turn ? t("me.notifyOn") : t("me.notifyOff"));
       qc.invalidateQueries({ queryKey: ["me"] });
     },
     onError: (err: Error) => toast("Error: " + err.message, "err"),
@@ -41,22 +42,22 @@ export function MeTab({ me }: { me: MeResponse }) {
     <section className="tab-panel">
       {beatPro > 0 && (
         <div className="achievement-badge">
-          🏆 Le ganó al PRO {beatPro > 1 ? `×${beatPro}` : ""}
+          {t("me.beatPro")} {beatPro > 1 ? `×${beatPro}` : ""}
         </div>
       )}
       <div className="cards-row">
-        <Kpi label="Partidas" value={finished} />
-        <Kpi label="Ganados" value={win} hint="ranked: sin bots, puntos default" />
-        <Kpi label="Win rate" value={fmtPct(winRate(u))} />
-        <Kpi label="Caídas dadas" value={caida} />
-        <Kpi label="Caídas recibidas" value={caido} />
-        <Kpi label="Caída ratio" value={fmtRate(caidaRatio(u))} hint="dadas / recibidas" />
+        <Kpi label={t("me.games")} value={finished} />
+        <Kpi label={t("me.won")} value={win} hint={t("me.wonHint")} />
+        <Kpi label={t("me.winRate")} value={fmtPct(winRate(u))} />
+        <Kpi label={t("me.caidasGiven")} value={caida} />
+        <Kpi label={t("me.caidasReceived")} value={caido} />
+        <Kpi label={t("me.caidaRatio")} value={fmtRate(caidaRatio(u))} hint={t("me.caidaRatioHint")} />
       </div>
 
       <div className="card">
-        <div className="card-title">Cantos (vivas / total)</div>
+        <div className="card-title">{t("me.cantos")}</div>
         {finished === 0 ? (
-          <p className="muted">Aún no has cantado nada — juega una partida primero.</p>
+          <p className="muted">{t("me.noCantos")}</p>
         ) : (
           SINGS.map(([k, label]) => {
             const total = Number(u[k]) || 0;
@@ -75,11 +76,11 @@ export function MeTab({ me }: { me: MeResponse }) {
       </div>
 
       <div className="card">
-        <div className="card-title">Preferencias</div>
+        <div className="card-title">{t("me.prefs")}</div>
         <label className="row-toggle">
           <span>
-            <strong>DM cuando sea mi turno</strong>
-            <small className="muted">El bot te avisa por mensaje privado</small>
+            <strong>{t("me.notifyTitle")}</strong>
+            <small className="muted">{t("me.notifyHint")}</small>
           </span>
           <input
             type="checkbox"

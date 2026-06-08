@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { GameState } from "../types";
 import { isStartBy } from "../types";
 import { useGame } from "../store";
+import { t } from "../../lib/i18n";
 import { Mesa } from "../components/Mesa";
 import { Hand } from "../components/Hand";
 import { Opponent } from "../components/Opponent";
@@ -54,11 +55,15 @@ export function Table({ state }: Props) {
   return (
     <div className="table-screen">
       <div className="table-topbar">
-        <span className="table-code">Mesa {state.code}</span>
+        <span className="table-code">{t("table.code", { code: state.code })}</span>
         <span className={`turn-pill ${isYourTurn ? "is-you" : ""}`}>
-          {isYourTurn ? "Tu turno" : turnSeatName ? `Turno: ${turnSeatName}` : "—"}
+          {isYourTurn
+            ? t("table.yourTurn")
+            : turnSeatName
+              ? t("table.turn", { name: turnSeatName })
+              : t("table.none")}
         </span>
-        {state.lastHand && <span className="table-lasthand">Última mano</span>}
+        {state.lastHand && <span className="table-lasthand">{t("table.lastHand")}</span>}
       </div>
 
       <div className="opp-row">
@@ -81,16 +86,19 @@ export function Table({ state }: Props) {
 
       {/* Last played card — always visible between the mesa and your hand. */}
       <div className="lastcard-strip">
-        <span className="muted">Última</span>
+        <span className="muted">{t("table.last")}</span>
         {state.lastCardPlayed ? (
           <>
             <PlayingCard card={state.lastCardPlayed} size="sm" />
             <span className="muted">
-              {state.lastCardPlayed.value} de {state.lastCardPlayed.type}
+              {t("table.cardOf", {
+                value: state.lastCardPlayed.value,
+                type: state.lastCardPlayed.type,
+              })}
             </span>
           </>
         ) : (
-          <span className="muted">—</span>
+          <span className="muted">{t("table.none")}</span>
         )}
       </div>
 
@@ -102,17 +110,17 @@ export function Table({ state }: Props) {
           {you && (
             <div className="you-rail">
               {you.color && <span className="rail-color">{you.color}</span>}
-              <span className="rail-stat" title="Tus puntos">
+              <span className="rail-stat" title={t("table.yourPoints")}>
                 ⭐ {you.points}
                 <small> pts</small>
               </span>
-              <span className="rail-stat" title="Tomaste esta mano">🂠 {you.took}</span>
+              <span className="rail-stat" title={t("table.youTook")}>🂠 {you.took}</span>
               {you.sangDead ? (
-                <span className="canto-dead" title="Canto muerto (lo mató una caída)">
+                <span className="canto-dead" title={t("table.deadCanto")}>
                   🎵 <s>{you.sangDead}</s> 💀
                 </span>
               ) : (
-                <span className="rail-canto" title="Tu canto">🎵 {you.sang || "—"}</span>
+                <span className="rail-canto" title={t("table.yourCanto")}>🎵 {you.sang || "—"}</span>
               )}
             </div>
           )}

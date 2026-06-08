@@ -1,4 +1,5 @@
 import type { Canto } from "../types";
+import { t } from "../../lib/i18n";
 
 interface Props {
   canSing: Canto | null;
@@ -12,13 +13,13 @@ export function CantoPicker({ canSing, onSing }: Props) {
   return (
     <div className="canto-picker">
       <div className="canto-picker-info">
-        <span className="canto-picker-label">Puedes cantar</span>
+        <span className="canto-picker-label">{t("canto.canSing")}</span>
         <span className="canto-picker-name">
-          {canSing.name} · {canSing.value} pts
+          {t("canto.namePts", { name: canSing.name, value: canSing.value })}
         </span>
       </div>
       <button type="button" className="btn btn-primary" onClick={onSing}>
-        🎵 Cantar
+        {t("canto.sing")}
       </button>
     </div>
   );

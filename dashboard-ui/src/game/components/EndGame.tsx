@@ -1,4 +1,5 @@
 import type { Winner } from "../types";
+import { t } from "../../lib/i18n";
 
 interface Props {
   winner: Winner | null;
@@ -13,15 +14,15 @@ export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) 
   const standings = winner?.standings ?? [];
   const youWon = winner?.seat != null && winner.seat === youSeat;
   const winnerName =
-    standings.find((s) => s.seat === winner?.seat)?.name ?? "—";
+    standings.find((s) => s.seat === winner?.seat)?.name ?? t("table.none");
 
   return (
     <div className="endgame">
       <div className={`endgame-banner ${youWon ? "won" : "lost"}`}>
         <div className="endgame-emoji">{youWon ? "🏆" : "🎲"}</div>
-        <h2>{youWon ? "¡Ganaste!" : "Fin de la partida"}</h2>
+        <h2>{youWon ? t("endgame.youWon") : t("endgame.over")}</h2>
         {!youWon && winner?.seat != null && (
-          <p className="muted">Ganó {winnerName}</p>
+          <p className="muted">{t("endgame.won", { name: winnerName })}</p>
         )}
       </div>
 
@@ -40,9 +41,9 @@ export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) 
             <span className="endgame-pos">{i + 1}</span>
             <span className="endgame-name">
               {s.name}
-              {s.seat === youSeat && <span className="muted"> (tú)</span>}
+              {s.seat === youSeat && <span className="muted">{t("endgame.you")}</span>}
             </span>
-            <span className="endgame-pts">{s.points} pts</span>
+            <span className="endgame-pts">{t("endgame.pts", { points: s.points })}</span>
           </li>
         ))}
       </ol>
@@ -50,13 +51,13 @@ export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) 
       <div className="endgame-actions">
         {isHost ? (
           <button type="button" className="btn btn-primary endgame-rematch" onClick={onRematch}>
-            🔄 Revancha
+            {t("endgame.rematch")}
           </button>
         ) : (
-          <span className="muted">Esperando al host para la revancha…</span>
+          <span className="muted">{t("endgame.waitingRematch")}</span>
         )}
         <button type="button" className="btn endgame-leave" onClick={onLeave}>
-          Salir
+          {t("endgame.leave")}
         </button>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { GameProvider, useGame } from "./store";
 import { Lobby } from "./screens/Lobby";
 import { Table } from "./screens/Table";
 import { startParam } from "../lib/telegram";
+import { t } from "../lib/i18n";
 import { useToast } from "../components/Toast";
 import "./game.css";
 
@@ -77,16 +78,16 @@ function ConnBar({
   if (conn === "connected") return null;
   const label =
     conn === "connecting"
-      ? "Conectando…"
+      ? t("conn.connecting")
       : conn === "disconnected"
-        ? "Sin conexión"
-        : "Desconectado";
+        ? t("conn.offline")
+        : t("conn.disconnected");
   return (
     <div className={`conn-bar conn-${conn}`}>
       <span>{label}</span>
       {conn === "disconnected" && (
         <button type="button" className="btn" onClick={onReconnect}>
-          Reintentar
+          {t("conn.retry")}
         </button>
       )}
     </div>

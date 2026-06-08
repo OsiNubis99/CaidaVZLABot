@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { GameConfig, OnOff } from "../types";
+import { t } from "../../lib/i18n";
 import { CLASICO, CANTO_FIELDS } from "../configDefaults";
 
 interface Props {
@@ -50,7 +51,7 @@ function Stepper({
           className="btn cfg-step"
           onClick={() => onChange(clamp(value - step))}
           disabled={value <= min}
-          aria-label="menos"
+          aria-label={t("cfg.less")}
         >
           −
         </button>
@@ -63,7 +64,7 @@ function Stepper({
           className="btn cfg-step"
           onClick={() => onChange(clamp(value + step))}
           disabled={value >= max}
-          aria-label="más"
+          aria-label={t("cfg.more")}
         >
           +
         </button>
@@ -91,14 +92,14 @@ function Toggle({
           className={`cfg-seg-btn ${value === "off" ? "is-on" : ""}`}
           onClick={() => onChange("off")}
         >
-          Off
+          {t("cfg.off")}
         </button>
         <button
           type="button"
           className={`cfg-seg-btn ${value === "on" ? "is-on" : ""}`}
           onClick={() => onChange("on")}
         >
-          On
+          {t("cfg.on")}
         </button>
       </div>
     </div>
@@ -110,13 +111,15 @@ function Toggle({
  *  the backend defaults). */
 export function CreateConfig({
   initial,
-  title = "Configurar mesa",
-  submitLabel = "Crear mesa",
+  title,
+  submitLabel,
   onSubmit,
   onCancel,
 }: Props) {
   const [cfg, setCfg] = useState<GameConfig>({ ...CLASICO, ...(initial || {}) });
   const [advanced, setAdvanced] = useState(false);
+  const titleText = title ?? t("cfg.title");
+  const submitText = submitLabel ?? t("cfg.create");
 
   const set = <K extends keyof GameConfig>(key: K, value: GameConfig[K]) =>
     setCfg((c) => ({ ...c, [key]: value }));
@@ -126,10 +129,10 @@ export function CreateConfig({
 
   return (
     <div className="prelobby-card cfg-card">
-      <h3>{title}</h3>
+      <h3>{titleText}</h3>
 
       <Stepper
-        label="Puntos para ganar"
+        label={t("cfg.points")}
         value={num("points")}
         min={1}
         max={100}
@@ -137,30 +140,30 @@ export function CreateConfig({
       />
 
       <div className="cfg-row">
-        <span className="cfg-label">Tipo</span>
+        <span className="cfg-label">{t("cfg.type")}</span>
         <div className="cfg-seg">
           <button
             type="button"
             className={`cfg-seg-btn ${cfg.type !== "parejas" ? "is-on" : ""}`}
             onClick={() => set("type", "individual")}
           >
-            Individual
+            {t("cfg.individual")}
           </button>
           <button
             type="button"
             className={`cfg-seg-btn ${cfg.type === "parejas" ? "is-on" : ""}`}
             onClick={() => set("type", "parejas")}
           >
-            Parejas
+            {t("cfg.parejas")}
           </button>
         </div>
       </div>
       {cfg.type === "parejas" && (
-        <p className="muted cfg-hint">Parejas requiere 4 jugadores.</p>
+        <p className="muted cfg-hint">{t("cfg.parejasHint")}</p>
       )}
 
       <Stepper
-        label="Valor de mesa limpia"
+        label={t("cfg.mesaValue")}
         value={num("mesa")}
         min={0}
         max={100}
@@ -168,17 +171,17 @@ export function CreateConfig({
       />
 
       <Toggle
-        label="Caída mata canto"
+        label={t("cfg.mataCanto")}
         value={(cfg.mata_canto as OnOff) ?? "off"}
         onChange={(v) => set("mata_canto", v)}
       />
       <Toggle
-        label="Caída mata mesa"
+        label={t("cfg.mataMesa")}
         value={(cfg.mata_mesa as OnOff) ?? "off"}
         onChange={(v) => set("mata_mesa", v)}
       />
       <Toggle
-        label="Caída continua"
+        label={t("cfg.caidaContinua")}
         value={(cfg.caida_continua as OnOff) ?? "off"}
         onChange={(v) => set("caida_continua", v)}
       />
@@ -188,13 +191,13 @@ export function CreateConfig({
         className="btn cfg-advanced-toggle"
         onClick={() => setAdvanced((a) => !a)}
       >
-        {advanced ? "▾ Ocultar avanzado" : "▸ Avanzado (multiplicadores y cantos)"}
+        {advanced ? t("cfg.hideAdvanced") : t("cfg.showAdvanced")}
       </button>
 
       {advanced && (
         <div className="cfg-advanced">
           <Stepper
-            label="Multiplicador caída"
+            label={t("cfg.multCaida")}
             value={num("caida")}
             min={0}
             max={10}
@@ -202,7 +205,7 @@ export function CreateConfig({
             onChange={(v) => set("caida", v)}
           />
           <Stepper
-            label="Multiplicador ronda"
+            label={t("cfg.multRonda")}
             value={num("ronda")}
             min={0}
             max={10}
@@ -226,14 +229,14 @@ export function CreateConfig({
 
       <div className="cfg-actions">
         <button type="button" className="btn" onClick={onCancel}>
-          Cancelar
+          {t("cfg.cancel")}
         </button>
         <button
           type="button"
           className="btn btn-primary"
           onClick={() => onSubmit(managedConfig(cfg))}
         >
-          {submitLabel}
+          {submitText}
         </button>
       </div>
     </div>

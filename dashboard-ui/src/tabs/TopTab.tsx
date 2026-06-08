@@ -5,6 +5,7 @@ import * as api from "../api";
 import { DataTable } from "../components/DataTable";
 import { CpuBadge } from "../components/Badge";
 import { useToast } from "../components/Toast";
+import { t } from "../lib/i18n";
 import {
   caidaRatio,
   displayName,
@@ -43,12 +44,12 @@ export function TopTab() {
     () => [
       {
         accessorKey: "rank",
-        header: "#",
+        header: t("top.rank"),
         cell: (c) => <span className="cell-mono">{c.row.original.rank}</span>,
       },
       {
         id: "name",
-        header: "Jugador",
+        header: t("top.player"),
         accessorFn: (u) => displayName(u),
         cell: (c) => (
           <>
@@ -62,38 +63,38 @@ export function TopTab() {
       },
       {
         accessorKey: "finished",
-        header: "Partidas",
+        header: t("top.games"),
         accessorFn: (u) => Number(u.finished) || 0,
       },
       {
         accessorKey: "win",
-        header: "Ganados",
+        header: t("top.won"),
         accessorFn: (u) => Number(u.win) || 0,
       },
       {
         accessorKey: "beat_pro",
-        header: "🏆 PRO",
+        header: t("top.pro"),
         accessorFn: (u) => Number(u.beat_pro) || 0,
       },
       {
         id: "win_rate",
-        header: "Win rate",
+        header: t("top.winRate"),
         accessorFn: (u) => winRate(u) ?? -1,
         cell: (c) => fmtPct(winRate(c.row.original)),
       },
       {
         accessorKey: "caida",
-        header: "Caídas dadas",
+        header: t("top.caidasGiven"),
         accessorFn: (u) => Number(u.caida) || 0,
       },
       {
         accessorKey: "caido",
-        header: "Caídas recibidas",
+        header: t("top.caidasReceived"),
         accessorFn: (u) => Number(u.caido) || 0,
       },
       {
         id: "caida_ratio",
-        header: "Caída ratio",
+        header: t("top.caidaRatio"),
         accessorFn: (u) => {
           const r = caidaRatio(u);
           if (r === null) return -1;
@@ -114,17 +115,17 @@ export function TopTab() {
           value={limit}
           onChange={(e) => setLimit(Number(e.target.value))}
         >
-          <option value={10}>Top 10</option>
-          <option value={25}>Top 25</option>
-          <option value={50}>Top 50</option>
-          <option value={100}>Top 100</option>
+          <option value={10}>{t("top.top10")}</option>
+          <option value={25}>{t("top.top25")}</option>
+          <option value={50}>{t("top.top50")}</option>
+          <option value={100}>{t("top.top100")}</option>
         </select>
-        {q.isFetching && <span className="muted">cargando…</span>}
+        {q.isFetching && <span className="muted">{t("top.loading")}</span>}
       </div>
       <DataTable
         data={ranked}
         columns={columns}
-        emptyMessage="Aún no hay datos"
+        emptyMessage={t("top.empty")}
       />
     </section>
   );

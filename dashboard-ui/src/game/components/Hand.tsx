@@ -1,5 +1,6 @@
 import type { Card, Hand as HandType } from "../types";
 import { isStartBy } from "../types";
+import { t } from "../../lib/i18n";
 import { PlayingCard } from "./PlayingCard";
 
 interface Props {
@@ -17,7 +18,7 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
   if (isStartBy(hand)) {
     return (
       <div className="hand hand-startby">
-        <div className="hand-prompt">¿Por dónde repartes?</div>
+        <div className="hand-prompt">{t("hand.dealPrompt")}</div>
         <div className="startby-choices">
           {/* On the Start_By hand the play payload is the direction VALUE
               (1 or 4), not a card index — GameSession.play reads it as
@@ -27,14 +28,14 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
             className="btn btn-primary startby-btn"
             onClick={() => onPlay(1)}
           >
-            Por 1
+            {t("hand.by1")}
           </button>
           <button
             type="button"
             className="btn btn-primary startby-btn"
             onClick={() => onPlay(4)}
           >
-            Por 4
+            {t("hand.by4")}
           </button>
         </div>
       </div>
@@ -43,7 +44,7 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
 
   const cards = hand as Card[];
   if (cards.length === 0) {
-    return <div className="hand hand-empty muted">Sin cartas</div>;
+    return <div className="hand hand-empty muted">{t("hand.empty")}</div>;
   }
 
   return (
@@ -67,9 +68,9 @@ export function Hand({ hand, isYourTurn, caidaPosition, onPlay }: Props) {
       <div className="hand-hint muted">
         {isYourTurn
           ? caidaPosition != null && cards.some((c) => c.position === caidaPosition)
-            ? "Tu turno — ¡tienes caída disponible!"
-            : "Tu turno — toca una carta para jugar"
-          : "Espera tu turno"}
+            ? t("hand.yourTurnCaida")
+            : t("hand.yourTurnPlay")
+          : t("hand.waitTurn")}
       </div>
     </div>
   );

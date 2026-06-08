@@ -2,6 +2,8 @@ import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "./api";
 import { getWebApp } from "./lib/telegram";
+import { t } from "./lib/i18n";
+import type { Dict } from "./lib/i18n.dict";
 import { displayName } from "./lib/format";
 import { MeTab } from "./tabs/MeTab";
 import { TopTab } from "./tabs/TopTab";
@@ -20,19 +22,19 @@ type TabId = "play" | "me" | "top" | "public" | "groups" | "users" | "stats";
 
 interface TabMeta {
   id: TabId;
-  label: string;
-  title: string;
+  labelKey: keyof Dict;
+  titleKey: keyof Dict;
   admin: boolean;
 }
 
 const TABS: TabMeta[] = [
-  { id: "play", label: "🎮 Jugar", title: "Jugar Caída", admin: false },
-  { id: "me", label: "👤 Mi cuenta", title: "Mi cuenta", admin: false },
-  { id: "top", label: "🏆 Top", title: "Top global", admin: false },
-  { id: "public", label: "🌐 Públicos", title: "Grupos públicos", admin: false },
-  { id: "groups", label: "📦 Grupos", title: "Grupos (admin)", admin: true },
-  { id: "users", label: "👥 Usuarios", title: "Usuarios (admin)", admin: true },
-  { id: "stats", label: "📊 Stats", title: "Estadísticas (admin)", admin: true },
+  { id: "play", labelKey: "app.tab.play", titleKey: "app.title.play", admin: false },
+  { id: "me", labelKey: "app.tab.me", titleKey: "app.title.me", admin: false },
+  { id: "top", labelKey: "app.tab.top", titleKey: "app.title.top", admin: false },
+  { id: "public", labelKey: "app.tab.public", titleKey: "app.title.public", admin: false },
+  { id: "groups", labelKey: "app.tab.groups", titleKey: "app.title.groups", admin: true },
+  { id: "users", labelKey: "app.tab.users", titleKey: "app.title.users", admin: true },
+  { id: "stats", labelKey: "app.tab.stats", titleKey: "app.title.stats", admin: true },
 ];
 
 export default function App() {
@@ -67,7 +69,7 @@ export default function App() {
   }, [visibleTabs, tab]);
 
   if (me.isLoading) {
-    return <Loading message="Cargando tu cuenta…" />;
+    return <Loading message={t("app.loadingAccount")} />;
   }
   if (me.isError) {
     const err = me.error as Error;
@@ -79,23 +81,23 @@ export default function App() {
   const handle = me.data.telegram.username
     ? "@" + me.data.telegram.username
     : displayName(me.data.telegram);
-  const who = me.data.role === "admin" ? `${handle} · admin` : handle;
+  const who = me.data.role === "admin" ? `${handle}${t("app.adminSuffix")}` : handle;
 
   return (
     <main>
       <header className="topbar">
         <div className="topbar-inner">
-          <h1>{tabMeta.title}</h1>
+          <h1>{t(tabMeta.titleKey)}</h1>
           <span className="muted">{who}</span>
         </div>
         <nav className="tabs">
-          {visibleTabs.map((t) => (
+          {visibleTabs.map((tm) => (
             <button
-              key={t.id}
-              className={`tab ${t.id === tab ? "active" : ""}`}
-              onClick={() => setTab(t.id)}
+              key={tm.id}
+              className={`tab ${tm.id === tab ? "active" : ""}`}
+              onClick={() => setTab(tm.id)}
             >
-              {t.label}
+              {t(tm.labelKey)}
             </button>
           ))}
         </nav>
@@ -109,7 +111,7 @@ export default function App() {
       {tab === "users" && me.data.role === "admin" && <UsersTab />}
       {tab === "stats" && me.data.role === "admin" && (
         <Suspense
-          fallback={<p className="muted" style={{ padding: 16 }}>Cargando…</p>}
+          fallback={<p className="muted" style={{ padding: 16 }}>{t("app.loading")}</p>}
         >
           <StatsTab />
         </Suspense>
@@ -122,12 +124,12 @@ function Loading({ message, kind = "ok" }: { message: string; kind?: "ok" | "err
   return (
     <div className="banner" style={{ margin: "24px auto" }}>
       <h2 style={{ color: kind === "err" ? "var(--danger)" : undefined }}>
-        {kind === "err" ? "Algo falló" : "Caída"}
+        {kind === "err" ? t("app.loadFailed") : t("app.brand")}
       </h2>
       <p>{message}</p>
       {kind === "err" && (
         <p className="muted">
-          Toma un screenshot y mándalo a @CaidaVZLANews.
+          {t("app.screenshotHint")}
         </p>
       )}
     </div>
@@ -137,11 +139,8 @@ function Loading({ message, kind = "ok" }: { message: string; kind?: "ok" | "err
 function OutsideTelegram() {
   return (
     <div className="banner" style={{ margin: "24px auto" }}>
-      <h2>Ábreme desde Telegram</h2>
-      <p>
-        Esta es una Telegram Web App. Busca <strong>@CaidaVZLABot</strong> en
-        Telegram y abre la app desde el menú del bot.
-      </p>
+      <h2>{t("app.outside.title")}</h2>
+      <p>{t("app.outside.body")}</p>
     </div>
   );
 }

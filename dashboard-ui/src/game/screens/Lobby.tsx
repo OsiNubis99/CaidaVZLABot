@@ -2,14 +2,16 @@ import { useState } from "react";
 import type { GameState, CpuDifficulty } from "../types";
 import { useGame } from "../store";
 import { openTelegramLink } from "../../lib/telegram";
+import { t } from "../../lib/i18n";
+import type { Dict } from "../../lib/i18n.dict";
 import { CreateConfig } from "../components/CreateConfig";
 import { configSummary } from "../configDefaults";
 
 const BOT = "CaidaVZLABot";
-const DIFFS: { id: CpuDifficulty; label: string }[] = [
-  { id: "easy", label: "Fácil" },
-  { id: "medium", label: "Medio" },
-  { id: "pro", label: "Pro" },
+const DIFFS: { id: CpuDifficulty; labelKey: keyof Dict }[] = [
+  { id: "easy", labelKey: "lobby.diff.easy" },
+  { id: "medium", labelKey: "lobby.diff.medium" },
+  { id: "pro", labelKey: "lobby.diff.pro" },
 ];
 
 interface Props {
@@ -36,8 +38,8 @@ export function Lobby({ state, youId }: Props) {
       <div className="lobby">
         <CreateConfig
           initial={state.config}
-          title={`Configurar mesa ${state.code}`}
-          submitLabel="Guardar"
+          title={t("lobby.configureTitle", { code: state.code })}
+          submitLabel={t("lobby.saveConfig")}
           onCancel={() => setEditingConfig(false)}
           onSubmit={(config) => {
             setEditingConfig(false);
@@ -54,7 +56,7 @@ export function Lobby({ state, youId }: Props) {
   // the bot has a Main Mini App enabled; the code in the text is the fallback
   // (friend opens the bot → 🎮 Jugar → Unirme → pega el código).
   const deepLink = `https://t.me/${BOT}?startapp=${state.code}`;
-  const inviteText = `¡Únete a mi mesa de Caída! 🎴\nCódigo: ${state.code}`;
+  const inviteText = t("lobby.inviteText", { code: state.code });
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
     deepLink,
   )}&text=${encodeURIComponent(inviteText)}`;
@@ -63,7 +65,7 @@ export function Lobby({ state, youId }: Props) {
     <div className="lobby">
       <div className="lobby-head">
         <div>
-          <div className="muted">Código de mesa</div>
+          <div className="muted">{t("lobby.code")}</div>
           <div className="lobby-code">{state.code}</div>
         </div>
         <button
@@ -71,11 +73,11 @@ export function Lobby({ state, youId }: Props) {
           className="btn btn-primary"
           onClick={() => openTelegramLink(shareUrl)}
         >
-          🔗 Invitar
+          {t("lobby.invite")}
         </button>
       </div>
 
-      <div className="lobby-config" title="Reglas de la mesa">
+      <div className="lobby-config" title={t("lobby.rulesTitle")}>
         <span className="muted">⚙️ {configSummary(state.config)}</span>
         {isHost && (
           <button
@@ -83,7 +85,7 @@ export function Lobby({ state, youId }: Props) {
             className="btn lobby-config-edit"
             onClick={() => setEditingConfig(true)}
           >
-            Configurar
+            {t("lobby.configure")}
           </button>
         )}
       </div>
@@ -94,15 +96,15 @@ export function Lobby({ state, youId }: Props) {
             <span className="lobby-seat-idx">{seat.index + 1}</span>
             <span className="lobby-seat-name">
               {seat.name}
-              {seat.kind === "cpu" && <span className="badge cpu">CPU</span>}
-              {seat.index === 0 && <span className="muted"> · host</span>}
+              {seat.kind === "cpu" && <span className="badge cpu">{t("opp.cpu")}</span>}
+              {seat.index === 0 && <span className="muted">{t("lobby.host")}</span>}
             </span>
             {isHost && seat.kind === "cpu" && (
               <button
                 type="button"
                 className="btn btn-danger lobby-seat-x"
                 onClick={() => game.removeCpu(seat.index)}
-                title="Quitar CPU"
+                title={t("lobby.removeCpu")}
               >
                 ✕
               </button>
@@ -112,14 +114,14 @@ export function Lobby({ state, youId }: Props) {
         {Array.from({ length: Math.max(0, 4 - filled) }).map((_, i) => (
           <div className="lobby-seat lobby-seat-empty" key={`e${i}`}>
             <span className="lobby-seat-idx">{filled + i + 1}</span>
-            <span className="muted">Libre</span>
+            <span className="muted">{t("lobby.free")}</span>
           </div>
         ))}
       </div>
 
       {isHost && filled < 4 && (
         <div className="lobby-cpu">
-          <span className="muted">Agregar CPU:</span>
+          <span className="muted">{t("lobby.addCpu")}</span>
           {DIFFS.map((d) => (
             <button
               key={d.id}
@@ -127,7 +129,7 @@ export function Lobby({ state, youId }: Props) {
               className="btn"
               onClick={() => game.addCpu(d.id)}
             >
-              + {d.label}
+              + {t(d.labelKey)}
             </button>
           ))}
         </div>
@@ -141,18 +143,18 @@ export function Lobby({ state, youId }: Props) {
             disabled={!canStart}
             onClick={game.start}
           >
-            ▶ Empezar
+            {t("lobby.start")}
           </button>
         ) : (
-          <span className="muted">Esperando a que el host empiece…</span>
+          <span className="muted">{t("lobby.waitingHost")}</span>
         )}
         <button type="button" className="btn" onClick={game.leave}>
-          Salir
+          {t("lobby.leave")}
         </button>
       </div>
 
       {!canStart && isHost && (
-        <p className="muted lobby-hint">Necesitas al menos 2 jugadores para empezar.</p>
+        <p className="muted lobby-hint">{t("lobby.needPlayers")}</p>
       )}
     </div>
   );
@@ -168,7 +170,7 @@ function PreLobby() {
     return (
       <div className="lobby lobby-pre">
         <CreateConfig
-          submitLabel="Crear mesa"
+          submitLabel={t("cfg.create")}
           onCancel={() => setConfiguring(false)}
           onSubmit={(config) => {
             setConfiguring(false);
@@ -182,28 +184,25 @@ function PreLobby() {
   return (
     <div className="lobby lobby-pre">
       <div className="prelobby-card">
-        <h3>Jugar Caída</h3>
-        <p className="muted">
-          Crea una mesa e invita amigos (o llénala con CPUs), o únete a una mesa
-          con su código.
-        </p>
+        <h3>{t("prelobby.title")}</h3>
+        <p className="muted">{t("prelobby.body")}</p>
         <button
           type="button"
           className="btn btn-primary prelobby-create"
           onClick={() => game.createSession()}
         >
-          Crear mesa rápida
+          {t("prelobby.createQuick")}
         </button>
         <button
           type="button"
           className="btn prelobby-configure"
           onClick={() => setConfiguring(true)}
         >
-          ⚙️ Crear con configuración
+          {t("prelobby.createConfig")}
         </button>
 
         <div className="prelobby-sep">
-          <span>o</span>
+          <span>{t("prelobby.or")}</span>
         </div>
 
         <form
@@ -218,12 +217,12 @@ function PreLobby() {
             type="text"
             inputMode="text"
             autoCapitalize="characters"
-            placeholder="CAIDA-XXXX"
+            placeholder={t("prelobby.codePlaceholder")}
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
           <button type="submit" className="btn" disabled={!code.trim()}>
-            Unirme
+            {t("prelobby.join")}
           </button>
         </form>
       </div>
