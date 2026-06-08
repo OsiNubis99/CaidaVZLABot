@@ -114,6 +114,19 @@ main { max-width: 1200px; margin: 0 auto; }
 /* Stats charts: maintainAspectRatio:false needs a sized container. */
 .stats-chart { position: relative; height: 280px; }
 .card-title .muted { font-weight: 400; }
+
+/* "Le ganó al PRO" achievement badge (Mi cuenta). */
+.achievement-badge {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  background: linear-gradient(90deg, rgba(212, 160, 23, 0.22), var(--bg-card));
+  border: 1px solid #d4a017;
+}
 .sing-row {
   display: flex;
   justify-content: space-between;

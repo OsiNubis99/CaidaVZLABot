@@ -126,7 +126,8 @@ module.exports = {
 		const user = await UserController.add(req.user);
 		const text =
 			`User: ${user.first_name} ${user.last_name}${user.username ? "(@" + user.username + ")" : ""}` +
-			`\nJuegos terminados: ${user.finished} \nGanados: ${user.win} \nGanados Custom:${user.win_custom}` +
+			`\nJuegos terminados: ${user.finished} \nGanados: ${user.win}` +
+			(user.beat_pro > 0 ? `\n🏆 Le ganó al PRO ×${user.beat_pro}` : "") +
 			`\nCaidas a otros jugadores: ${user.caida}` +
 			`\nCaido por otros jugadores: ${user.caido}` +
 			`\nRonda: ${user.alive_ronda} vivas / ${user.ronda} cantadas ` +

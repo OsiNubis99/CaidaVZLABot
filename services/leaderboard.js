@@ -6,9 +6,10 @@ const { UserController } = require("../database");
 function formatRow(idx, u) {
   const name = u.first_name || "(sin nombre)";
   const handle = u.username ? "@" + u.username : "";
-  const total = u.win + u.win_custom;
-  const rate = u.finished > 0 ? Math.round((total / u.finished) * 100) : 0;
-  return `${idx + 1}. ${name}${handle ? " " + handle : ""} — ${total} wins · ${u.finished} partidas · ${rate}%`;
+  const wins = u.win || 0;
+  const rate = u.finished > 0 ? Math.round((wins / u.finished) * 100) : 0;
+  const pro = u.beat_pro ? ` · 🏆×${u.beat_pro}` : "";
+  return `${idx + 1}. ${name}${handle ? " " + handle : ""} — ${wins} ganados · ${u.finished} partidas · ${rate}%${pro}`;
 }
 
 async function topMessage(limit = 10) {

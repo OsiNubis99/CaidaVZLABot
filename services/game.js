@@ -888,6 +888,10 @@ module.exports = {
           winner_first_name: winner ? winner.first_name : null,
           points: group.points,
           decks: group.decks,
+          // Enriched stats summary (roster, ranked flag, config snapshot,
+          // winner slot) stashed by gameStats.recordResult in kill(). Lets a
+          // future recompute re-derive stats from the event log.
+          result: group._lastResult || null,
         });
         // Bump the denormalized games_played counter on the group row
         // so the admin list can sort by "most active". Fire and forget —
@@ -973,6 +977,7 @@ module.exports = {
             winner_first_name: winner ? winner.first_name : null,
             points: group.points,
             decks: group.decks,
+            result: group._lastResult || null,
           });
           games[chatId] = new Game(group.name, new Config(group.config));
           cleanUsers(group.users, chatId);

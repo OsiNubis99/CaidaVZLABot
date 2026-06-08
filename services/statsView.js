@@ -23,7 +23,7 @@ function topPlayersTable(rows) {
   }
   const trs = rows
     .map((u, i) => {
-      const total = (u.win || 0) + (u.win_custom || 0);
+      const total = u.win || 0;
       const rate = u.finished > 0 ? Math.round((total / u.finished) * 100) : 0;
       return `<tr>
         <td>${i + 1}</td>

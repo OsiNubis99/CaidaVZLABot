@@ -51,7 +51,7 @@ describe("statsView.render", () => {
     const html = render(sampleData);
     expect(html).toMatch(/>A( |<)/); // name in cell, possibly followed by handle span
     expect(html).toContain("@a");
-    expect(html).toMatch(/70%/); // (5+2)/10 = 70%
+    expect(html).toMatch(/50%/); // win 5 / 10 finished = 50% (win_custom ignored)
   });
 
   it("escapes HTML injection in player names", () => {

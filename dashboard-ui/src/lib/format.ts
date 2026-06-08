@@ -25,14 +25,13 @@ export function fmtDate(d: string | null | undefined): string {
 }
 
 /**
- * Win rate = (win + win_custom) / finished, as %. Returns null when
- * the user hasn't finished any game yet — let the renderer decide what
- * to show in the no-data state.
+ * Win rate = win (ganados) / finished, as %. Returns null when the user hasn't
+ * finished any game yet — let the renderer decide the no-data state.
  */
 export function winRate(u: UserRow): number | null {
   const f = Number(u.finished) || 0;
   if (f <= 0) return null;
-  const wins = (Number(u.win) || 0) + (Number(u.win_custom) || 0);
+  const wins = Number(u.win) || 0;
   return Math.round((wins / f) * 100);
 }
 

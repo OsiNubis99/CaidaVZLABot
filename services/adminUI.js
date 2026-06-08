@@ -258,9 +258,7 @@ function userDisplayName(u) {
 function userRowLabel(u) {
   const flag = u.is_banned ? "🚫" : "👤";
   const wins = Number(u.win) || 0;
-  const customWins = Number(u.win_custom) || 0;
-  const totalWins = wins + customWins;
-  const winsSuffix = totalWins > 0 ? ` 🏆${totalWins}` : "";
+  const winsSuffix = wins > 0 ? ` 🏆${wins}` : "";
   return `${flag} ${userDisplayName(u)}${winsSuffix}`;
 }
 
@@ -314,7 +312,7 @@ function formatUserDetail(u) {
   const handle = u.username ? "@" + u.username : "(sin username)";
   const finished = Number(u.finished) || 0;
   const win = Number(u.win) || 0;
-  const winCustom = Number(u.win_custom) || 0;
+  const beatPro = Number(u.beat_pro) || 0;
   const caida = Number(u.caida) || 0;
   const caido = Number(u.caido) || 0;
   return (
@@ -323,7 +321,7 @@ function formatUserDetail(u) {
     `\n` +
     `Baneado: ${u.is_banned ? "🚫 Sí" : "❌ No"}\n` +
     `Partidas: ${finished}\n` +
-    `Wins: ${win} · Wins custom: ${winCustom}\n` +
+    `Ganados: ${win}${beatPro > 0 ? ` · 🏆 le ganó al PRO ×${beatPro}` : ""}\n` +
     `Caídas dadas: ${caida} · Caídas recibidas: ${caido}\n` +
     `Notify on turn: ${u.notify_on_turn ? "✅" : "❌"}`
   );

@@ -137,6 +137,20 @@ export function StatsTab() {
     },
   };
 
+  // ── "Le ganaron al PRO" achievement (horizontal) ──────────────────────
+  const beatPro = data.beatPro ?? [];
+  const beatProChart = {
+    labels: beatPro.map((d) => d.name),
+    datasets: [
+      {
+        label: "Le ganó al PRO",
+        data: beatPro.map((d) => d.beatPro),
+        backgroundColor: c.accent,
+        borderRadius: 4,
+      },
+    ],
+  };
+
   return (
     <section className="tab-panel">
       <div className="card stats-card">
@@ -171,6 +185,20 @@ export function StatsTab() {
         ) : (
           <div className="stats-chart">
             <Bar data={cpuChart} options={cpuOpts} />
+          </div>
+        )}
+      </div>
+
+      <div className="card stats-card">
+        <div className="card-title">🏆 Le ganaron al PRO <span className="muted">· 1v1 vs CPU Pro</span></div>
+        {beatPro.length === 0 ? (
+          <p className="muted">Nadie le ha ganado al PRO en 1v1 todavía.</p>
+        ) : (
+          <div
+            className="stats-chart"
+            style={{ height: Math.max(140, beatPro.length * 34 + 40) }}
+          >
+            <Bar data={beatProChart} options={trivOpts} />
           </div>
         )}
       </div>

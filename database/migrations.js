@@ -113,6 +113,25 @@ const STATEMENTS = [
           ('cpu_medium', '🤖 CPU Medio', '', NULL, false),
           ('cpu_pro',    '🤖 CPU Pro',   '', NULL, false)
    ON CONFLICT (id_user) DO NOTHING`,
+
+  // Stats redesign: "le ganó al PRO" achievement counter.
+  `ALTER TABLE public.user ADD COLUMN IF NOT EXISTS beat_pro int DEFAULT 0`,
+
+  // One-shot data migrations, guarded by a marker row so they run exactly once
+  // (migrations run on every boot).
+  `CREATE TABLE IF NOT EXISTS public.schema_meta (
+     key text PRIMARY KEY,
+     applied_at timestamptz DEFAULT now()
+   )`,
+  // Reset `win` to 0 once: the column now means "ganados" (ranked only), but
+  // historical values were accumulated under the old preset/custom rule.
+  `DO $$
+   BEGIN
+     IF NOT EXISTS (SELECT 1 FROM public.schema_meta WHERE key = 'win_reset_v1') THEN
+       UPDATE public.user SET win = 0;
+       INSERT INTO public.schema_meta(key) VALUES ('win_reset_v1');
+     END IF;
+   END $$`,
 ];
 
 async function run() {

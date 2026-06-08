@@ -33,16 +33,20 @@ export function MeTab({ me }: { me: MeResponse }) {
 
   const finished = Number(u.finished) || 0;
   const win = Number(u.win) || 0;
-  const winCustom = Number(u.win_custom) || 0;
+  const beatPro = Number(u.beat_pro) || 0;
   const caida = Number(u.caida) || 0;
   const caido = Number(u.caido) || 0;
 
   return (
     <section className="tab-panel">
+      {beatPro > 0 && (
+        <div className="achievement-badge">
+          🏆 Le ganó al PRO {beatPro > 1 ? `×${beatPro}` : ""}
+        </div>
+      )}
       <div className="cards-row">
         <Kpi label="Partidas" value={finished} />
-        <Kpi label="Wins" value={win} />
-        <Kpi label="Win custom" value={winCustom} />
+        <Kpi label="Ganados" value={win} hint="ranked: sin bots, puntos default" />
         <Kpi label="Win rate" value={fmtPct(winRate(u))} />
         <Kpi label="Caídas dadas" value={caida} />
         <Kpi label="Caídas recibidas" value={caido} />

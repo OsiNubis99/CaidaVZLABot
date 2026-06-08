@@ -5,6 +5,7 @@ const resp = require("../lang/es");
 const { getLang } = require("../lang");
 const Config = require("./Config");
 const UserDatabase = require("../database/user");
+const gameStats = require("../services/gameStats");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 
@@ -594,15 +595,10 @@ class Game {
    * @param {String} pre - Optional state text that led to this kill.
    */
   kill(player, pre = "") {
-    let win = this.config.game_mode > 0 ? 1 : 2
-    for (var i = 0; i < this.users.length; ++i) {
-      let user = this.users[i]
-      let comparate = this.scoringSlot(i)
-      let user_win = player == comparate ? win : 0
-      // Fire-and-forget: DB failures shouldn't block kill response, but
-      // catch the rejection so it doesn't become an unhandledRejection.
-      UserDatabase.set_stats(user.statsId(), user_win, user.caida, user.caido).catch(() => {})
-    }
+    // Record game-result stats (ganados ranked, bot win rate, beat-PRO). Pure
+    // decision + fire-and-forget writes live in services/gameStats; it also
+    // stashes a summary on `this._lastResult` for the GAME_FINISHED event.
+    gameStats.recordResult(this, player);
     const L = this._lang();
     let response = pre ? pre + "\n\n" : "";
     response += L.ig_won_prefix;

@@ -49,19 +49,31 @@ module.exports = {
   },
 
   /**
-   * Update game-end stats for a user.
+   * Record one finished game for a user. `won` is the already-decided ranked
+   * outcome (see services/gameStats): increments finished always, win only when
+   * `won`. The legacy win/win_custom split is gone — `win` is the single
+   * "ganados" counter now.
    * @param {String} id_user
-   * @param {Number} win - 0 = lost, 1 = win, 2 = win_custom.
-   * @param {Number} caida
-   * @param {Number} caido
+   * @param {{won:boolean, caida:number, caido:number}} delta
    */
-  async set_stats(id_user, win, caida, caido) {
-    let query = "UPDATE public.user SET finished = finished + 1";
-    if (win === 1) query += ", win = win + 1";
-    else if (win === 2) query += ", win_custom = win_custom + 1";
-    query += ", caida = caida + $2, caido = caido + $3 WHERE id_user = $1;";
-    const result = await database.query(query, [id_user, caida, caido]);
-    return result.rows[0];
+  async recordGameStats(id_user, { won, caida, caido }) {
+    await database.query(
+      `UPDATE public.user
+       SET finished = finished + 1,
+           win = win + $2,
+           caida = caida + $3,
+           caido = caido + $4
+       WHERE id_user = $1`,
+      [id_user, won ? 1 : 0, caida || 0, caido || 0],
+    );
+  },
+
+  /** Increment the "le ganó al PRO" achievement counter. */
+  async incrementBeatPro(id_user) {
+    await database.query(
+      "UPDATE public.user SET beat_pro = COALESCE(beat_pro, 0) + 1 WHERE id_user = $1",
+      [id_user],
+    );
   },
 
   /**
@@ -81,7 +93,7 @@ module.exports = {
   },
 
   /**
-   * Top players sorted by primary wins then custom wins then finished games.
+   * Top players sorted by wins (ganados) then finished games.
    * Only users that have finished at least one game are included.
    * @param {Number} limit
    */
@@ -89,10 +101,10 @@ module.exports = {
     // caido is required by the dashboard so it can render Caídas
     // recibidas and Caída ratio. Cheap to add — same row, same index.
     const r = await database.query(
-      `SELECT id_user, first_name, last_name, username, finished, win, win_custom, caida, caido
+      `SELECT id_user, first_name, last_name, username, finished, win, caida, caido, beat_pro
        FROM public.user
        WHERE finished > 0 AND COALESCE(is_banned, false) = false
-       ORDER BY win DESC, win_custom DESC, finished DESC
+       ORDER BY win DESC, finished DESC
        LIMIT $1`,
       [limit],
     );
@@ -104,7 +116,7 @@ module.exports = {
    * dataset; all coerced to plain numbers (pg returns SUM/bigint as strings).
    * Human stats exclude the synthetic CPU rows (id_user LIKE 'cpu%'); real
    * Telegram ids are numeric so they never collide with that prefix.
-   * @returns {Promise<{cantos: Object, trivilin: Array, cpu: Array}>}
+   * @returns {Promise<{cantos: Object, trivilin: Array, cpu: Array, beatPro: Array}>}
    */
   async stats() {
     const CANTOS = [
@@ -136,14 +148,14 @@ module.exports = {
     }));
 
     const cpuR = await database.query(
-      `SELECT id_user, first_name, finished, win, win_custom
+      `SELECT id_user, first_name, finished, win
        FROM public.user
        WHERE id_user IN ('cpu_easy', 'cpu_medium', 'cpu_pro')
        ORDER BY id_user`,
     );
     const cpu = cpuR.rows.map((r) => {
       const finished = Number(r.finished) || 0;
-      const wins = (Number(r.win) || 0) + (Number(r.win_custom) || 0);
+      const wins = Number(r.win) || 0;
       return {
         id_user: r.id_user,
         label: r.first_name || r.id_user,
@@ -153,7 +165,24 @@ module.exports = {
       };
     });
 
-    return { cantos, trivilin, cpu };
+    // "Le ganaron al PRO" — humans with the 1v1-vs-cpu_pro achievement.
+    const beatR = await database.query(
+      `SELECT id_user, first_name, last_name, username, beat_pro
+       FROM public.user
+       WHERE COALESCE(beat_pro, 0) > 0 AND id_user NOT LIKE 'cpu%'
+             AND COALESCE(is_banned, false) = false
+       ORDER BY beat_pro DESC
+       LIMIT 10`,
+    );
+    const beatPro = beatR.rows.map((r) => ({
+      name:
+        (r.username && "@" + r.username) ||
+        [r.first_name, r.last_name].filter(Boolean).join(" ") ||
+        String(r.id_user),
+      beatPro: Number(r.beat_pro) || 0,
+    }));
+
+    return { cantos, trivilin, cpu, beatPro };
   },
 
   /**
@@ -225,7 +254,7 @@ module.exports = {
     switch (sort) {
       case "wins":
         orderBy =
-          "COALESCE(win, 0) DESC, COALESCE(win_custom, 0) DESC, COALESCE(finished, 0) DESC, first_name ASC";
+          "COALESCE(win, 0) DESC, COALESCE(finished, 0) DESC, first_name ASC";
         break;
       case "banned":
         orderBy = "COALESCE(is_banned, false) DESC, first_name ASC";

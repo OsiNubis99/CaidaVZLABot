@@ -67,13 +67,13 @@ export function TopTab() {
       },
       {
         accessorKey: "win",
-        header: "Wins",
+        header: "Ganados",
         accessorFn: (u) => Number(u.win) || 0,
       },
       {
-        accessorKey: "win_custom",
-        header: "Custom",
-        accessorFn: (u) => Number(u.win_custom) || 0,
+        accessorKey: "beat_pro",
+        header: "🏆 PRO",
+        accessorFn: (u) => Number(u.beat_pro) || 0,
       },
       {
         id: "win_rate",

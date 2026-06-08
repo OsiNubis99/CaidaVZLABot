@@ -21,7 +21,8 @@ export interface UserRow {
   is_banned?: boolean;
   finished?: number;
   win?: number;
-  win_custom?: number;
+  win_custom?: number; // legacy, no longer written
+  beat_pro?: number; // "le ganó al PRO" achievement count
   caida?: number;
   caido?: number;
   notify_on_turn?: boolean;
@@ -99,8 +100,14 @@ export interface CpuStat {
   winRate: number; // 0..1
 }
 
+export interface BeatProEntry {
+  name: string;
+  beatPro: number;
+}
+
 export interface StatsResponse {
   cantos: CantoTotals;
   trivilin: TrivilinEntry[];
   cpu: CpuStat[];
+  beatPro: BeatProEntry[];
 }
