@@ -1,5 +1,5 @@
 // "Mi cuenta" extras: your last games (did they count? why not?) and the
-// Acompañante (Mesa real) stats — shown apart, never summed with the app's.
+// Acompañante (Mesa real) profile — its own view, never summed with the app's.
 import { useQuery } from "@tanstack/react-query";
 import * as api from "../api";
 import { getLocale, t } from "../lib/i18n";
@@ -97,54 +97,74 @@ function RecentRow({ row }: { row: GameHistoryRow }) {
   );
 }
 
-/** Acompañante stats: games scored at real tables (separate from the app). */
-export function CompanionStatsCard() {
+/** "Mi cuenta" → 🃏 Mesa real: the full profile of the games scored at real
+ *  tables, laid out like the app's (KPIs, cantos, last games) and always
+ *  apart from it. No "caídas recibidas" here: real tables only record who
+ *  made the caída. */
+export function CompanionProfile() {
   const q = useQuery({ queryKey: ["companionMe"], queryFn: api.companionMe });
   const s = q.data?.stats;
   const recent = q.data?.recent ?? [];
-  return (
-    <div className="card companion-card">
-      <div className="card-title">
-        {t("me.realTitle")} <span className="muted">· {t("me.realSeparate")}</span>
-      </div>
-      {q.isLoading ? (
+  if (q.isLoading) {
+    return (
+      <div className="card">
         <p className="muted">{t("app.loading")}</p>
-      ) : q.isError || !s ? (
+      </div>
+    );
+  }
+  if (q.isError || !s) {
+    return (
+      <div className="card">
         <p className="muted">{t("me.recentError")}</p>
-      ) : s.played === 0 ? (
-        <p className="muted">{t("me.realEmpty")}</p>
+      </div>
+    );
+  }
+  const rate = s.played > 0 ? Math.round((s.won / s.played) * 100) : null;
+  return (
+    <>
+      <p className="muted top-note">{t("me.realNote")}</p>
+      {s.played === 0 && s.refereed === 0 ? (
+        <div className="card">
+          <p className="muted">{t("me.realEmpty")}</p>
+        </div>
       ) : (
         <>
           <div className="cards-row">
-            <Mini label={t("me.games")} value={s.played} />
-            <Mini label={t("me.realWon")} value={s.won} />
-            <Mini label={t("me.winRate")} value={fmtPct(Math.round((s.won / s.played) * 100))} />
-            <Mini label={t("me.realCaidas")} value={s.caidas} />
-            <Mini label={t("me.realMesas")} value={s.mesas} />
-            <Mini label={t("me.realPoints")} value={s.points} />
+            <Kpi label={t("me.games")} value={s.played} />
+            <Kpi label={t("me.realWon")} value={s.won} />
+            <Kpi label={t("me.winRate")} value={fmtPct(rate)} />
+            <Kpi label={t("me.realCaidas")} value={s.caidas} />
+            <Kpi label={t("me.realMesas")} value={s.mesas} />
+            <Kpi label={t("me.realPoints")} value={s.points} />
+            <Kpi label={t("me.realManual")} value={s.manual} hint={t("me.realManualHint")} />
+            <Kpi label={t("me.realRefereed")} value={s.refereed} hint={t("me.realRefereedHint")} />
           </div>
-          {CANTO_ROWS.some(([k]) => (s.cantos[k] || 0) > 0) && (
-            <div className="real-cantos">
-              {CANTO_ROWS.filter(([k]) => (s.cantos[k] || 0) > 0).map(([k, label]) => (
-                <span key={k} className="badge no">
-                  {label} ×{s.cantos[k]}
-                </span>
-              ))}
-            </div>
-          )}
-          {recent.length > 0 && (
-            <>
-              <div className="card-subtitle">{t("me.realRecent")}</div>
+
+          <div className="card">
+            <div className="card-title">{t("me.realCantos")}</div>
+            {CANTO_ROWS.map(([k, label]) => (
+              <div className="sing-row" key={k}>
+                <span>{label}</span>
+                <span className="cell-mono">{s.cantos[k] || 0}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="card">
+            <div className="card-title">{t("me.realRecent")}</div>
+            {recent.length === 0 ? (
+              <p className="muted">{t("me.realRecentEmpty")}</p>
+            ) : (
               <ul className="history-list">
                 {recent.map((g) => (
                   <CompanionRow key={g.id} game={g} />
                 ))}
               </ul>
-            </>
-          )}
+            )}
+          </div>
         </>
       )}
-    </div>
+    </>
   );
 }
 
@@ -176,11 +196,24 @@ function CompanionRow({ game }: { game: CompanionRecentGame }) {
   );
 }
 
-function Mini({ label, value }: { label: string; value: string | number }) {
+export function Kpi({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+}) {
   return (
     <div className="kpi">
       <div className="kpi-label">{label}</div>
       <div className="kpi-value">{value}</div>
+      {hint && (
+        <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+          {hint}
+        </div>
+      )}
     </div>
   );
 }

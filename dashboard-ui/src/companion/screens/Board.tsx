@@ -6,6 +6,7 @@ import { t } from "../../lib/i18n";
 import { haptic } from "../../lib/telegram";
 import { Modal } from "../../components/Modal";
 import { Sheet } from "../components/Sheet";
+import { ClaimBanner, PeopleChip, QueueCta } from "../components/People";
 import {
   CANTO_LABEL,
   POS_CLASS,
@@ -29,7 +30,8 @@ const QUICK_POINTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const MAX_MANUAL = 99;
 
 /** In-game scoreboard: one button per player on each edge + "Mesa limpia" in
- *  the middle. Only the scorer (host) can tap; everyone else watches live. */
+ *  the middle. Only the referee (host) sees the green button and can tap;
+ *  everyone else watches live — and sees who's refereeing in the middle. */
 export function Board({ state }: { state: CompanionState }) {
   const c = useCompanion();
   const host = state.you.isHost;
@@ -55,31 +57,28 @@ export function Board({ state }: { state: CompanionState }) {
             {state.mode === "parejas" ? t("cfg.parejas") : t("cfg.individual")}
           </span>
         </div>
-        {host ? (
-          <div className="real-chips">
-            <button
-              type="button"
-              className="real-chip"
-              disabled={!state.ops.length}
-              onClick={() => c.undo()}
-            >
-              ↶ {t("real.undo")}
-            </button>
-            <button
-              type="button"
-              className="real-chip danger"
-              onClick={() => setSheet({ kind: "close" })}
-            >
-              {t("real.close")}
-            </button>
-          </div>
-        ) : (
-          <span className="muted real-scorer">
-            {state.hostPosition == null
-              ? t("real.refereeIs", { name: state.hostName })
-              : t("real.scoredBy", { name: state.hostName })}
-          </span>
-        )}
+        <div className="real-chips">
+          {host && (
+            <>
+              <button
+                type="button"
+                className="real-chip"
+                disabled={!state.ops.length}
+                onClick={() => c.undo()}
+              >
+                ↶ {t("real.undo")}
+              </button>
+              <button
+                type="button"
+                className="real-chip danger"
+                onClick={() => setSheet({ kind: "close" })}
+              >
+                {t("real.close")}
+              </button>
+            </>
+          )}
+          <PeopleChip state={state} />
+        </div>
       </div>
 
       <div className={`real-table ${host ? "is-facing" : ""}`}>
@@ -116,16 +115,24 @@ export function Board({ state }: { state: CompanionState }) {
           );
         })}
         <div className="real-center">
-          <button
-            type="button"
-            className="real-mesa"
-            disabled={!host || blocked || state.config.mesa <= 0}
-            onClick={() => setSheet({ kind: "mesa" })}
-          >
-            <span className="real-mesa-icon">✨</span>
-            <span>{t("real.mesaLimpia")}</span>
-            <small>+{state.config.mesa}</small>
-          </button>
+          {host ? (
+            <button
+              type="button"
+              className="real-mesa"
+              disabled={blocked || state.config.mesa <= 0}
+              onClick={() => setSheet({ kind: "mesa" })}
+            >
+              <span className="real-mesa-icon">✨</span>
+              <span>{t("real.mesaLimpia")}</span>
+              <small>+{state.config.mesa}</small>
+            </button>
+          ) : (
+            <div className="real-ref-disc">
+              <span className="real-mesa-icon">🧑‍⚖️</span>
+              <span className="real-ref-name">{state.hostName}</span>
+              <small>{t("real.people.referee")}</small>
+            </div>
+          )}
         </div>
       </div>
 
@@ -145,6 +152,8 @@ export function Board({ state }: { state: CompanionState }) {
         )}
         {state.ops.length > 0 && <span className="real-foot-count">≡ {state.ops.length}</span>}
       </button>
+      <ClaimBanner state={state} />
+      <QueueCta state={state} />
 
       {sheet?.kind === "player" && state.seats[sheet.position] && (
         <PlayerSheet

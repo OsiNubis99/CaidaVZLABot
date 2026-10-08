@@ -7,6 +7,7 @@ import { CreateConfig } from "../../game/components/CreateConfig";
 import { configSummary, matchPreset } from "../../game/configDefaults";
 import { Modal } from "../../components/Modal";
 import { Sheet } from "../components/Sheet";
+import { ClaimBanner, PeopleChip, QueueCta } from "../components/People";
 import { POS_CLASS } from "../labels";
 
 const BOT = "CaidaVZLABot";
@@ -74,13 +75,16 @@ export function Lobby({ state }: { state: CompanionState }) {
           <div className="muted">{t("real.codeLabel")}</div>
           <div className="lobby-code">{state.code}</div>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => openTelegramLink(shareUrl)}
-        >
-          {t("lobby.invite")}
-        </button>
+        <div className="real-head-actions">
+          <PeopleChip state={state} />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => openTelegramLink(shareUrl)}
+          >
+            {t("lobby.invite")}
+          </button>
+        </div>
       </div>
 
       <div className="lobby-config">
@@ -189,14 +193,19 @@ export function Lobby({ state }: { state: CompanionState }) {
         ) : (
           <p className="muted lobby-legend">🧑‍⚖️ {t("real.refereeIs", { name: state.hostName })}</p>
         ))}
-      {!host && state.you.position == null && seated < state.seats.length && (
-        <div className="real-referee">
-          <span>{t("real.watching")}</span>
-          <button type="button" className="btn btn-primary" onClick={() => c.join(state.code)}>
-            {t("real.sitMe")}
-          </button>
-        </div>
-      )}
+      {!host &&
+        state.you.position == null &&
+        (seated < state.seats.length && state.queue.length === 0 ? (
+          <div className="real-referee">
+            <span>{t("real.watching")}</span>
+            <button type="button" className="btn btn-primary" onClick={() => c.join(state.code)}>
+              {t("real.sitMe")}
+            </button>
+          </div>
+        ) : (
+          <QueueCta state={state} />
+        ))}
+      <ClaimBanner state={state} />
 
       <div className="lobby-actions">
         {host ? (
@@ -245,7 +254,8 @@ export function Lobby({ state }: { state: CompanionState }) {
   );
 }
 
-/** Empty seat tapped: seat a guest (no account) or sit the scorer back down. */
+/** Empty seat tapped: seat the next in line, a guest (no account), or the
+ *  referee themselves. */
 function EmptySeatSheet({
   state,
   position,
@@ -259,6 +269,30 @@ function EmptySeatSheet({
   const [name, setName] = useState("");
   return (
     <Sheet title={t("real.emptySeatTitle")} onClose={onClose}>
+      {state.queue.length > 0 && (
+        <>
+          <div className="real-lbl">🙋 {t("real.queue.fromLine")}</div>
+          <div className="real-who">
+            {state.queue.slice(0, 4).map((e, i) => (
+              <button
+                key={e.qid}
+                type="button"
+                className="real-w"
+                onClick={() => {
+                  c.seatQueued(e.qid, position);
+                  onClose();
+                }}
+              >
+                <span>
+                  {i + 1}. {e.name}
+                </span>
+                <small>{e.guest ? t("real.guestTag") : e.online ? "" : t("real.offline")}</small>
+              </button>
+            ))}
+          </div>
+          <div className="real-lbl">{t("real.queue.orGuest")}</div>
+        </>
+      )}
       <form
         className="prelobby-join"
         onSubmit={(e) => {

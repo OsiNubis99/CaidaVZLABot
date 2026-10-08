@@ -22,6 +22,13 @@ const C2S = Object.freeze({
   DISCARD: "companion:discard", // host: close the table without saving
   REMATCH: "companion:rematch", // { mode: "again" | "winners" | "lobby" } host, finished
   LEAVE: "companion:leave", // non-host stops following the table
+  QUEUE_JOIN: "companion:queueJoin", // {} not seated: ask to play the next game
+  QUEUE_LEAVE: "companion:queueLeave", // {} leave the line
+  QUEUE_ADD: "companion:queueAdd", // { name } host: line up someone without the app
+  QUEUE_REMOVE: "companion:queueRemove", // { qid } host
+  SEAT_QUEUED: "companion:seatQueued", // { qid, position } host, lobby: seat from the line
+  TRANSFER: "companion:transfer", // { pid } host: pass the referee role (pid from state)
+  CLAIM: "companion:claim", // {} take the role once the referee has been away long enough
 });
 
 const S2C = Object.freeze({

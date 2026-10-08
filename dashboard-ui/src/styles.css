@@ -371,11 +371,21 @@ input[type="number"].input, input[type="text"].input { width: 100%; }
 .history-result b { color: var(--text); font-size: 13px; }
 .history-vs { font-size: 12px; }
 .history-foot { font-size: 11px; margin: 8px 0 0; }
-.companion-card .cards-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.companion-card .kpi { padding: 8px 10px; background: var(--bg-elevated); }
-.companion-card .kpi-value { font-size: 18px; }
-.real-cantos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 
-/* ─── Top: App / Mesa real ─── */
+/* ─── Top / Mi cuenta: App / Mesa real ─── */
 .top-switch { flex: 0 0 auto; }
 .top-note { font-size: 12px; margin: 0 0 10px; }
+.top-legend { margin: 8px 0 0; }
+.top-reset {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* Top: the column it's ordered by + people below the minimum of games */
+.data-table thead th.is-sorted { color: var(--text); }
+.data-table tbody tr.is-unranked td { color: var(--text-muted); }
+.data-table tbody tr.is-first-unranked td { border-top: 2px dashed var(--text-muted); }

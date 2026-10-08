@@ -7,9 +7,9 @@ Web app que abre dentro de Telegram desde el botón del menú del bot (📎 al l
 | Tab | Quién la ve | Qué muestra |
 |---|---|---|
 | 🎮 Jugar | Todos | Partida online (WebApp). El host reordena asientos en el lobby (toca uno y luego otro: orden de juego + parejas 1-3 vs 2-4); el lobby y el final dicen si la mesa **cuenta para el ranking** y por qué no |
-| 🃏 Mesa real | Todos | **Acompañante** para partidas con cartas reales: el anfitrión crea `MESA-XXXX`, invita, sienta a la gente como está en la mesa (2v2 por defecto) y anota con 5 botones (un jugador por borde + Mesa limpia al centro). Los demás ven el marcador en vivo. Stats **separadas** de la app |
-| 👤 Mi cuenta | Todos | KPIs (partidas, ganados, win rate, caídas), cantos (vivas/total), **últimas partidas** (si contaron y por qué no), sección **Mesa real**, toggle `notify_on_turn` |
-| 🏆 Top | Todos | Leaderboard global, 10/25/50/100, con switch **App / Mesa real** (rankings separados) |
+| 🃏 Mesa real | Todos | **Acompañante** para partidas con cartas reales: el anfitrión crea `MESA-XXXX`, invita, sienta a la gente como está en la mesa (2v2 por defecto) y anota con 5 botones (un jugador por borde + Mesa limpia al centro). **Solo el árbitro** ve el botón verde; los demás ven en el centro quién arbitra y el marcador en vivo. 👥 **Lista de la mesa** (árbitro, jugando, cola, mirando), **cola** para la próxima, **pasar el rol** de árbitro y **tomarlo** si el árbitro lleva 5 min desconectado. Stats **separadas** de la app |
+| 👤 Mi cuenta | Todos | Switch **App / Mesa real** (el mismo del Top; la elección se recuerda). App: KPIs (partidas, ganados, win rate, caídas dadas/recibidas, ratio), cantos (vivas/total), **últimas partidas** (si contaron y por qué no). Mesa real: partidas, ganadas, win rate, caídas, mesas limpias, puntos, puntos extra (➕ Sumar puntos), arbitradas, cantos por tipo y últimas mesas. Toggle `notify_on_turn` |
+| 🏆 Top | Todos | Leaderboard 10/25/50/100 con switch **App / Mesa real** (rankings separados). Orden **oficial: % de victorias con mínimo 10 partidas** (los de menos van abajo, sin número). Tocar una columna trae el Top N **por esa columna** (orden en el server); tocarla otra vez o "Volver al ranking oficial" restaura |
 | 🌐 Públicos | Todos | Grupos públicos con link de invite (best-effort) |
 | 📦 Grupos | Solo admin | Search/sort/paginación + toggle público/banned, +N meses, rename, delete |
 | 👥 Usuarios | Solo admin | Search/sort/paginación + toggle banned |
@@ -52,19 +52,21 @@ Header obligatorio en todo `/api/*`: `X-Telegram-Init-Data: <urlencoded initData
 | GET | `/api/me` | | `{role, telegram:{id,first_name,...}, user:{...stats}}` |
 | POST | `/api/me/notify` | `{value:bool}` | Toggle `notify_on_turn` propio |
 | GET | `/api/me/games?limit` | | Últimas partidas terminadas (grupos + WebApp, 30 días de `game_events`): `{rows:[{at, source, place, won, ranked, reason, preset, points, mySlot, players}]}` |
-| GET | `/api/leaderboard?limit` | | Top global, `limit` 1-100 |
-| GET | `/api/companion/me` | | Acompañante: `{stats:{played,won,caidas,mesas,points,cantos}, recent:[...]}` |
-| GET | `/api/companion/leaderboard?limit` | | Top del acompañante (solo jugadores con cuenta) |
+| GET | `/api/leaderboard?limit&sort` | | Top global, `limit` 1-100. `sort` ∈ `win_rate` (oficial, default) `win finished beat_pro caida caido caida_ratio`; otro valor → oficial. Responde `{rows, limit, sort, minGames}` |
+| GET | `/api/companion/me` | | Acompañante: `{stats:{played,won,caidas,mesas,points,manual,refereed,cantos}, recent:[...]}` (`manual` = ➕ Sumar puntos; `refereed` = mesas guardadas como árbitro) |
+| GET | `/api/companion/leaderboard?limit&sort` | | Top del acompañante (solo jugadores con cuenta). `sort` ∈ `win_rate` (oficial) `won played caidas mesas points` |
 | GET | `/api/groups/public` | | Lista de grupos públicos con `invite` |
 
 ### WebSocket (socket.io, mismo path `<prefix>/socket.io/`)
 
 - `/` — partida online. Nuevo: `session:swapSeats {a,b}` (host, lobby). El estado trae `hostSeat`, `you.isHost` y `ranked:{ranked, reason, preset}`.
-- `/companion` — acompañante. C2S `companion:create|join|resume|swap|guest|kick|sit|config|start|record|undo|confirm|close|discard|rematch|leave`; S2C `companion:state|error|ended`. Solo el anfitrión muta (validado en el server); desconectarse nunca saca a nadie.
+- `/companion` — acompañante. C2S `companion:create|join|resume|swap|guest|kick|sit|config|start|record|undo|confirm|close|discard|rematch|queueJoin|queueLeave|queueAdd|queueRemove|seatQueued|transfer|claim|leave`; S2C `companion:state|error|ended`. Solo el árbitro (host) muta (validado en el server); desconectarse nunca saca a nadie.
   - `create {config?, referee?}` — `referee: true` = el creador solo arbitra (sin puesto ni stats). `sit {position?}` lo sienta (sin posición → primer puesto libre).
-  - `join {code, watch?}` — `watch: true` re-engancha sin sentarse (espectadores que reconectan).
+  - `join {code, watch?}` — `watch: true` re-engancha sin sentarse (espectadores que reconectan). Si hay **cola**, el link de invitación no sienta a nadie (no se salta la cola): entra mirando.
   - `record {kind: caida|canto|mesa|puntos, seat, value?, canto?}` — `puntos` = puntos manuales 1–99 (mala echada, lo pegado en mesa, cartas al final de la baraja).
-  - `rematch {mode: again|winners|lobby}` — todos otra vez (arranca ya) · siguen los ganadores (los demás se levantan) · nueva partida desde el lobby.
+  - `rematch {mode: again|winners|lobby}` — todos otra vez (arranca ya) · siguen los ganadores (los perdedores van **al final de la cola** y la cola llena todos los puestos libres) · nueva partida desde el lobby.
+  - Cola: `queueJoin {}` / `queueLeave {}` (quien mira pide la próxima / se sale) · `queueAdd {name}` (árbitro anota a alguien sin app) · `queueRemove {qid}` · `seatQueued {qid, position}` (árbitro, lobby). Una mesa viva por persona: no se sienta a nadie que esté jugando en otra.
+  - Rol: `transfer {pid}` (árbitro → alguien de la mesa con app y conectado) · `claim {}` (cualquiera de la mesa con app, si el árbitro lleva `5 min` desconectado). El estado trae `hostOnline`, `queue[]`, `spectators[]`, `you.queued` y `you.claimInMs`; las personas van con `pid` opaco por mesa, **nunca** el id de Telegram.
 
 ### Admin tier (además, `id in ADMIN_USER_IDS`)
 

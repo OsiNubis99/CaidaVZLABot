@@ -1,5 +1,6 @@
 const UserDTO = require("../class/UserDTO");
 const database = require("../config/db");
+const ranking = require("../services/ranking");
 
 const SING_COLUMNS = new Set([
   "caida",
@@ -93,18 +94,21 @@ module.exports = {
   },
 
   /**
-   * Top players sorted by wins (ganados) then finished games.
-   * Only users that have finished at least one game are included.
+   * Top players. Default = the official ranking (win rate among people with
+   * enough games, see services/ranking.js); `sort` picks another whitelisted
+   * column. Only users that have finished at least one game are included.
    * @param {Number} limit
+   * @param {String} [sort] - ranking.APP_SORT_KEYS (anything else → win_rate)
    */
-  async top(limit = 10) {
+  async top(limit = 10, sort) {
     // caido is required by the dashboard so it can render Caídas
-    // recibidas and Caída ratio. Cheap to add — same row, same index.
+    // recibidas and Caída ratio.
+    const order = ranking.appOrderBy(sort);
     const r = await database.query(
       `SELECT id_user, first_name, last_name, username, finished, win, caida, caido, beat_pro
        FROM public.user
        WHERE finished > 0 AND COALESCE(is_banned, false) = false
-       ORDER BY win DESC, finished DESC
+       ORDER BY ${order.sql}
        LIMIT $1`,
       [limit],
     );

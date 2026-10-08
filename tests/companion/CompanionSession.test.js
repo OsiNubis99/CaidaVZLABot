@@ -221,10 +221,10 @@ describe("CompanionSession", () => {
     it("a non-host leaving: frees the seat in lobby/finished, keeps it while playing", () => {
       const s = fullTable();
       s.start();
-      expect(s.leave("2")).toEqual({ left: false });
+      expect(s.leave("2")).toEqual({ left: false, dequeued: false });
       expect(s.positionOf("2")).toBe(1);
       s.closeWithWinner(0);
-      expect(s.leave("2")).toEqual({ left: true });
+      expect(s.leave("2")).toEqual({ left: true, dequeued: false });
       expect(s.positionOf("2")).toBe(-1);
       expect(() => s.leave("1")).toThrow(code("host_cannot_leave"));
     });
@@ -247,8 +247,8 @@ describe("CompanionSession", () => {
       const s = fullTable();
       const host = s.toClient("1", new Set(["1", "3"]));
       const guest = s.toClient("3", new Set(["1", "3"]));
-      expect(host.you).toEqual({ position: 0, isHost: true });
-      expect(guest.you).toEqual({ position: 2, isHost: false });
+      expect(host.you).toMatchObject({ position: 0, isHost: true });
+      expect(guest.you).toMatchObject({ position: 2, isHost: false });
       expect(host.seats[2]).toMatchObject({ name: "Mafeer", online: true, isHost: false });
       expect(host.seats[1].online).toBe(false);
       expect(JSON.stringify(host)).not.toMatch(/"userId"/);
@@ -262,7 +262,7 @@ describe("CompanionSession", () => {
       expect(s.positionOf("1")).toBe(-1);
       expect(s.isHost("1")).toBe(true);
       expect(s.seatedCount()).toBe(0);
-      expect(s.toClient("1").you).toEqual({ position: null, isHost: true });
+      expect(s.toClient("1").you).toMatchObject({ position: null, isHost: true });
       expect(s.toClient("1").hostPosition).toBeNull();
     });
 
@@ -310,12 +310,15 @@ describe("CompanionSession", () => {
       expect(s.ops[0].id).toBe(1);
     });
 
-    it("winners: the winning pair keeps its seats, the rest stand up (host included)", () => {
+    it("winners: the winning pair keeps its seats, the losers line up (host included)", () => {
       const s = wonBy(1);
+      s.enqueueGuest("E");
+      s.enqueueGuest("F");
       s.rematch("winners");
       expect(s.status).toBe("lobby");
-      expect(s.seats.map((x) => x && x.name)).toEqual([null, "Daniel", null, "Jhonne"]);
-      expect(s.positionOf("1")).toBe(-1); // the host lost: now referees
+      expect(s.seats.map((x) => x && x.name)).toEqual(["E", "Daniel", "F", "Jhonne"]);
+      expect(s.queue.map((e) => e.name)).toEqual(["Andrés", "Mafeer"]);
+      expect(s.positionOf("1")).toBe(-1); // the host lost: referees while in line
       expect(s.isHost("1")).toBe(true);
     });
 
@@ -326,15 +329,21 @@ describe("CompanionSession", () => {
       s.start();
       s.record({ kind: "mesa", seat: 2 });
       s.closeWithWinner(2);
+      for (const n of ["X", "Y", "Z"]) s.enqueueGuest(n);
       s.rematch("winners");
-      expect(s.seats.map((x) => x && x.name)).toEqual([null, null, "C", null]);
+      expect(s.seats.map((x) => x && x.name)).toEqual(["X", "Y", "C", "Z"]);
+      expect(s.queue.map((e) => e.name)).toEqual(["Andrés", "B"]);
     });
 
     it("winners uses who actually won even if someone left after the game", () => {
       const s = wonBy(0); // Andrés(0) + Mafeer(2)
       s.leave("4"); // Jhonne leaves: 3 seated → the summary alone would say individual
+      s.enqueueGuest("E");
+      s.enqueueGuest("F");
       s.rematch("winners");
-      expect(s.seats.map((x) => x && x.name)).toEqual(["Andrés", null, "Mafeer", null]);
+      // Mafeer still counts as a winner: only Daniel lines up.
+      expect(s.seats.map((x) => x && x.name)).toEqual(["Andrés", "E", "Mafeer", "F"]);
+      expect(s.queue.map((e) => e.name)).toEqual(["Daniel"]);
     });
 
     it("lobby (default): everyone back to the lobby to reorganize", () => {
@@ -353,6 +362,267 @@ describe("CompanionSession", () => {
       u.leave("2");
       expect(() => u.rematch("again")).toThrow(code("not_enough_players"));
       expect(u.status).toBe("finished");
+    });
+  });
+});
+
+describe("CompanionSession — people, queue and referee role", () => {
+  const { MAX_QUEUE } = CompanionSession;
+  const names = (s) => s.seats.map((x) => x && x.name);
+  const line = (s) => s.queue.map((e) => e.name);
+
+  describe("queue (pedir la próxima)", () => {
+    it("someone watching queues once; seated people can't; the referee adds guests", () => {
+      const s = fullTable();
+      const q1 = s.enqueue({ userId: "5", name: "Pedro" });
+      expect(s.enqueue({ userId: "5", name: "Pedro" })).toBe(q1); // idempotent
+      expect(() => s.enqueue({ userId: "2", name: "Daniel" })).toThrow(code("already_seated"));
+      s.enqueueGuest("Luis");
+      expect(line(s)).toEqual(["Pedro", "Luis"]);
+      expect(s.queue[1]).toMatchObject({ userId: null, guest: true });
+      expect(() => s.enqueueGuest("   ")).toThrow(code("bad_name"));
+    });
+
+    it("leaving the line: the referee removes an entry, or a person leaves it themselves", () => {
+      const s = fullTable();
+      const a = s.enqueue({ userId: "5", name: "Pedro" });
+      s.enqueueGuest("Luis");
+      s.dequeue(a);
+      expect(line(s)).toEqual(["Luis"]);
+      expect(() => s.dequeue(999)).toThrow(code("not_in_queue"));
+      s.enqueue({ userId: "6", name: "Ana" });
+      expect(s.dequeueUser("6")).toBe(true);
+      expect(s.dequeueUser("6")).toBe(false);
+      expect(line(s)).toEqual(["Luis"]);
+    });
+
+    it("has a cap", () => {
+      const s = fullTable();
+      for (let i = 0; i < MAX_QUEUE; i++) s.enqueueGuest("G" + i);
+      expect(() => s.enqueueGuest("uno más")).toThrow(code("queue_full"));
+    });
+
+    it("taking a seat or leaving the table takes you out of the line", () => {
+      const s = mk();
+      s.enqueue({ userId: "5", name: "Pedro" });
+      s.join({ userId: "5", name: "Pedro" });
+      expect(s.queue).toEqual([]);
+      s.enqueue({ userId: "6", name: "Ana" });
+      expect(s.leave("6")).toEqual({ left: false, dequeued: true });
+      expect(s.queue).toEqual([]);
+    });
+
+    it("the referee seats someone from the line on an empty seat (lobby)", () => {
+      const s = mk(); // host at 0
+      s.addGuest("B"); // 1
+      const qid = s.enqueue({ userId: "5", name: "Pedro" });
+      expect(s.seatFromQueue(qid, 3)).toBe(3);
+      expect(s.seats[3]).toEqual({ userId: "5", name: "Pedro", guest: false });
+      expect(s.queue).toEqual([]);
+      const g = s.enqueueGuest("Luis");
+      expect(() => s.seatFromQueue(g, 1)).toThrow(code("seat_taken"));
+      expect(s.seatFromQueue(g, 2, { canSeat: () => false })).toBe(2); // guests are never busy
+    });
+
+    it("won't seat someone who's playing at another table", () => {
+      const s = mk();
+      const qid = s.enqueue({ userId: "5", name: "Pedro" });
+      expect(() => s.seatFromQueue(qid, 1, { canSeat: () => false })).toThrow(code("busy"));
+      expect(line(s)).toEqual(["Pedro"]);
+    });
+
+    it("survives a restart", () => {
+      const s = fullTable();
+      s.enqueue({ userId: "5", name: "Pedro" });
+      s.enqueueGuest("Luis");
+      const back = CompanionSession.fromJSON(JSON.parse(JSON.stringify(s.toJSON())));
+      expect(line(back)).toEqual(["Pedro", "Luis"]);
+      const next = back.enqueueGuest("Ana");
+      expect(next).toBeGreaterThan(Math.max(...s.queue.map((e) => e.qid)));
+    });
+  });
+
+  describe("winners stay + the line", () => {
+    /** Parejas at 4, the B pair (Daniel 1 + Jhonne 3) wins; `queued` lines up first. */
+    function wonByB(queued = []) {
+      const s = fullTable();
+      for (const q of queued) {
+        if (q.guest) s.enqueueGuest(q.name);
+        else s.enqueue(q);
+      }
+      s.start();
+      s.closeWithWinner(1);
+      return s;
+    }
+
+    it("the first in line take the losers' seats; the losers go to the end of the line", () => {
+      const s = wonByB([
+        { userId: "5", name: "Pedro" },
+        { guest: true, name: "Luis" },
+      ]);
+      s.rematch("winners");
+      expect(names(s)).toEqual(["Pedro", "Daniel", "Luis", "Jhonne"]);
+      expect(line(s)).toEqual(["Andrés", "Mafeer"]);
+      expect(s.status).toBe("lobby");
+    });
+
+    it("only one waiting: they play with the first loser", () => {
+      const s = wonByB([{ userId: "5", name: "Pedro" }]);
+      s.rematch("winners");
+      expect(names(s)).toEqual(["Pedro", "Daniel", "Andrés", "Jhonne"]);
+      expect(line(s)).toEqual(["Mafeer"]);
+    });
+
+    it("nobody waiting: the losers sit back down where they were", () => {
+      const s = wonByB();
+      s.rematch("winners");
+      expect(names(s)).toEqual(["Andrés", "Daniel", "Mafeer", "Jhonne"]);
+      expect(s.queue).toEqual([]);
+    });
+
+    it("skips someone busy at another table (they keep their place in line)", () => {
+      const s = wonByB([
+        { userId: "5", name: "Pedro" },
+        { userId: "6", name: "Ana" },
+        { guest: true, name: "Luis" },
+      ]);
+      s.rematch("winners", { canSeat: (id) => id !== "5" });
+      expect(names(s)).toEqual(["Ana", "Daniel", "Luis", "Jhonne"]);
+      expect(line(s)).toEqual(["Pedro", "Andrés", "Mafeer"]);
+    });
+
+    it("guests who lose keep their name in the line", () => {
+      const s = mk();
+      s.addGuest("Invitado"); // 1
+      s.join({ userId: "3", name: "Mafeer" }); // 2
+      s.addGuest("Otro"); // 3
+      s.start();
+      s.closeWithWinner(0); // Andrés + Mafeer win
+      s.enqueue({ userId: "5", name: "Pedro" });
+      s.rematch("winners");
+      expect(names(s)).toEqual(["Andrés", "Pedro", "Mafeer", "Invitado"]);
+      expect(s.queue).toEqual([
+        expect.objectContaining({ name: "Otro", guest: true, userId: null }),
+      ]);
+    });
+
+    it("'again' and 'lobby' leave the line alone", () => {
+      for (const mode of ["again", "lobby"]) {
+        const s = wonByB([{ userId: "5", name: "Pedro" }]);
+        s.rematch(mode);
+        expect(line(s)).toEqual(["Pedro"]);
+        expect(s.seatedCount()).toBe(4);
+      }
+    });
+  });
+
+  describe("referee role: pass it on / take it over", () => {
+    it("passing it to a seated player: they run the table, the old referee keeps playing", () => {
+      const s = fullTable();
+      s.transferHost({ userId: "3", name: "Mafeer" });
+      expect(s.isHost("3")).toBe(true);
+      expect(s.isHost("1")).toBe(false);
+      expect(s.hostName).toBe("Mafeer");
+      expect(s.positionOf("1")).toBe(0);
+      expect(s.toClient("1").you).toMatchObject({ position: 0, isHost: false });
+      expect(s.toClient("3")).toMatchObject({ hostPosition: 2, you: { isHost: true } });
+    });
+
+    it("passing it to someone watching; a referee in line leaves the line", () => {
+      const s = mk({ hostSeated: false });
+      s.enqueue({ userId: "9", name: "Carlos" });
+      s.transferHost({ userId: "9", name: "Carlos" });
+      expect(s.toClient("9")).toMatchObject({
+        hostPosition: null,
+        you: { position: null, isHost: true },
+      });
+      expect(s.queue).toEqual([]);
+    });
+
+    it("refuses passing it to yourself or to a guest", () => {
+      const s = fullTable();
+      expect(() => s.transferHost({ userId: "1", name: "Andrés" })).toThrow(code("already_host"));
+      expect(() => s.transferHost({ userId: null, name: "Luis" })).toThrow(code("bad_target"));
+    });
+
+    it("works in any phase (mid-game too) and survives a restart", () => {
+      const s = fullTable();
+      s.start();
+      s.record({ kind: "mesa", seat: 1 });
+      s.transferHost({ userId: "2", name: "Daniel" });
+      s.record({ kind: "mesa", seat: 2 });
+      const back = CompanionSession.fromJSON(JSON.parse(JSON.stringify(s.toJSON())));
+      expect(back.isHost("2")).toBe(true);
+      expect(back.hostName).toBe("Daniel");
+    });
+
+    it("taking it over: only once the referee has been away long enough", () => {
+      const s = fullTable();
+      const away = (ms) => ({ hostAwayMs: ms, claimAfterMs: 300_000 });
+      expect(() => s.claimHost({ userId: "2", name: "Daniel" }, away(null))).toThrow(
+        code("referee_online"),
+      );
+      expect(() => s.claimHost({ userId: "2", name: "Daniel" }, away(299_999))).toThrow(
+        code("too_soon"),
+      );
+      s.claimHost({ userId: "2", name: "Daniel" }, away(300_000));
+      expect(s.isHost("2")).toBe(true);
+      expect(() => s.claimHost({ userId: "2", name: "Daniel" }, away(400_000))).toThrow(
+        code("already_host"),
+      );
+    });
+  });
+
+  describe("who's at the table (toClient)", () => {
+    const presence = (ids, extra = {}) => ({
+      online: new Set(ids),
+      watchers: new Map(ids.map((id) => [id, "@u" + id])),
+      ...extra,
+    });
+
+    it("lists who's watching (connected, not seated, not the referee, not in line) and the line", () => {
+      const s = fullTable();
+      s.enqueue({ userId: "5", name: "Pedro" });
+      s.enqueueGuest("Luis");
+      const st = s.toClient("7", presence(["1", "2", "5", "7", "8"]));
+      expect(st.spectators.map((x) => x.name)).toEqual(["@u7", "@u8"]);
+      // the viewer finds themselves in the list
+      expect(st.spectators.map((x) => x.you)).toEqual([true, false]);
+      expect(st.queue).toEqual([
+        expect.objectContaining({ name: "Pedro", guest: false, online: true, you: false }),
+        expect.objectContaining({ name: "Luis", guest: true, online: false, you: false }),
+      ]);
+      expect(st.hostOnline).toBe(true);
+      expect(st.you).toMatchObject({
+        position: null,
+        isHost: false,
+        queued: null,
+        claimInMs: null,
+      });
+      expect(s.toClient("5", presence(["5"])).you.queued).toBe(1);
+    });
+
+    it("never sends Telegram ids: people are referenced by an opaque per-table id", () => {
+      const s = fullTable();
+      s.enqueue({ userId: "5", name: "Pedro" });
+      const st = s.toClient("1", presence(["1", "2", "5", "7"]));
+      expect(JSON.stringify(st)).not.toMatch(/"userId"/);
+      const pid = st.spectators[0].pid;
+      expect(pid).toMatch(/^[\w-]{6,}$/);
+      expect(s.userIdForPid(pid)).toBe("7");
+      expect(s.userIdForPid(st.seats[1].pid)).toBe("2");
+      expect(s.userIdForPid(st.queue[0].pid)).toBe("5");
+      expect(s.userIdForPid("nope")).toBeNull();
+    });
+
+    it("tells non-referees when they can take the role over", () => {
+      const s = fullTable();
+      const st = (viewer, ms) =>
+        s.toClient(viewer, presence(["2", "7"], { hostAwayMs: ms, claimAfterMs: 300_000 }));
+      expect(st("2", 120_000).you.claimInMs).toBe(180_000);
+      expect(st("7", 400_000).you.claimInMs).toBe(0);
+      expect(st("2", 400_000).hostOnline).toBe(false);
+      expect(s.toClient("1", presence(["1"], { hostAwayMs: null })).you.claimInMs).toBeNull();
     });
   });
 });

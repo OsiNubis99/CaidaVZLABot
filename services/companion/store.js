@@ -87,6 +87,20 @@ function findByUser(userId) {
   return finished;
 }
 
+/**
+ * Is this user seated at (or running) ANOTHER table that's still going?
+ * Used before seating someone from a line or handing them the referee role:
+ * one live table per person.
+ */
+function busyElsewhere(userId, code) {
+  const id = String(userId);
+  for (const s of sessions.values()) {
+    if (s.code === code || s.status === "finished") continue;
+    if (s.positionOf(id) >= 0 || s.isHost(id)) return true;
+  }
+  return false;
+}
+
 /** Swap in a rebuilt session object (e.g. restoring a snapshot). */
 function replace(session) {
   sessions.set(session.code, session);
@@ -205,6 +219,7 @@ module.exports = {
   create,
   get,
   findByUser,
+  busyElsewhere,
   replace,
   restore,
   remove,

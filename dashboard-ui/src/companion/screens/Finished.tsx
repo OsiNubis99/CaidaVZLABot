@@ -1,10 +1,12 @@
-import type { CompanionState, RematchMode } from "../types";
+import type { CompanionSeat, CompanionState, RematchMode } from "../types";
 import { useCompanion } from "../store";
 import { t } from "../../lib/i18n";
 import { slotName, wonTitle } from "../labels";
+import { ClaimBanner, PeopleChip, QueueCta } from "../components/People";
 
 /** Saved result: winner, score, what each person contributed — and what's
- *  next: everyone again, winners stay (the rest stand up), or a new game. */
+ *  next: everyone again, winners stay (the line takes the losers' seats), or
+ *  a new game from the lobby. */
 export function Finished({ state }: { state: CompanionState }) {
   const c = useCompanion();
   const res = state.result;
@@ -19,13 +21,19 @@ export function Finished({ state }: { state: CompanionState }) {
   const score = slots.map((s) => res.totals[s.slot] ?? s.total).join(" – ");
   const hasGuests = state.seats.some((s) => s?.guest);
   const seated = state.seats.filter(Boolean).length;
+  const winners = new Set(res.winners ?? []);
   const winnerNames = (res.winners ?? [])
     .map((p) => state.seats[p]?.name)
     .filter((n): n is string => Boolean(n));
   const pairWon = winnerNames.length > 1;
-  const names = pairWon
-    ? t("real.pair", { a: winnerNames[0], b: winnerNames[1] })
-    : (winnerNames[0] ?? "");
+  // Preview of "siguen los ganadores": the losers go to the end of the line,
+  // every free seat is taken from the front of it.
+  const losers = state.seats.filter((s): s is CompanionSeat => !!s && !winners.has(s.position));
+  const freeSeats = state.seats.filter((s) => !s || !winners.has(s.position)).length;
+  const entering = [...state.queue.map((e) => e.name), ...losers.map((s) => s.name)].slice(
+    0,
+    freeSeats,
+  );
 
   const options: { mode: RematchMode; label: string; sub: string; primary?: boolean }[] = [
     {
@@ -37,13 +45,19 @@ export function Finished({ state }: { state: CompanionState }) {
     {
       mode: "winners",
       label: pairWon ? t("real.next.winners") : t("real.next.winner"),
-      sub: pairWon ? t("real.next.winnersSub", { names }) : t("real.next.winnerSub", { names }),
+      sub:
+        state.queue.length === 0
+          ? t("real.next.winnersNoQueue")
+          : t("real.next.winnersIn", { names: entering.join(" · ") }),
     },
     { mode: "lobby", label: t("real.next.lobby"), sub: t("real.next.lobbySub") },
   ];
 
   return (
     <div className="endgame real-finished">
+      <div className="real-fin-top">
+        <PeopleChip state={state} />
+      </div>
       <div className={`endgame-banner ${youWon ? "won" : ""}`}>
         <div className="endgame-emoji">🏆</div>
         <h2>{youWon ? t("real.youWon") : wonTitle(state, res.winnerSlot)}</h2>
@@ -120,6 +134,8 @@ export function Finished({ state }: { state: CompanionState }) {
         ) : (
           <>
             <span className="muted">{t("real.waitingRematch", { name: state.hostName })}</span>
+            <ClaimBanner state={state} />
+            <QueueCta state={state} />
             <button type="button" className="btn endgame-leave" onClick={c.leave}>
               {t("endgame.leave")}
             </button>

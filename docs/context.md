@@ -154,7 +154,11 @@ push to main/develop.
     persists + refreshes in-memory game. When `allowMidGame` is
     false and a deck is in play, the mutation is rejected and the
     callback shows a popup alert.
-  - `leaderboard.js` — `/top` renderer.
+  - `leaderboard.js` — `/top` renderer (official order: win rate with a
+    minimum of games, see `ranking.js`).
+  - `ranking.js` — Top order: `MIN_RANKED_GAMES` (10) and the whitelisted
+    ORDER BY per sort key for `public.user` (app) and the companion
+    aggregate. Client `?sort=` never reaches SQL unless whitelisted.
   - `rateLimit.js` — sliding-window per (userId, command) bucket.
     Index uses `COMMAND_LIMITS` table to drive limits per command.
   - `stats.js` + `statsView.js` — `/stats` dashboard data fetcher
@@ -205,8 +209,17 @@ public.companion_player   (game_id, position) PK + id_user (NULL = guest) + name
 The Acompañante tables are its OWN stats: nothing there reads or writes
 `public.user`, and the app's stats never read them. The creator may only
 referee (no seat → no stats); after a saved game the host picks what's next:
-everyone again (starts now), winners stay (the rest stand up), or a new game
-from the lobby.
+everyone again (starts now), winners stay (the losers go to the end of the
+line and the line fills every free seat), or a new game from the lobby.
+Spectators can line up for the next game (the referee can also line up
+people without the app); the referee role can be handed over (`transfer`) or
+taken over (`claim`) once the referee has been offline for 5 minutes. Only
+the referee sees the green "Mesa limpia" button. Real tables record who made
+each caída but not who received it, so Mi cuenta (Mesa real) has no
+"caídas recibidas" / ratio.
+
+Top (app and Mesa real): official order is win rate among people with at
+least 10 games; below that they're listed after a divider, unranked.
 
 Migrations list is the source of truth in `database/migrations.js`.
 

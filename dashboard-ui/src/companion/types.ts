@@ -41,6 +41,8 @@ export interface CompanionSeat {
   position: number;
   name: string;
   guest: boolean;
+  /** Opaque per-table id (people with the app) — to pass them the referee role. */
+  pid?: string;
   isHost: boolean;
   online: boolean;
   /** Scoring slot: team (0 = positions 0+2, 1 = 1+3) in parejas, else the position. */
@@ -83,6 +85,24 @@ export interface CompanionResult {
  *  stand up), or back to the lobby to reorganize. */
 export type RematchMode = "again" | "winners" | "lobby";
 
+/** Someone waiting to play the next game (FIFO). */
+export interface QueueEntry {
+  qid: number;
+  name: string;
+  /** Lined up by the referee: no app. */
+  guest: boolean;
+  pid?: string;
+  online: boolean;
+  you: boolean;
+}
+
+/** Connected, not seated, not the referee, not in line. */
+export interface Spectator {
+  pid: string;
+  name: string;
+  you: boolean;
+}
+
 export interface CompanionState {
   code: string;
   status: CompanionStatus;
@@ -95,9 +115,20 @@ export interface CompanionState {
   ops: CompanionOp[];
   pendingWin: { slot: number } | null;
   result: CompanionResult | null;
+  /** The referee (árbitro): the one who scores. */
   hostName: string;
   hostPosition: number | null;
-  you: { position: number | null; isHost: boolean };
+  hostOnline: boolean;
+  queue: QueueEntry[];
+  spectators: Spectator[];
+  you: {
+    position: number | null;
+    isHost: boolean;
+    /** 1-based place in line, or null. */
+    queued: number | null;
+    /** ms until you may take the referee role over (0 = now); null = can't. */
+    claimInMs: number | null;
+  };
 }
 
 /** A record the scorer adds (server computes the points). */

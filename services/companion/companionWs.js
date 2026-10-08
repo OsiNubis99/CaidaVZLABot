@@ -2,10 +2,12 @@
  * Acompañante realtime layer: the `/companion` socket.io namespace.
  *
  * Same server, same Telegram initData auth as the game (verifyInitData), but
- * a separate namespace + store so the two never interfere. Only the host
- * (the person who created the table) mutates anything; everyone else just
- * watches the live score. Unlike the game, a disconnect NEVER removes anybody:
- * the host may lock the phone or switch tabs mid real-life game.
+ * a separate namespace + store so the two never interfere. Only the referee
+ * (the host: the table's creator, or whoever got the role) mutates the game;
+ * everyone else watches the live score and can line up for the next game.
+ * Unlike the game, a disconnect NEVER removes anybody: the referee may lock
+ * the phone or switch tabs mid real-life game. If they're gone for good, after
+ * CLAIM_AFTER_MS anyone at the table with the app can take the role over.
  */
 const { NAMESPACE, C2S, S2C } = require("./protocol");
 const { POSITIONS } = require("./scoring");
@@ -15,10 +17,18 @@ const logger = require("../../config/logger");
 
 const SWEEP_EVERY_MS = 30 * 60 * 1000;
 
+/** Tunables (configure() in tests). */
+const opts = {
+  claimAfterMs: 5 * 60 * 1000,
+  now: () => Date.now(),
+};
+
 let nsp = null;
 
 /** code → Set<socket> watching that table. */
 const tableSockets = new Map();
+/** code → when the referee was first seen offline (cleared when they're back). */
+const hostAwaySince = new Map();
 
 function coded(code, message) {
   const err = new Error(message || code);
@@ -54,13 +64,44 @@ function onlineIds(code) {
   return ids;
 }
 
+/** How long the referee has been offline (ms), or null while connected. */
+function hostAwayMs(session, online = onlineIds(session.code)) {
+  if (online.has(session.hostUserId)) {
+    hostAwaySince.delete(session.code);
+    return null;
+  }
+  let since = hostAwaySince.get(session.code);
+  if (since == null) {
+    // First time seen offline (a disconnect, or the first look after a restart).
+    since = opts.now();
+    hostAwaySince.set(session.code, since);
+  }
+  return opts.now() - since;
+}
+
+/** Who's connected to a table right now, for toClient. */
+function presenceOf(session) {
+  const online = onlineIds(session.code);
+  const watchers = new Map();
+  for (const s of tableSockets.get(session.code) || []) {
+    const id = String(s.data.user.id);
+    if (!watchers.has(id)) watchers.set(id, displayName(s.data.user));
+  }
+  return {
+    online,
+    watchers,
+    hostAwayMs: hostAwayMs(session, online),
+    claimAfterMs: opts.claimAfterMs,
+  };
+}
+
 /** Push the table to everyone watching it, each with their own `you`. */
 function broadcast(session) {
   const set = tableSockets.get(session.code);
   if (!set) return;
-  const online = onlineIds(session.code);
+  const presence = presenceOf(session);
   for (const socket of set) {
-    socket.emit(S2C.STATE, { state: session.toClient(socket.data.user.id, online) });
+    socket.emit(S2C.STATE, { state: session.toClient(socket.data.user.id, presence) });
   }
 }
 
@@ -76,6 +117,7 @@ function endTable(code, reason) {
     socket.emit(S2C.ENDED, { reason });
     untrack(socket);
   }
+  hostAwaySince.delete(code);
   store.remove(code);
 }
 
@@ -101,6 +143,25 @@ function normalizeCode(raw) {
   const s = raw.trim().toUpperCase().replace(/\s+/g, "");
   if (!s) return null;
   return s.startsWith(store.CODE_PREFIX) ? s : store.CODE_PREFIX + s.replace(/^MESA/, "");
+}
+
+/** Seat name if seated (what the table calls them), else their Telegram name. */
+function nameAt(session, user) {
+  const pos = session.positionOf(user.id);
+  return pos >= 0 ? session.seats[pos].name : displayName(user);
+}
+
+/** The name a connected user goes by (any of their sockets on this table). */
+function connectedName(code, userId) {
+  for (const s of tableSockets.get(code) || []) {
+    if (String(s.data.user.id) === userId) return displayName(s.data.user);
+  }
+  return null;
+}
+
+/** For CompanionSession: can this person be seated here (not playing elsewhere)? */
+function seatableHere(code) {
+  return (userId) => !store.busyElsewhere(userId, code);
 }
 
 /**
@@ -170,8 +231,13 @@ const handlers = {
       return;
     }
     // Watch without a seat: a reconnecting watcher (`watch`), a game under
-    // way, or no free seat. Otherwise the invite link seats you.
-    if (payload.watch || session.status !== "lobby" || session.seatedCount() >= POSITIONS) {
+    // way, no free seat, or people waiting in line (the link doesn't jump it).
+    if (
+      payload.watch ||
+      session.status !== "lobby" ||
+      session.seatedCount() >= POSITIONS ||
+      session.queue.length > 0
+    ) {
       track(socket, code);
       broadcast(session);
       return;
@@ -279,7 +345,7 @@ const handlers = {
     const session = requireTable(socket);
     requireHost(session, socket);
     // "again" | "winners" | "lobby" (see CompanionSession#rematch)
-    session.rematch(payload.mode);
+    session.rematch(payload.mode, { canSeat: seatableHere(session.code) });
     commit(session);
   },
 
@@ -291,9 +357,76 @@ const handlers = {
       broadcast(session); // presence only — the host closes with DISCARD
       return;
     }
-    const { left } = session.leave(socket.data.user.id);
-    if (left) commit(session);
+    const { left, dequeued } = session.leave(socket.data.user.id);
+    if (left || dequeued) commit(session);
     else broadcast(session);
+  },
+
+  // ── the line (cola para la próxima) ──
+
+  [C2S.QUEUE_JOIN](socket) {
+    const session = requireTable(socket);
+    const user = socket.data.user;
+    session.enqueue({ userId: user.id, name: nameAt(session, user) });
+    commit(session);
+  },
+
+  [C2S.QUEUE_LEAVE](socket) {
+    const session = requireTable(socket);
+    if (session.dequeueUser(socket.data.user.id)) commit(session);
+    else broadcast(session);
+  },
+
+  [C2S.QUEUE_ADD](socket, payload) {
+    const session = requireTable(socket);
+    requireHost(session, socket);
+    session.enqueueGuest(payload.name);
+    commit(session);
+  },
+
+  [C2S.QUEUE_REMOVE](socket, payload) {
+    const session = requireTable(socket);
+    requireHost(session, socket);
+    session.dequeue(payload.qid);
+    commit(session);
+  },
+
+  [C2S.SEAT_QUEUED](socket, payload) {
+    const session = requireTable(socket);
+    requireHost(session, socket);
+    session.seatFromQueue(payload.qid, payload.position, { canSeat: seatableHere(session.code) });
+    commit(session);
+  },
+
+  // ── referee role ──
+
+  [C2S.TRANSFER](socket, payload) {
+    const session = requireTable(socket);
+    requireHost(session, socket);
+    const target = typeof payload.pid === "string" ? session.userIdForPid(payload.pid) : null;
+    if (!target) throw coded("bad_target", "Esa persona ya no está en la mesa");
+    // Only to someone who can actually run it from their phone right now.
+    const name = connectedName(session.code, target);
+    if (!name) throw coded("target_offline", "Esa persona no está conectada");
+    if (store.busyElsewhere(target, session.code)) {
+      throw coded("already_in_table", "Esa persona está en otra mesa");
+    }
+    session.transferHost({ userId: target, name });
+    commit(session);
+  },
+
+  [C2S.CLAIM](socket) {
+    const session = requireTable(socket);
+    const user = socket.data.user;
+    if (store.busyElsewhere(user.id, session.code)) {
+      throw coded("already_in_table", "Ya estás en otra mesa");
+    }
+    session.claimHost(
+      { userId: user.id, name: nameAt(session, user) },
+      { hostAwayMs: hostAwayMs(session), claimAfterMs: opts.claimAfterMs },
+    );
+    logger.info({ code: session.code }, "companion: referee role taken over");
+    commit(session);
   },
 };
 
@@ -364,9 +497,16 @@ function attach(io) {
   return nsp;
 }
 
+/** Test hook: shorten the take-over delay, fake the clock. */
+function configure({ claimAfterMs, now } = {}) {
+  if (claimAfterMs != null) opts.claimAfterMs = claimAfterMs;
+  if (now) opts.now = now;
+}
+
 module.exports = {
   attach,
   startReaper,
   sweep,
+  configure,
   _internal: { handlers, tableSockets, normalizeCode },
 };

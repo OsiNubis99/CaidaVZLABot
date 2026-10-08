@@ -9,6 +9,7 @@ import type {
   GameHistoryRow,
   CompanionMeResponse,
   CompanionLeaderRow,
+  LeaderboardResponse,
 } from "./types";
 
 // Relative — works under /dashboard/ in dev and /caidavzlabot/ in
@@ -63,8 +64,13 @@ export const me = () => call<MeResponse>("GET", "me");
 export const setMyNotify = (value: boolean) =>
   call<{ notify_on_turn: boolean }>("POST", "me/notify", { value });
 
-export const leaderboard = (limit: number) =>
-  call<{ rows: UserRow[]; limit: number }>("GET", `leaderboard?limit=${limit}`);
+/** Top players. `sort` = a column key (server whitelists it; default = the
+ *  official ranking: win rate with a minimum of `minGames`). */
+export const leaderboard = (limit: number, sort = "win_rate") =>
+  call<LeaderboardResponse<UserRow>>(
+    "GET",
+    `leaderboard?limit=${limit}&sort=${encodeURIComponent(sort)}`,
+  );
 
 /** Your last finished games (groups + WebApp) and whether they counted. */
 export const myGames = (limit = 10) =>
@@ -73,10 +79,10 @@ export const myGames = (limit = 10) =>
 /** Acompañante (Mesa real) — separate stats from the app's. */
 export const companionMe = () => call<CompanionMeResponse>("GET", "companion/me");
 
-export const companionLeaderboard = (limit: number) =>
-  call<{ rows: CompanionLeaderRow[]; limit: number }>(
+export const companionLeaderboard = (limit: number, sort = "win_rate") =>
+  call<LeaderboardResponse<CompanionLeaderRow>>(
     "GET",
-    `companion/leaderboard?limit=${limit}`,
+    `companion/leaderboard?limit=${limit}&sort=${encodeURIComponent(sort)}`,
   );
 
 export const publicGroups = () =>
