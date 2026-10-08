@@ -2,15 +2,21 @@
 
 Web app que abre dentro de Telegram desde el botón del menú del bot (📎 al lado del input). Live data sobre Postgres, mutaciones reales, auth nativa por `initData` firmado por Telegram.
 
-## Vistas (5 tabs)
+## Vistas
 
 | Tab | Quién la ve | Qué muestra |
 |---|---|---|
-| 👤 Mi cuenta | Todos | KPIs (partidas, wins, win rate, caídas), tabla de cantos (vivas/total), toggle `notify_on_turn` |
-| 🏆 Top | Todos | Leaderboard global, 10/25/50/100 |
+| 🎮 Jugar | Todos | Partida online (WebApp). El host reordena asientos en el lobby (toca uno y luego otro: orden de juego + parejas 1-3 vs 2-4); el lobby y el final dicen si la mesa **cuenta para el ranking** y por qué no |
+| 🃏 Mesa real | Todos | **Acompañante** para partidas con cartas reales: el anfitrión crea `MESA-XXXX`, invita, sienta a la gente como está en la mesa (2v2 por defecto) y anota con 5 botones (un jugador por borde + Mesa limpia al centro). Los demás ven el marcador en vivo. Stats **separadas** de la app |
+| 👤 Mi cuenta | Todos | KPIs (partidas, ganados, win rate, caídas), cantos (vivas/total), **últimas partidas** (si contaron y por qué no), sección **Mesa real**, toggle `notify_on_turn` |
+| 🏆 Top | Todos | Leaderboard global, 10/25/50/100, con switch **App / Mesa real** (rankings separados) |
 | 🌐 Públicos | Todos | Grupos públicos con link de invite (best-effort) |
 | 📦 Grupos | Solo admin | Search/sort/paginación + toggle público/banned, +N meses, rename, delete |
 | 👥 Usuarios | Solo admin | Search/sort/paginación + toggle banned |
+
+**Ranked (“Ganados”)**: sin CPUs y con los 13 valores numéricos (puntos, mesa, multiplicadores, cantos) iguales a un modo de fábrica (Clásico o The Grupish). El tipo (2v2 / todos contra todos) y los toggles (mata canto/mesa, caída continua) no importan. Regla en `services/ranked.js` (pura, la usan el writer de stats y la WebApp).
+
+**Acompañante**: namespace socket.io `/companion` (mismo server y auth `initData`), sesiones en memoria + `public.companion_session` (sobreviven un deploy; flush en SIGTERM, barrido de mesas sin actividad por 12 h). Resultados en `companion_game` + `companion_player` — **nunca** toca `public.user`. Deep link `t.me/<bot>?startapp=MESA-XXXX` abre la pestaña Mesa real.
 
 ## Arquitectura
 
@@ -45,8 +51,20 @@ Header obligatorio en todo `/api/*`: `X-Telegram-Init-Data: <urlencoded initData
 |---|---|---|---|
 | GET | `/api/me` | | `{role, telegram:{id,first_name,...}, user:{...stats}}` |
 | POST | `/api/me/notify` | `{value:bool}` | Toggle `notify_on_turn` propio |
+| GET | `/api/me/games?limit` | | Últimas partidas terminadas (grupos + WebApp, 30 días de `game_events`): `{rows:[{at, source, place, won, ranked, reason, preset, points, mySlot, players}]}` |
 | GET | `/api/leaderboard?limit` | | Top global, `limit` 1-100 |
+| GET | `/api/companion/me` | | Acompañante: `{stats:{played,won,caidas,mesas,points,cantos}, recent:[...]}` |
+| GET | `/api/companion/leaderboard?limit` | | Top del acompañante (solo jugadores con cuenta) |
 | GET | `/api/groups/public` | | Lista de grupos públicos con `invite` |
+
+### WebSocket (socket.io, mismo path `<prefix>/socket.io/`)
+
+- `/` — partida online. Nuevo: `session:swapSeats {a,b}` (host, lobby). El estado trae `hostSeat`, `you.isHost` y `ranked:{ranked, reason, preset}`.
+- `/companion` — acompañante. C2S `companion:create|join|resume|swap|guest|kick|sit|config|start|record|undo|confirm|close|discard|rematch|leave`; S2C `companion:state|error|ended`. Solo el anfitrión muta (validado en el server); desconectarse nunca saca a nadie.
+  - `create {config?, referee?}` — `referee: true` = el creador solo arbitra (sin puesto ni stats). `sit {position?}` lo sienta (sin posición → primer puesto libre).
+  - `join {code, watch?}` — `watch: true` re-engancha sin sentarse (espectadores que reconectan).
+  - `record {kind: caida|canto|mesa|puntos, seat, value?, canto?}` — `puntos` = puntos manuales 1–99 (mala echada, lo pegado en mesa, cartas al final de la baraja).
+  - `rematch {mode: again|winners|lobby}` — todos otra vez (arranca ya) · siguen los ganadores (los demás se levantan) · nueva partida desde el lobby.
 
 ### Admin tier (además, `id in ADMIN_USER_IDS`)
 

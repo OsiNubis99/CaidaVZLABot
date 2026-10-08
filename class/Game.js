@@ -183,9 +183,12 @@ class Game {
     // time so it travels with them through per-deck rotations
     // (see this.users.push(this.users.shift()) in handing_out_cards).
     // Parejas mode leaves user.color empty — team colors are computed
-    // per render from decks % 2.
+    // per render from decks % 2. Pick the first color nobody holds: a
+    // lobby leave frees a color, and indexing by users.length would hand a
+    // newcomer the color someone still has.
     if (!user.color && this.config && !this.isParejasMode()) {
-      user.color = User.INDIVIDUAL_COLORS[this.users.length] || "";
+      const taken = new Set(this.users.map((u) => u && u.color));
+      user.color = User.INDIVIDUAL_COLORS.find((c) => !taken.has(c)) || "";
     }
     this.users.push(user);
     return this.print(false);
@@ -591,14 +594,22 @@ class Game {
    * single coherent message instead of jumping straight to "🏆 Won X"
    * with no context.
    *
-   * @param {Number} player - The winning player's scoring slot.
+   * `player` arrives either as a USER index (dealer pegar-en-mesa, canto,
+   * bad sync) or as a SCORING slot (points/took win checks). Both normalise
+   * through scoringSlot(): a user index maps to its slot, and a slot value
+   * maps to itself (0/1 in parejas, identity in individual). Without this, a
+   * parejas win by user 2/3 credited nobody in the stats.
+   *
+   * @param {Number} player - Winner's user index or scoring slot (see above).
    * @param {String} pre - Optional state text that led to this kill.
    */
   kill(player, pre = "") {
+    const winnerSlot = this.scoringSlot(player);
+    this._winnerSlot = winnerSlot;
     // Record game-result stats (ganados ranked, bot win rate, beat-PRO). Pure
     // decision + fire-and-forget writes live in services/gameStats; it also
     // stashes a summary on `this._lastResult` for the GAME_FINISHED event.
-    gameStats.recordResult(this, player);
+    const result = gameStats.recordResult(this, winnerSlot);
     const L = this._lang();
     let response = pre ? pre + "\n\n" : "";
     response += L.ig_won_prefix;
@@ -608,8 +619,27 @@ class Game {
     // below, so we skip it.
     if (this.isParejasMode()) response += this._renderFinalScore(player);
     response += "\n" + this._renderFinalStandings();
+    // Tell the table when the game doesn't count for "ganados" (and why), so
+    // nobody finds out later in the leaderboard.
+    if (result && !result.ranked) {
+      response +=
+        "\n\n" + (result.reason === "bots" ? L.ig_not_ranked_bots : L.ig_not_ranked_custom);
+    }
     this.decks = 0;
     return { finished: true, response };
+  }
+
+  /**
+   * The user credited with the win (for parejas, the first member of the
+   * winning team in users[] order). Falls back to the player up when kill()
+   * hasn't run. Users and points rotate together, so slot ↔ user stays
+   * aligned at finish time.
+   * @returns {User|null}
+   */
+  winnerUser() {
+    if (this._winnerSlot == null) return this.users[this.player] || null;
+    const idx = this.users.findIndex((u, i) => u && this.scoringSlot(i) === this._winnerSlot);
+    return idx >= 0 ? this.users[idx] : null;
   }
 
   /**

@@ -1,13 +1,17 @@
 import { useState } from "react";
 import type { GameConfig, OnOff } from "../types";
 import { t } from "../../lib/i18n";
-import { CLASICO, CANTO_FIELDS } from "../configDefaults";
+import { CLASICO, CANTO_FIELDS, PRESETS, matchPreset } from "../configDefaults";
 
 interface Props {
   /** Seed values (the current table config when editing); defaults to Clásico. */
   initial?: GameConfig;
   title?: string;
   submitLabel?: string;
+  /** "game" (default): the WebApp game — engine toggles + ranked hint.
+   *  "companion": the real-table scorekeeper — only target, type and values
+   *  (the toggles are rules the players apply at the real table). */
+  variant?: "game" | "companion";
   onSubmit: (config: GameConfig) => void;
   onCancel: () => void;
 }
@@ -24,7 +28,7 @@ function managedConfig(cfg: GameConfig): GameConfig {
 }
 
 /** A compact +/- numeric stepper. */
-function Stepper({
+export function Stepper({
   label,
   value,
   min,
@@ -107,12 +111,13 @@ function Toggle({
 }
 
 /** Create-table config form: pick the same rules the chat `/configurar` exposes.
- *  Seeds from the Clásico preset; only changed fields are sent (the rest keep
- *  the backend defaults). */
+ *  Seeds from the Clásico preset; the factory modes are one tap away, and the
+ *  game variant says live whether the table will count for the ranking. */
 export function CreateConfig({
   initial,
   title,
   submitLabel,
+  variant = "game",
   onSubmit,
   onCancel,
 }: Props) {
@@ -120,6 +125,8 @@ export function CreateConfig({
   const [advanced, setAdvanced] = useState(false);
   const titleText = title ?? t("cfg.title");
   const submitText = submitLabel ?? t("cfg.create");
+  const isGame = variant === "game";
+  const preset = matchPreset(cfg);
 
   const set = <K extends keyof GameConfig>(key: K, value: GameConfig[K]) =>
     setCfg((c) => ({ ...c, [key]: value }));
@@ -130,6 +137,30 @@ export function CreateConfig({
   return (
     <div className="prelobby-card cfg-card">
       <h3>{titleText}</h3>
+
+      {/* Factory modes: everything but the 2v2 / todos-contra-todos choice. */}
+      <div className="cfg-row">
+        <span className="cfg-label">{t("cfg.mode")}</span>
+        <div className="cfg-seg">
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`cfg-seg-btn ${preset?.id === p.id ? "is-on" : ""}`}
+              onClick={() => setCfg((c) => ({ ...p.values, type: c.type }))}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      {isGame && (
+        <p className={`cfg-ranked ${preset ? "is-ranked" : "is-custom"}`}>
+          {preset
+            ? t("cfg.rankedYes", { preset: preset.name })
+            : t("cfg.rankedNo")}
+        </p>
+      )}
 
       <Stepper
         label={t("cfg.points")}
@@ -159,7 +190,9 @@ export function CreateConfig({
         </div>
       </div>
       {cfg.type === "parejas" && (
-        <p className="muted cfg-hint">{t("cfg.parejasHint")}</p>
+        <p className="muted cfg-hint">
+          {isGame ? t("cfg.parejasHint") : t("cfg.parejasHintReal")}
+        </p>
       )}
 
       <Stepper
@@ -170,21 +203,25 @@ export function CreateConfig({
         onChange={(v) => set("mesa", v)}
       />
 
-      <Toggle
-        label={t("cfg.mataCanto")}
-        value={(cfg.mata_canto as OnOff) ?? "off"}
-        onChange={(v) => set("mata_canto", v)}
-      />
-      <Toggle
-        label={t("cfg.mataMesa")}
-        value={(cfg.mata_mesa as OnOff) ?? "off"}
-        onChange={(v) => set("mata_mesa", v)}
-      />
-      <Toggle
-        label={t("cfg.caidaContinua")}
-        value={(cfg.caida_continua as OnOff) ?? "off"}
-        onChange={(v) => set("caida_continua", v)}
-      />
+      {isGame && (
+        <>
+          <Toggle
+            label={t("cfg.mataCanto")}
+            value={(cfg.mata_canto as OnOff) ?? "off"}
+            onChange={(v) => set("mata_canto", v)}
+          />
+          <Toggle
+            label={t("cfg.mataMesa")}
+            value={(cfg.mata_mesa as OnOff) ?? "off"}
+            onChange={(v) => set("mata_mesa", v)}
+          />
+          <Toggle
+            label={t("cfg.caidaContinua")}
+            value={(cfg.caida_continua as OnOff) ?? "off"}
+            onChange={(v) => set("caida_continua", v)}
+          />
+        </>
+      )}
 
       <button
         type="button"

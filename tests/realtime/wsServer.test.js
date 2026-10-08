@@ -373,4 +373,46 @@ describe("wsServer (socket.io integration)", () => {
       sessionSockets.delete(code);
     });
   });
+
+  // ── host reorders seats from the lobby ───────────────────────────────────
+  describe("seat swap", () => {
+    const { handlers, sessionSockets } = wsServer._internal;
+
+    function fakeSocket(code, userId, name) {
+      const emitted = [];
+      const socket = {
+        emitted,
+        data: { code, user: { id: userId, first_name: name } },
+        emit: (event, payload) => emitted.push([event, payload]),
+      };
+      sessionSockets.set(code, new Set([socket]));
+      return socket;
+    }
+
+    it("host swaps seats and everyone gets the new order (host flag moves too)", () => {
+      const session = sessionStore.create({ userId: 990, name: "Host" });
+      session.addHuman({ userId: 991, name: "Guest" });
+      const code = session.code;
+      const host = fakeSocket(code, 990, "Host");
+
+      handlers[C2S.SESSION_SWAP](host, { a: 0, b: 1 });
+
+      const last = host.emitted[host.emitted.length - 1];
+      expect(last[0]).toBe(S2C.SESSION_STATE);
+      expect(last[1].state.seats.map((s) => s.name)).toEqual(["Guest", "Host"]);
+      expect(last[1].state.hostSeat).toBe(1);
+      expect(last[1].state.you).toMatchObject({ seat: 1, isHost: true });
+      sessionSockets.delete(code);
+    });
+
+    it("rejects a non-host swap", () => {
+      const session = sessionStore.create({ userId: 995, name: "Host" });
+      session.addHuman({ userId: 996, name: "Guest" });
+      const code = session.code;
+      const guest = fakeSocket(code, 996, "Guest");
+      expect(() => handlers[C2S.SESSION_SWAP](guest, { a: 0, b: 1 })).toThrow(/anfitrión/i);
+      expect(session.seats[0].name).toBe("Host");
+      sessionSockets.delete(code);
+    });
+  });
 });

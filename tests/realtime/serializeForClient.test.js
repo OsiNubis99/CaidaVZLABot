@@ -174,4 +174,48 @@ describe("serializeForClient", () => {
       st.lastEvent.kind,
     );
   });
+
+  describe("host + ranked", () => {
+    it("hostSeat / you.isHost follow the host, not seat 0", () => {
+      const s = new GameSession({ code: "CAIDA-HS", host: { userId: "1", name: "Andres" } });
+      s.addHuman({ userId: "2", name: "Bea" });
+      s.swapSeats(0, 1);
+      const host = serializeForClient(s, "1");
+      const guest = serializeForClient(s, "2");
+      expect(host.hostSeat).toBe(1);
+      expect(host.you.isHost).toBe(true);
+      expect(guest.you.isHost).toBe(false);
+      expect(guest.you.seat).toBe(0);
+    });
+
+    it("ranked: factory config without bots counts", () => {
+      const s = new GameSession({
+        code: "CAIDA-RK1",
+        host: { userId: "1", name: "Andres" },
+        config: { ...game_modes[2], type: "individual" },
+      });
+      s.addHuman({ userId: "2", name: "Bea" });
+      expect(serializeForClient(s, "1").ranked).toEqual({
+        ranked: true,
+        reason: null,
+        preset: "The Grupish",
+      });
+    });
+
+    it("ranked: a CPU at the table → reason bots", () => {
+      const s = new GameSession({ code: "CAIDA-RK2", host: { userId: "1", name: "Andres" } });
+      s.addCpu("pro");
+      expect(serializeForClient(s, "1").ranked).toMatchObject({ ranked: false, reason: "bots" });
+    });
+
+    it("ranked: changed points → reason custom_scoring", () => {
+      const s = new GameSession({
+        code: "CAIDA-RK3",
+        host: { userId: "1", name: "Andres" },
+        config: { points: 30 },
+      });
+      s.addHuman({ userId: "2", name: "Bea" });
+      expect(serializeForClient(s, "1").ranked.reason).toBe("custom_scoring");
+    });
+  });
 });

@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { GameProvider, useGame } from "./store";
+import type { ConnState } from "./ws";
 import { Lobby } from "./screens/Lobby";
 import { Table } from "./screens/Table";
-import { startParam } from "../lib/telegram";
+import { startParam, isCompanionCode } from "../lib/telegram";
 import { t } from "../lib/i18n";
 import { useToast } from "../components/Toast";
 import "./game.css";
@@ -39,8 +40,9 @@ function GameFlow({ youId }: Props) {
     if (conn !== "connected" || was === "connected") return;
     const raw = startParam();
     // "play"/"app"/"open" are generic "just open the app" deep links (the
-    // /msg-app broadcast button), not a table code — don't try to join.
-    const code = raw && !/^(play|app|open)$/i.test(raw) ? raw : "";
+    // /msg-app broadcast button), not a table code — don't try to join. A
+    // MESA-XXXX code belongs to the Acompañante (Mesa real) tab.
+    const code = raw && !/^(play|app|open)$/i.test(raw) && !isCompanionCode(raw) ? raw : "";
     if (code && !state && !autoJoined.current) {
       autoJoined.current = true;
       joinSession(code);
@@ -68,11 +70,11 @@ function GameFlow({ youId }: Props) {
   );
 }
 
-function ConnBar({
+export function ConnBar({
   conn,
   onReconnect,
 }: {
-  conn: ReturnType<typeof useGame>["conn"];
+  conn: ConnState;
   onReconnect: () => void;
 }) {
   if (conn === "connected") return null;

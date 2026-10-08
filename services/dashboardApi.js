@@ -8,7 +8,10 @@
  *   USER-tier (cualquier user de Telegram con initData válido):
  *     GET  /api/me                       perfil + stats personales + role
  *     POST /api/me/notify                { value: bool }  notify_on_turn
+ *     GET  /api/me/games?limit           últimas partidas (grupos + WebApp), si contaron
  *     GET  /api/leaderboard?limit        top global
+ *     GET  /api/companion/me             stats del Acompañante (mesa real) + últimas mesas
+ *     GET  /api/companion/leaderboard    top del Acompañante (separado del de la app)
  *     GET  /api/groups/public            grupos públicos con link
  *
  *   ADMIN-tier (además, id en ADMIN_USER_IDS):
@@ -31,6 +34,8 @@ const express = require("express");
 const env = require("../config/env");
 const logger = require("../config/logger");
 const { GroupController, UserController } = require("../database");
+const CompanionRepo = require("../database/companion");
+const gameHistory = require("./gameHistory");
 const { resolveGroupLink } = require("./groupLink");
 const auth = require("./dashboardAuth");
 
@@ -122,6 +127,44 @@ function build(bot) {
       res.json({ rows, limit });
     } catch (err) {
       logger.error({ err: err.message }, "dashboard /api/leaderboard failed");
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
+  // Your last finished games (groups + WebApp), with whether they counted.
+  router.get("/api/me/games", async (req, res) => {
+    try {
+      const limit = clampPageSize(req.query.limit, 10, 30);
+      const rows = await gameHistory.recentForUser(req.tgUser.id, limit);
+      res.json({ rows, limit });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/me/games failed");
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
+  // ── Acompañante (real-table scorekeeper) — its OWN stats, never mixed
+  //    with the app's (public.user is not read or written here).
+  router.get("/api/companion/me", async (req, res) => {
+    try {
+      const [stats, recent] = await Promise.all([
+        CompanionRepo.userStats(req.tgUser.id),
+        CompanionRepo.recentGames(req.tgUser.id, clampPageSize(req.query.limit, 10, 30)),
+      ]);
+      res.json({ stats, recent });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/companion/me failed");
+      res.status(500).json({ error: "internal" });
+    }
+  });
+
+  router.get("/api/companion/leaderboard", async (req, res) => {
+    try {
+      const limit = clampPageSize(req.query.limit, 25, 100);
+      const rows = await CompanionRepo.leaderboard(limit);
+      res.json({ rows, limit });
+    } catch (err) {
+      logger.error({ err: err.message }, "dashboard /api/companion/leaderboard failed");
       res.status(500).json({ error: "internal" });
     }
   });

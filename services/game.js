@@ -881,8 +881,10 @@ module.exports = {
       }
       if (response.finished) {
         finished = true;
-        const winnerIdx = group.player; // kill sets this.player to the winner
-        const winner = group.users[winnerIdx];
+        // kill() records the winning scoring slot; group.player is just
+        // whoever played the last card (a canto/tomadas win can land on
+        // someone else's play).
+        const winner = group.winnerUser();
         events.record(chatId, events.EVENT_TYPES.GAME_FINISHED, {
           winner_user_id: winner ? winner.id_user : null,
           winner_first_name: winner ? winner.first_name : null,
@@ -970,8 +972,7 @@ module.exports = {
         });
         if (response.finished) {
           finished = true;
-          const winnerIdx = group.player;
-          const winner = group.users[winnerIdx];
+          const winner = group.winnerUser();
           events.record(chatId, events.EVENT_TYPES.GAME_FINISHED, {
             winner_user_id: winner ? winner.id_user : null,
             winner_first_name: winner ? winner.first_name : null,

@@ -9,6 +9,7 @@ import { Opponent } from "../components/Opponent";
 import { CantoPicker } from "../components/CantoPicker";
 import { EndGame } from "../components/EndGame";
 import { PlayingCard } from "../components/PlayingCard";
+import { viewerIsHost } from "./Lobby";
 
 interface Props {
   state: GameState;
@@ -40,7 +41,8 @@ export function Table({ state }: Props) {
       <EndGame
         winner={state.winner ?? null}
         youSeat={yourSeat}
-        isHost={yourSeat === 0}
+        isHost={viewerIsHost(state)}
+        ranked={state.ranked}
         onRematch={rematch}
         onLeave={leave}
       />

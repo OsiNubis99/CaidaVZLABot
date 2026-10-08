@@ -1,0 +1,731 @@
+/* Acompañante (Mesa real) — scoreboard for games played with real cards.
+   Positions: 0 bottom, 1 right, 2 top, 3 left. Colors per position. */
+
+.real-panel {
+  gap: 10px;
+}
+
+.real-seat,
+.real-mesa,
+.real-k,
+.real-c,
+.real-w,
+.real-chip,
+.real-foot {
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.real-seat:disabled,
+.real-mesa:disabled,
+.real-foot:disabled {
+  cursor: default;
+}
+
+/* position colors */
+.real-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  margin-inline-end: 6px;
+  vertical-align: middle;
+}
+.real-dot.c0,
+.real-bar i.c0 {
+  background: #e5534b;
+}
+.real-dot.c1,
+.real-bar i.c1 {
+  background: #2f81f7;
+}
+.real-dot.c2,
+.real-bar i.c2 {
+  background: #3fb950;
+}
+.real-dot.c3,
+.real-bar i.c3 {
+  background: #d4a017;
+}
+
+/* ─── board ─── */
+.real-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: calc(100dvh - 150px - var(--tg-top-inset, 0px) - var(--tg-bottom-inset, 0px));
+  min-height: 430px;
+}
+.real-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.real-title {
+  font-size: 14px;
+}
+.real-title b {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 1px;
+}
+.real-chips {
+  display: flex;
+  gap: 6px;
+}
+.real-chip {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+.real-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.real-chip.danger {
+  color: var(--danger);
+}
+.real-scorer {
+  font-size: 12px;
+}
+
+.real-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(74px, 23%) 1fr minmax(74px, 23%);
+  grid-template-rows: minmax(88px, 24%) 1fr minmax(88px, 24%);
+  gap: 8px;
+}
+.real-table.is-lobby {
+  flex: 0 0 auto;
+  height: 330px;
+}
+
+.real-seat {
+  position: relative;
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.08s;
+}
+.real-seat:not(:disabled):active {
+  transform: scale(0.98);
+}
+.real-seat.pos-top {
+  grid-column: 1 / span 3;
+  grid-row: 1;
+}
+.real-seat.pos-bottom {
+  grid-column: 1 / span 3;
+  grid-row: 3;
+}
+.real-seat.pos-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.real-seat.pos-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+.real-seat.is-void {
+  visibility: hidden;
+}
+.real-seat.is-empty {
+  background: transparent;
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  color: var(--text-muted);
+}
+.real-seat.is-picked {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.4);
+}
+.real-seat.is-target {
+  border-color: rgba(47, 129, 247, 0.55);
+  border-style: dashed;
+}
+.real-seat .team-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  writing-mode: horizontal-tb; /* the A/B letter stays upright on the sides */
+}
+/* On the left seat the name column sits on the right half (it faces the
+   center): keep the letter on the outer side so long names never hit it. */
+.real-seat.pos-left .team-tag {
+  right: auto;
+  left: 6px;
+}
+
+.real-seat-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  align-self: stretch;
+  min-inline-size: 0;
+}
+
+/* The side seats are tall and narrow: paint them vertically (the layout box
+   turns with the text, so names fit on one line), each facing its own edge
+   of the table — left reads top-down, right bottom-up. */
+.real-seat.pos-left,
+.real-seat.pos-right {
+  writing-mode: vertical-rl;
+}
+.real-seat.pos-right .real-seat-in {
+  transform: rotate(180deg);
+}
+.pos-left .real-seat-pts,
+.pos-right .real-seat-pts {
+  line-height: 1.05;
+}
+
+/* Phone lying on the table (the scorer's device): the top player reads
+   their seat from the far edge too. */
+.real-table.is-facing .pos-top .real-seat-in {
+  transform: rotate(180deg);
+}
+
+.real-seat-name {
+  max-inline-size: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.real-seat-pts {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.real-seat-sub {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.real-seat-free {
+  font-size: 12px;
+}
+.real-seat-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.real-seat-tags small {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  padding-block: 1px;
+  padding-inline: 6px;
+}
+.real-seat-tags small.is-off {
+  color: var(--danger);
+}
+
+.real-bar {
+  inline-size: 72%;
+  block-size: 4px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+  display: block;
+}
+.real-bar i {
+  display: block;
+  block-size: 100%;
+  transition: inline-size 0.3s;
+}
+
+.real-center {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+}
+.real-mesa {
+  width: min(118px, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #23a160, #146b3f);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.15;
+  color: #fff;
+  padding: 6px;
+}
+.real-mesa:not(:disabled):active {
+  transform: scale(0.97);
+}
+.real-mesa:disabled {
+  filter: saturate(0.8);
+}
+.real-mesa-icon {
+  font-size: 18px;
+}
+.real-mesa small {
+  font-weight: 500;
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+.real-felt {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: rgba(23, 146, 87, 0.1);
+  border: 1px solid rgba(23, 146, 87, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+}
+
+.real-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  text-align: left;
+}
+.real-foot-last {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.real-foot-count {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ─── sheets ─── */
+.real-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(5, 8, 12, 0.62);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.real-sheet-backdrop.is-center {
+  align-items: center;
+  padding: 16px;
+}
+.real-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 86dvh;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  padding: 10px 14px calc(16px + var(--tg-bottom-inset, 0px));
+  animation: real-up 0.16s ease-out;
+}
+@keyframes real-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.real-sheet-grab {
+  width: 38px;
+  height: 4px;
+  border-radius: 4px;
+  background: #39414f;
+  margin: 0 auto 10px;
+}
+.real-sheet-title {
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.real-sheet-title .muted {
+  font-weight: 400;
+}
+.real-sheet .btn + .btn {
+  margin-left: 0;
+}
+.real-lbl {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin: 10px 0 6px;
+}
+.real-row4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.real-row5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.real-row-ronda {
+  margin-bottom: 6px;
+}
+.real-k {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 17px;
+  padding: 4px 2px;
+}
+.real-k small {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.real-k.is-sm {
+  min-height: 44px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.real-k.is-xs {
+  min-height: 40px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.real-hint {
+  font-size: 11.5px;
+  margin: -2px 0 8px;
+}
+.real-k:active,
+.real-c:active,
+.real-w:active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.real-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.real-c {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.real-c span {
+  color: var(--ok);
+  font-weight: 700;
+}
+.real-c.is-win span {
+  color: #d4a017;
+}
+.real-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.real-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.real-mini-lbl {
+  flex: 1;
+  font-size: 13px;
+}
+.real-mini .cfg-value {
+  min-width: 26px;
+  text-align: center;
+}
+.real-mini-add {
+  min-width: 54px;
+}
+
+.real-who {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.real-w {
+  min-height: 60px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 6px;
+  text-align: center;
+}
+.real-w small {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.real-note {
+  font-size: 12px;
+  margin: 10px 0 0;
+  text-align: center;
+}
+.real-wide {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+}
+
+.real-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.real-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.real-history li:first-child {
+  border-top: 0;
+}
+.real-x {
+  padding: 3px 9px;
+}
+
+.real-win {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid #d4a017;
+  border-radius: 16px;
+  padding: 20px 18px;
+  text-align: center;
+  box-shadow: 0 0 28px rgba(212, 160, 23, 0.25);
+}
+.real-win h3 {
+  margin: 6px 0 4px;
+}
+.real-win-score {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+.real-win .btn + .btn {
+  margin-left: 0;
+}
+
+/* ─── lobby ─── */
+.real-selbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  font-size: 13px;
+}
+.real-selbar > span {
+  flex: 1;
+  min-width: 140px;
+}
+.real-pre-points {
+  margin: 8px 0 4px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.real-pre-points li {
+  margin: 3px 0;
+}
+
+/* creator plays or only referees */
+.real-role {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0 2px;
+}
+.real-role button {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 9px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.real-role button small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.real-role button.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+.real-referee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  font-size: 13px;
+}
+.real-referee > span {
+  flex: 1;
+}
+
+/* what next after a saved game */
+.real-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  inline-size: 100%;
+}
+.real-next .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 11px;
+  margin: 0;
+}
+/* beats styles.css `.btn + .btn` (it lands later in the bundle) */
+.real-next .btn + .btn {
+  margin-left: 0;
+}
+.real-next .btn small {
+  font-size: 11.5px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* ─── finished ─── */
+.real-result {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.real-result-slot {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.real-result-slot.is-winner {
+  border-color: var(--ok);
+}
+.real-result-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.real-result-head b {
+  font-size: 18px;
+}
+.real-result-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 3px 0;
+}
+.real-result-row .muted {
+  font-size: 11.5px;
+  text-align: right;
+}
+.real-saved {
+  font-size: 12px;
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 360px) {
+  .real-seat-pts {
+    font-size: 24px;
+  }
+  .real-k {
+    font-size: 15px;
+  }
+}

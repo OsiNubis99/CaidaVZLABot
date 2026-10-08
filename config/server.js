@@ -7,6 +7,7 @@ const express = require("express");
 const dashboardAuth = require("../services/dashboardAuth");
 const dashboardApi = require("../services/dashboardApi");
 const wsServer = require("../services/realtime/wsServer");
+const companionWs = require("../services/companion/companionWs");
 
 const app = express();
 
@@ -64,7 +65,9 @@ app.post(`/bot${env.token}`, (req, res) => {
 const server = http.createServer(app);
 
 if (dashboardAuth.isEnabled()) {
-  wsServer.attach(server);
+  const io = wsServer.attach(server);
+  // Acompañante (real-table scorekeeper) rides the same io, own namespace.
+  companionWs.attach(io);
 } else {
   logger.info("realtime ws disabled (set DASHBOARD_BASE_URL to enable)");
 }

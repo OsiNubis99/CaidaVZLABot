@@ -352,3 +352,30 @@ input[type="number"].input, input[type="text"].input { width: 100%; }
   .data-table thead th, .data-table tbody td { padding: 8px 10px; }
   .col-actions .btn { padding: 5px 8px; font-size: 11px; }
 }
+
+/* ─── Mi cuenta: últimas partidas + Mesa real ─── */
+.card-subtitle { font-size: 12px; color: var(--text-muted); margin: 12px 0 4px; }
+.history-list { list-style: none; margin: 0; padding: 0; }
+.history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+.history-row:first-child { border-top: 0; }
+.history-main { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.history-when { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-result { flex: 0 0 auto; font-size: 12.5px; color: var(--text-muted); display: flex; gap: 6px; align-items: baseline; }
+.history-result.is-won { color: var(--ok); }
+.history-result b { color: var(--text); font-size: 13px; }
+.history-vs { font-size: 12px; }
+.history-foot { font-size: 11px; margin: 8px 0 0; }
+.companion-card .cards-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.companion-card .kpi { padding: 8px 10px; background: var(--bg-elevated); }
+.companion-card .kpi-value { font-size: 18px; }
+.real-cantos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+/* ─── Top: App / Mesa real ─── */
+.top-switch { flex: 0 0 auto; }
+.top-note { font-size: 12px; margin: 0 0 10px; }

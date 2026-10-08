@@ -118,4 +118,7 @@ module.exports = {
   ig_dot_sep: " · ",
   ig_players_header: "Jugadores:",
   ig_won_prefix: "🏆 Ganó ",
+  ig_not_ranked_bots: "ℹ️ No cuenta para el ranking: había bots en la mesa.",
+  ig_not_ranked_custom:
+    "ℹ️ No cuenta para el ranking: se cambiaron puntos o multiplicadores (solo cuentan los valores de Clásico o The Grupish).",
 };

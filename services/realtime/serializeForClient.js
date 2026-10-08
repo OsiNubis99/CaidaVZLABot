@@ -9,6 +9,8 @@
  * at the transport.
  */
 
+const { rankedStatus } = require("../ranked");
+
 const STARTBY_SENTINEL = "Start_By";
 
 /** Minimal client card shape. Drops `number`; keeps `position` for the
@@ -108,11 +110,19 @@ function serializeForClient(session, viewerUserId) {
     return base;
   });
 
+  const hostSeat = seatIndexForUserId(session, session.hostUserId);
   const state = {
     code: session.code,
     status: session.status,
     config: { ...game.config },
     seats,
+    // The host can move seats, so "host" is no longer "seat 0".
+    hostSeat: hostSeat >= 0 ? hostSeat : null,
+    // Does this table count for "ganados"? Same rule the stats writer uses.
+    ranked: rankedStatus({
+      config: game.config,
+      hasBots: session.seats.some((s) => s && s.kind === "cpu"),
+    }),
   };
 
   if (!playing) {
@@ -152,7 +162,16 @@ function serializeForClient(session, viewerUserId) {
 /** `you` for the lobby (no hand yet) or for a viewer who isn't seated. */
 function viewerSeatStub(session, viewerUserId) {
   const seatIdx = seatIndexForUserId(session, viewerUserId);
-  return { seat: seatIdx >= 0 ? seatIdx : null, hand: [], canSing: null };
+  return {
+    seat: seatIdx >= 0 ? seatIdx : null,
+    hand: [],
+    canSing: null,
+    isHost: isHostViewer(session, viewerUserId),
+  };
+}
+
+function isHostViewer(session, viewerUserId) {
+  return viewerUserId != null && String(viewerUserId) === String(session.hostUserId);
 }
 
 /**
@@ -160,11 +179,12 @@ function viewerSeatStub(session, viewerUserId) {
  * their declarable canto. A spectator (not seated) gets an empty hand.
  */
 function buildYou(session, game, viewerUserId, startBy) {
+  const isHost = isHostViewer(session, viewerUserId);
   const seatIdx = seatIndexForUserId(session, viewerUserId);
-  if (seatIdx < 0) return { seat: null, hand: [], canSing: null };
+  if (seatIdx < 0) return { seat: null, hand: [], canSing: null, isHost };
 
   const idx = game.get_user_index(viewerUserId);
-  if (idx < 0) return { seat: seatIdx, hand: [], canSing: null };
+  if (idx < 0) return { seat: seatIdx, hand: [], canSing: null, isHost };
   const user = game.users[idx];
 
   // get_player_cards returns ["Start_By"] when this user must choose the
@@ -172,14 +192,14 @@ function buildYou(session, game, viewerUserId, startBy) {
   // declarable Sings object appended as a trailing element when present.
   const raw = game.get_player_cards(viewerUserId);
   if (raw.length === 1 && raw[0] === STARTBY_SENTINEL) {
-    return { seat: seatIdx, hand: { type: "startBy" }, canSing: cantoOf(user) };
+    return { seat: seatIdx, hand: { type: "startBy" }, canSing: cantoOf(user), isHost };
   }
 
   const hand = raw
     .filter((c) => c && typeof c === "object" && c.type !== undefined && c.position !== undefined)
     .map(cardToClient);
 
-  return { seat: seatIdx, hand, canSing: cantoOf(user) };
+  return { seat: seatIdx, hand, canSing: cantoOf(user), isHost };
 }
 
 /** The viewer's declarable canto, or null. A canto is declarable when it

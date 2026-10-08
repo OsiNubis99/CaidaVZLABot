@@ -4,33 +4,26 @@
  *
  * Rules:
  *  - "win" (ganados) counts only for a RANKED game: no bots in the roster AND
- *    default scoring (the numeric config equals Clásico). On/off toggles
- *    (mata_canto, mata_mesa, caida_continua), `type` and `game_mode` do NOT
- *    affect rankedness.
+ *    the numeric scoring equals one of the FACTORY modes (Clásico, The
+ *    Grupish — every lang/game_modes_es entry with game_mode > 0). On/off
+ *    toggles (mata_canto, mata_mesa, caida_continua), `type` (2v2 / todos
+ *    contra todos) and `game_mode` do NOT affect rankedness — only changing
+ *    points or multipliers does.
  *  - Bots (cpu_easy/medium/pro rows) count ALL their games (a bot is always in
  *    its own game), so their win rate stays measurable.
  *  - "beat_pro" achievement: a human who beats cpu_pro in a 1v1.
  *
  * The decision (computeResult) is pure and unit-tested; recordResult wires it
  * to the DB and stashes the summary on the game for the GAME_FINISHED event.
+ * The ranked rules themselves live in services/ranked (no DB).
  */
 const { UserController } = require("../database");
-const game_modes = require("../lang/game_modes_es");
-
-// Numeric scoring fields that define a "default" (Clásico) game. On/off toggles
-// and `type` are intentionally excluded.
-const SCORING_FIELDS = [
-  "points", "mesa", "caida", "ronda",
-  "chiguire", "patrulla", "vigia", "registro", "maguaro",
-  "registrico", "casa_chica", "casa_grande", "trivilin",
-];
-
-/** True when every numeric scoring value matches the Clásico preset. */
-function isDefaultScoring(config) {
-  if (!config) return false;
-  const def = game_modes[1];
-  return SCORING_FIELDS.every((f) => Number(config[f]) === Number(def[f]));
-}
+const {
+  SCORING_FIELDS,
+  matchFactoryPreset,
+  isDefaultScoring,
+  rankedStatus,
+} = require("./ranked");
 
 function pickScoring(config) {
   const out = {};
@@ -41,22 +34,28 @@ function pickScoring(config) {
 /**
  * Pure: decide the stat deltas for a finished game. No DB, no side effects.
  * @param {Object} game - the finished Game (users[], config, scoringSlot()).
- * @param {Number} winnerSlot - the scoring slot passed to kill().
- * @returns {{ranked:boolean, is1v1:boolean, winnerSlot:number,
- *            entries:Array, beatProUserId:(string|null), config:Object}}
+ * @param {Number} winnerSlot - the winning scoring slot.
+ * @returns {{ranked:boolean, reason:(string|null), preset:(string|null),
+ *            is1v1:boolean, winnerSlot:number, entries:Array,
+ *            beatProUserId:(string|null), config:Object}}
  */
 function computeResult(game, winnerSlot) {
   const users = (game && game.users) || [];
   const hasBots = users.some((u) => u && u.cpu_difficulty);
-  const ranked = !hasBots && isDefaultScoring(game.config);
+  const status = rankedStatus({ config: game.config, hasBots });
+  const ranked = status.ranked;
 
   const entries = users.map((u, i) => {
     const isBot = !!u.cpu_difficulty;
-    const won = game.scoringSlot(i) === winnerSlot;
+    const slot = game.scoringSlot(i);
+    const won = slot === winnerSlot;
     return {
       statsId: u.statsId(),
+      // Display name for the player's game history (never the Telegram id).
+      name: u.first_name || null,
       isBot,
       difficulty: u.cpu_difficulty || null,
+      slot,
       won,
       // Bots count their wins always (for win rate); humans only when ranked.
       countWin: isBot ? won : ranked && won,
@@ -77,6 +76,8 @@ function computeResult(game, winnerSlot) {
 
   return {
     ranked,
+    reason: status.reason,
+    preset: status.preset,
     is1v1: users.length === 2,
     winnerSlot,
     entries,
@@ -112,4 +113,11 @@ function recordResult(game, winnerSlot) {
   return summary;
 }
 
-module.exports = { isDefaultScoring, computeResult, recordResult, SCORING_FIELDS };
+module.exports = {
+  isDefaultScoring,
+  matchFactoryPreset,
+  rankedStatus,
+  computeResult,
+  recordResult,
+  SCORING_FIELDS,
+};

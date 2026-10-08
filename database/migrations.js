@@ -132,6 +132,51 @@ const STATEMENTS = [
        INSERT INTO public.schema_meta(key) VALUES ('win_reset_v1');
      END IF;
    END $$`,
+
+  // ── Acompañante (scorekeeper for real-table games) ──────────────────
+  // Its stats live ONLY in these tables — nothing here touches public.user,
+  // and the app's stats never read them.
+  // Live tables, so a deploy mid real-life game doesn't lose the score.
+  `CREATE TABLE IF NOT EXISTS public.companion_session (
+     code varchar(16) PRIMARY KEY,
+     state jsonb NOT NULL,
+     updated_at timestamptz DEFAULT now()
+   )`,
+  // One row per finished (saved) game.
+  `CREATE TABLE IF NOT EXISTS public.companion_game (
+     id bigserial PRIMARY KEY,
+     code varchar(16) NOT NULL,
+     game_no int NOT NULL DEFAULT 1,
+     host_id varchar(50) NOT NULL,
+     mode varchar(16) NOT NULL,
+     players int NOT NULL,
+     target int NOT NULL,
+     winner_slot int NOT NULL,
+     ended_by varchar(16) NOT NULL,
+     totals jsonb NOT NULL,
+     config jsonb NOT NULL,
+     ops jsonb NOT NULL,
+     started_at timestamptz,
+     finished_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  // One row per seated person in a saved game (guests: id_user NULL).
+  `CREATE TABLE IF NOT EXISTS public.companion_player (
+     game_id bigint NOT NULL REFERENCES public.companion_game(id) ON DELETE CASCADE,
+     position int NOT NULL,
+     id_user varchar(50),
+     name text NOT NULL,
+     guest boolean NOT NULL DEFAULT false,
+     slot int NOT NULL,
+     won boolean NOT NULL,
+     points int NOT NULL DEFAULT 0,
+     caidas int NOT NULL DEFAULT 0,
+     cantos jsonb NOT NULL DEFAULT '{}'::jsonb,
+     mesas int NOT NULL DEFAULT 0,
+     manual int NOT NULL DEFAULT 0,
+     PRIMARY KEY (game_id, position)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_companion_player_user
+     ON public.companion_player (id_user) WHERE id_user IS NOT NULL`,
 ];
 
 async function run() {

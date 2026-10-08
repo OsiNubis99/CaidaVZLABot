@@ -182,7 +182,7 @@ push to main/develop.
 - `tests/` — 9 vitest files. 58 tests total.
 - `.github/workflows/ci.yml` — CI runner.
 
-## DB schema (5 tables, 9 migrations)
+## DB schema (8 tables, see migrations)
 
 ```
 public.user            id_user PK + game stats + is_banned + notify_on_turn
@@ -193,7 +193,20 @@ public.cards           (value, type) PK + file_id (Telegram sticker file_id)
 public.game_state      id_group PK + state (jsonb) + updated_at
 public.game_events     id (bigserial) PK + id_group + event_type + payload (jsonb)
                        + created_at  (+ idx_game_events_group_time index)
+                       WebApp games log game_finished too (id_group = CAIDA-XXXX)
+public.companion_session  code PK + state (jsonb)  — live Acompañante tables
+public.companion_game     id PK + code, mode, target, winner_slot, ended_by,
+                          totals/config/ops (jsonb), started/finished_at
+public.companion_player   (game_id, position) PK + id_user (NULL = guest) + name
+                          + slot, won, points, caidas, cantos (jsonb), mesas,
+                          manual (hand-typed points: mala echada, pegado…)
 ```
+
+The Acompañante tables are its OWN stats: nothing there reads or writes
+`public.user`, and the app's stats never read them. The creator may only
+referee (no seat → no stats); after a saved game the host picks what's next:
+everyone again (starts now), winners stay (the rest stand up), or a new game
+from the lobby.
 
 Migrations list is the source of truth in `database/migrations.js`.
 
