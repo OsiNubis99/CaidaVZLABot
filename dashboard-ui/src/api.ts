@@ -6,6 +6,9 @@ import type {
   PublicGroup,
   Paged,
   StatsResponse,
+  GameHistoryRow,
+  CompanionMeResponse,
+  CompanionLeaderRow,
 } from "./types";
 
 // Relative — works under /dashboard/ in dev and /caidavzlabot/ in
@@ -62,6 +65,19 @@ export const setMyNotify = (value: boolean) =>
 
 export const leaderboard = (limit: number) =>
   call<{ rows: UserRow[]; limit: number }>("GET", `leaderboard?limit=${limit}`);
+
+/** Your last finished games (groups + WebApp) and whether they counted. */
+export const myGames = (limit = 10) =>
+  call<{ rows: GameHistoryRow[]; limit: number }>("GET", `me/games?limit=${limit}`);
+
+/** Acompañante (Mesa real) — separate stats from the app's. */
+export const companionMe = () => call<CompanionMeResponse>("GET", "companion/me");
+
+export const companionLeaderboard = (limit: number) =>
+  call<{ rows: CompanionLeaderRow[]; limit: number }>(
+    "GET",
+    `companion/leaderboard?limit=${limit}`,
+  );
 
 export const publicGroups = () =>
   call<{ rows: PublicGroup[] }>("GET", "groups/public");

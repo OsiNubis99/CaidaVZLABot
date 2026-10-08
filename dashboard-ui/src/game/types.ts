@@ -74,6 +74,17 @@ export interface You {
   seat: number | null;
   hand: Hand;
   canSing: Canto | null;
+  /** The table's creator (can reorder seats, add CPUs, start). Optional for
+   *  older servers — fall back to "seat 0". */
+  isHost?: boolean;
+}
+
+/** Does this table count for "ganados"? Same rule the stats writer applies:
+ *  no bots + points/multipliers equal to a factory mode (Clásico, The Grupish). */
+export interface RankedStatus {
+  ranked: boolean;
+  reason: "bots" | "custom_scoring" | null;
+  preset: string | null;
 }
 
 export type LastEventKind =
@@ -123,6 +134,9 @@ export interface GameState {
   status: SessionStatus;
   config: GameConfig;
   seats: Seat[];
+  /** Seat index of the table's creator (seats can be reordered). */
+  hostSeat?: number | null;
+  ranked?: RankedStatus;
   table: (Card | null)[];
   lastCardPlayed: Card | null;
   turnSeat: number | null;

@@ -392,18 +392,17 @@ class GameSession {
 
   /**
    * Standings snapshot for a finished game. The winning slot is the one
-   * whose points reached config.points; winner.seat is the (first) seat
-   * mapped to that slot (parejas folds two seats into one slot).
+   * kill() recorded (game._winnerSlot); scanning for "first slot ≥ threshold"
+   * is only a fallback — with a deferred pegar-en-mesa win two slots can be
+   * over the line and the scan would name the wrong one. winner.seat is the
+   * (first) seat mapped to that slot (parejas folds two seats into one slot).
    */
   _buildWinner() {
     const game = this.game;
     const threshold = game.config.points;
-    let winnerSlot = -1;
-    for (let i = 0; i < game.points.length; i++) {
-      if ((game.points[i] || 0) >= threshold) {
-        winnerSlot = i;
-        break;
-      }
+    let winnerSlot = game._winnerSlot != null ? game._winnerSlot : -1;
+    for (let i = 0; winnerSlot < 0 && i < game.points.length; i++) {
+      if ((game.points[i] || 0) >= threshold) winnerSlot = i;
     }
     const standings = this.seats.map((seat) => {
       const gi = game.get_user_index(seat.userId);
@@ -423,6 +422,35 @@ class GameSession {
       .map((s) => ({ seat: s.seat, name: s.name, points: s.points }))
       .sort((a, b) => b.points - a.points);
     return { seat: winnerSeat, standings: publicStandings };
+  }
+
+  // ── seat ordering (lobby) ──────────────────────────────────────────
+
+  /**
+   * Swap two seats (host + lobby only; the WS layer enforces host). The seat
+   * order IS the play order and the parejas split (seats 0+2 vs 1+3), so the
+   * engine's users[] is rebuilt in the new seat order. A rematch rebuilds
+   * users[] from seats, so the order sticks.
+   * @param {Number} a - seat index
+   * @param {Number} b - seat index
+   */
+  swapSeats(a, b) {
+    this._assertLobby();
+    const n = this.seats.length;
+    const valid = (i) => Number.isInteger(i) && i >= 0 && i < n;
+    if (!valid(a) || !valid(b)) throw sessionError("bad_seat", "Asiento inválido");
+    if (a === b) return;
+    [this.seats[a], this.seats[b]] = [this.seats[b], this.seats[a]];
+    this._reindexSeats();
+    // Colors stay with each player (Game.join hands out the first free one).
+    const byId = new Map(this.game.users.map((u) => [String(u.id_user), u]));
+    this.game.users = this.seats.map((s) => byId.get(String(s.userId))).filter(Boolean);
+  }
+
+  /** Seat index of the host, or null if the host isn't seated. */
+  hostSeatIndex() {
+    const seat = this.seatOf(this.hostUserId);
+    return seat ? seat.index : null;
   }
 
   /** Seat index for an engine users[] index, matched by userId (the engine

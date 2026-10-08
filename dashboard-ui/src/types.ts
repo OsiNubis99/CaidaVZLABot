@@ -83,6 +83,60 @@ export interface MeResponse {
   user: UserRow | null;
 }
 
+/** GET /api/me/games — one of your finished games (services/gameHistory). */
+export interface GameHistoryRow {
+  at: string;
+  source: "group" | "webapp";
+  place: string | null;
+  won: boolean;
+  ranked: boolean;
+  reason: "bots" | "custom_scoring" | null;
+  preset: string | null;
+  points: number[];
+  winnerSlot: number | null;
+  mySlot: number | null;
+  players: { name: string | null; slot: number | null; bot: boolean; me: boolean }[];
+}
+
+// ─── Acompañante (Mesa real) — never mixed with the app's stats ─────────
+export interface CompanionStats {
+  played: number;
+  won: number;
+  caidas: number;
+  mesas: number;
+  points: number;
+  cantos: Record<string, number>;
+}
+
+export interface CompanionRecentGame {
+  id: number;
+  at: string;
+  mode: "parejas" | "individual";
+  target: number;
+  totals: Record<string, number>;
+  winnerSlot: number;
+  endedBy: "target" | "manual";
+  mySlot: number;
+  won: boolean;
+  myPoints: number;
+  roster: { name: string; slot: number; position: number; me: boolean }[];
+}
+
+export interface CompanionMeResponse {
+  stats: CompanionStats;
+  recent: CompanionRecentGame[];
+}
+
+export interface CompanionLeaderRow {
+  id_user: string;
+  name: string;
+  played: number;
+  won: number;
+  caidas: number;
+  mesas: number;
+  points: number;
+}
+
 // ─── Stats (admin) ──────────────────────────────────────────────────────
 /** Global totals per canto type, summed across human players. */
 export type CantoTotals = Record<string, number>;

@@ -369,4 +369,80 @@ describe("sessionStore", () => {
       expect(() => s.setConfig({ points: 30 })).toThrow(/ya empezó/i);
     });
   });
+
+  describe("swapSeats (reordenar asientos)", () => {
+    function four() {
+      const s = new GameSession({ code: "CAIDA-SW1", host: { userId: "1", name: "A" } });
+      s.addHuman({ userId: "2", name: "B" });
+      s.addHuman({ userId: "3", name: "C" });
+      s.addCpu("easy");
+      return s;
+    }
+
+    it("swaps two seats and the engine's play order follows", () => {
+      const s = four();
+      s.swapSeats(0, 2);
+      expect(s.seats.map((x) => x.name)).toEqual(["C", "B", "A", "🤖 Fácil"]);
+      expect(s.seats.map((x) => x.index)).toEqual([0, 1, 2, 3]);
+      expect(s.game.users.map((u) => u.first_name)).toEqual(["C", "B", "A", "🤖 Fácil"]);
+    });
+
+    it("colors stay with each player", () => {
+      const s = four();
+      const colorOf = (id) => s.game.users[s.game.get_user_index(id)].color;
+      const before = ["1", "2", "3"].map(colorOf);
+      s.swapSeats(1, 2);
+      expect(["1", "2", "3"].map(colorOf)).toEqual(before);
+    });
+
+    it("the host keeps hosting after moving seats", () => {
+      const s = four();
+      s.swapSeats(0, 3);
+      expect(s.hostUserId).toBe("1");
+      expect(s.hostSeatIndex()).toBe(3);
+    });
+
+    it("rejects bad indices and non-lobby states", () => {
+      const s = four();
+      expect(() => s.swapSeats(0, 4)).toThrow(/inválido/);
+      expect(() => s.swapSeats(-1, 1)).toThrow(/inválido/);
+      patchDeck(s);
+      s.start();
+      expect(() => s.swapSeats(0, 1)).toThrow(/ya empezó/);
+    });
+
+    it("parejas teams follow the new order (seats 0+2 vs 1+3)", () => {
+      const s = four();
+      s.setConfig({ type: "parejas" });
+      s.swapSeats(1, 2); // A, C, B, CPU → A+B vs C+CPU
+      const slot = (id) => s.game.scoringSlot(s.game.get_user_index(id));
+      expect(slot("1")).toBe(slot("2"));
+      expect(slot("3")).not.toBe(slot("1"));
+    });
+
+    it("a rematch keeps the new order", () => {
+      const cfg = new Config({ ...game_modes[1], mata_mesa: "off" });
+      cfg.points = 10; // dealer's pegar-en-mesa wins at deal time
+      const s = new GameSession({ code: "CAIDA-SW2", host: { userId: "1", name: "A" }, config: cfg });
+      s.addCpu("medium");
+      s.swapSeats(0, 1);
+      patchDeck(s);
+      s.start(4);
+      expect(s.status).toBe("finished");
+      s.rematch();
+      expect(s.game.users.map((u) => u.id_user)).toEqual(s.seats.map((x) => x.userId));
+      expect(s.seats[0].kind).toBe("cpu");
+    });
+  });
+
+  describe("winner from kill()'s slot", () => {
+    it("_buildWinner uses game._winnerSlot even if another slot is over the line", () => {
+      const s = new GameSession({ code: "CAIDA-WN1", host: { userId: "1", name: "A" } });
+      s.addHuman({ userId: "2", name: "B" });
+      s.game.points = [30, 25];
+      s.game._winnerSlot = 1;
+      const w = s._buildWinner();
+      expect(w.seat).toBe(1);
+    });
+  });
 });

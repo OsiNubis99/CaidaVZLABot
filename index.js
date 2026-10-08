@@ -6,6 +6,8 @@ const adminUI = require("./services/adminUI");
 const cards = require("./services/cards");
 const audio = require("./services/audio");
 const gameReaper = require("./services/gameReaper");
+const companionStore = require("./services/companion/store");
+const companionWs = require("./services/companion/companionWs");
 const leaderboard = require("./services/leaderboard");
 const rateLimit = require("./services/rateLimit");
 const events = require("./services/events");
@@ -133,6 +135,11 @@ async function gracefulShutdown(signal) {
     await game.flushPendingSaves();
   } catch (err) {
     logger.warn({ err: err.message }, "shutdown flush failed");
+  }
+  try {
+    await companionStore.flush();
+  } catch (err) {
+    logger.warn({ err: err.message }, "shutdown companion flush failed");
   }
   try {
     const db = require("./config/db");
@@ -931,4 +938,11 @@ game.loadedPromise
 // max_game_duration_minutes. Stops them and posts a notice to the
 // chat. First sweep happens after a 60s startup delay.
 gameReaper.start(bot);
+
+// Acompañante: restore live real-table scoreboards after a deploy, then sweep
+// tables idle for 12 h every 30 min.
+require("./config/db")
+  .ready.then(() => companionStore.loadAll())
+  .catch((err) => logger.warn({ err: err.message }, "companion: restore failed"));
+companionWs.startReaper();
 

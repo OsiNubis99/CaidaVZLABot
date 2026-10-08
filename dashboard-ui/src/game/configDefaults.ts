@@ -44,6 +44,49 @@ export const CLASICO: Required<
   trivilin: 24,
 };
 
+/** The Grupish preset — mirrors lang/game_modes_es[2] (Clásico + Chigüire 5 and
+ *  the engine toggles on). Also counts for the ranking. */
+export const GRUPISH: typeof CLASICO = {
+  ...CLASICO,
+  caida_continua: "on",
+  mata_canto: "on",
+  mata_mesa: "on",
+  chiguire: 5,
+};
+
+/** Factory modes — the only point/multiplier sets that count for "ganados". */
+export const PRESETS: { id: "clasico" | "grupish"; name: string; values: typeof CLASICO }[] = [
+  { id: "clasico", name: "Clásico", values: CLASICO },
+  { id: "grupish", name: "The Grupish", values: GRUPISH },
+];
+
+/** The numeric fields that decide rankedness. `type` (2v2 / todos contra
+ *  todos) and the on/off toggles never do — mirrors services/ranked.js. */
+export const SCORING_KEYS = [
+  "points",
+  "mesa",
+  "caida",
+  "ronda",
+  "chiguire",
+  "patrulla",
+  "vigia",
+  "registro",
+  "maguaro",
+  "registrico",
+  "casa_chica",
+  "casa_grande",
+  "trivilin",
+] as const;
+
+/** The factory mode whose points/multipliers equal `cfg`, or null. */
+export function matchPreset(cfg: GameConfig): (typeof PRESETS)[number] | null {
+  return (
+    PRESETS.find((p) =>
+      SCORING_KEYS.every((k) => Number(cfg[k] ?? CLASICO[k]) === Number(p.values[k])),
+    ) ?? null
+  );
+}
+
 /** A numeric field shown in the "Valores de canto" advanced section. */
 export interface CantoField {
   key: keyof typeof CLASICO;

@@ -77,6 +77,11 @@ export function startParam(): string {
   return tg?.initDataUnsafe?.start_param || "";
 }
 
+/** A start_param / typed code for an Acompañante (Mesa real) table. */
+export function isCompanionCode(raw: string): boolean {
+  return /^MESA-/i.test(raw.trim());
+}
+
 export function applyTheme() {
   const tg = getWebApp();
   if (!tg) return;

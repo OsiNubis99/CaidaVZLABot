@@ -11,6 +11,8 @@ import { PublicTab } from "./tabs/PublicTab";
 import { GroupsTab } from "./tabs/GroupsTab";
 import { UsersTab } from "./tabs/UsersTab";
 import { GameTab } from "./game/GameTab";
+import { CompanionTab } from "./companion/CompanionTab";
+import { isCompanionCode } from "./lib/telegram";
 
 // Lazy: keeps Chart.js out of the main bundle — only admins who open Stats
 // download it.
@@ -18,7 +20,7 @@ const StatsTab = lazy(() =>
   import("./tabs/StatsTab").then((m) => ({ default: m.StatsTab })),
 );
 
-type TabId = "play" | "me" | "top" | "public" | "groups" | "users" | "stats";
+type TabId = "play" | "real" | "me" | "top" | "public" | "groups" | "users" | "stats";
 
 interface TabMeta {
   id: TabId;
@@ -29,6 +31,7 @@ interface TabMeta {
 
 const TABS: TabMeta[] = [
   { id: "play", labelKey: "app.tab.play", titleKey: "app.title.play", admin: false },
+  { id: "real", labelKey: "app.tab.real", titleKey: "app.title.real", admin: false },
   { id: "me", labelKey: "app.tab.me", titleKey: "app.title.me", admin: false },
   { id: "top", labelKey: "app.tab.top", titleKey: "app.title.top", admin: false },
   { id: "public", labelKey: "app.tab.public", titleKey: "app.title.public", admin: false },
@@ -50,10 +53,13 @@ export default function App() {
   );
 
   const [tab, setTab] = useState<TabId>(() => {
+    const sp = getWebApp()?.initDataUnsafe?.start_param || "";
+    // Deep-linked into an Acompañante table (startapp=MESA-XXXX) → Mesa real.
+    if (isCompanionCode(sp)) return "real";
     const hash = (location.hash || "").slice(1) as TabId;
-    if (["play", "me", "top", "public", "groups", "users", "stats"].includes(hash)) return hash;
+    if (TABS.some((tm) => tm.id === hash)) return hash;
     // Deep-linked into a game (startapp=<code>) → land on the play tab.
-    return getWebApp()?.initDataUnsafe?.start_param ? "play" : "me";
+    return sp ? "play" : "me";
   });
 
   // Keep URL hash in sync so refreshing inside the WebApp keeps the tab.
@@ -104,6 +110,7 @@ export default function App() {
       </header>
 
       {tab === "play" && <GameTab youId={me.data.telegram.id} />}
+      {tab === "real" && <CompanionTab />}
       {tab === "me" && <MeTab me={me.data} />}
       {tab === "top" && <TopTab />}
       {tab === "public" && <PublicTab />}

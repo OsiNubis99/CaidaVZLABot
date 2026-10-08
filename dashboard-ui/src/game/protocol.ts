@@ -10,6 +10,7 @@ export const C2S = {
   SESSION_START: "session:start",
   SESSION_REMATCH: "session:rematch",
   SESSION_CONFIG: "session:config",
+  SESSION_SWAP: "session:swapSeats",
   SESSION_RESUME: "session:resume",
   ACTION_PLAY: "action:play",
   ACTION_SING: "action:sing",

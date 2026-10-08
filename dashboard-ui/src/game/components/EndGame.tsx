@@ -1,16 +1,19 @@
-import type { Winner } from "../types";
+import type { RankedStatus, Winner } from "../types";
 import { t } from "../../lib/i18n";
+import { RankedLine } from "../screens/Lobby";
 
 interface Props {
   winner: Winner | null;
   youSeat: number | null;
   isHost: boolean;
+  /** Did this game count for "ganados"? (absent on older servers) */
+  ranked?: RankedStatus;
   onRematch: () => void;
   onLeave: () => void;
 }
 
 /** Final standings screen shown when status === "finished". */
-export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) {
+export function EndGame({ winner, youSeat, isHost, ranked, onRematch, onLeave }: Props) {
   const standings = winner?.standings ?? [];
   const youWon = winner?.seat != null && winner.seat === youSeat;
   const winnerName =
@@ -25,6 +28,8 @@ export function EndGame({ winner, youSeat, isHost, onRematch, onLeave }: Props) 
           <p className="muted">{t("endgame.won", { name: winnerName })}</p>
         )}
       </div>
+
+      {ranked && <RankedLine ranked={ranked} />}
 
       <ol className="endgame-standings">
         {standings.map((s, i) => (

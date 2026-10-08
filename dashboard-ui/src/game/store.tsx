@@ -64,6 +64,8 @@ export interface GameStore extends StoreState {
   rematch: () => void;
   resume: () => void;
   setConfig: (config: GameConfig) => void;
+  /** Host: swap two seats in the lobby (seat order = play order + parejas). */
+  swapSeats: (a: number, b: number) => void;
   leave: () => void;
   // Game actions
   play: (cardIndex: number) => void;
@@ -143,6 +145,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       rematch: () => gameSocket.send(C2S.SESSION_REMATCH, {}),
       resume: () => gameSocket.send(C2S.SESSION_RESUME, {}),
       setConfig: (config) => gameSocket.send(C2S.SESSION_CONFIG, { config }),
+      swapSeats: (a, b) => gameSocket.send(C2S.SESSION_SWAP, { a, b }),
       leave: () => {
         gameSocket.send(C2S.SESSION_LEAVE, {});
         dispatchRef.current({ type: "reset" });

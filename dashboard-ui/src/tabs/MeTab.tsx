@@ -4,6 +4,7 @@ import { useToast } from "../components/Toast";
 import { t } from "../lib/i18n";
 import { winRate, caidaRatio, fmtPct, fmtRate } from "../lib/format";
 import type { MeResponse, UserRow } from "../types";
+import { CompanionStatsCard, RecentGamesCard } from "./MeExtras";
 
 const SINGS: Array<[keyof UserRow, string]> = [
   ["ronda", "Ronda"],
@@ -74,6 +75,10 @@ export function MeTab({ me }: { me: MeResponse }) {
           })
         )}
       </div>
+
+      <RecentGamesCard />
+
+      <CompanionStatsCard />
 
       <div className="card">
         <div className="card-title">{t("me.prefs")}</div>

@@ -18,6 +18,7 @@ const { sanitizeConfig } = require("./configSanitize");
 const serializeForClient = require("./serializeForClient");
 const turnLoop = require("./turnLoop");
 const dashboardAuth = require("../dashboardAuth");
+const events = require("../events");
 const env = require("../../config/env");
 const logger = require("../../config/logger");
 
@@ -147,6 +148,7 @@ function settle(session) {
  *  host leaves it (there's no in-memory session reaper). */
 function finishGame(session) {
   turnLoop.clear(session.code);
+  recordFinished(session);
   const winner = session.winner || null;
   const set = sessionSockets.get(session.code);
   if (set) {
@@ -157,6 +159,27 @@ function finishGame(session) {
       });
     }
   }
+}
+
+/**
+ * Log the finish in game_events (keyed by the table code — chat ids are
+ * numeric, so no collision) with the same enriched `result` the Telegram
+ * path stores. Feeds "Mi cuenta → Últimas partidas" (did it count? why not?).
+ * Best-effort: events.record never throws.
+ */
+function recordFinished(session) {
+  const game = session.game;
+  // Once per game (a rematch builds a fresh Game, so this resets itself).
+  if (game._finishRecorded) return;
+  game._finishRecorded = true;
+  const winner = typeof game.winnerUser === "function" ? game.winnerUser() : null;
+  events.record(session.code, events.EVENT_TYPES.GAME_FINISHED, {
+    source: "webapp",
+    winner_user_id: winner ? winner.id_user : null,
+    winner_first_name: winner ? winner.first_name : null,
+    points: game.points,
+    result: game._lastResult || null,
+  });
 }
 
 // ── C2S handlers ──────────────────────────────────────────────────────────
@@ -241,6 +264,13 @@ const handlers = {
     const session = requireSession(socket);
     requireHost(session, socket);
     session.setConfig(sanitizeConfig(payload.config));
+    broadcastState(session);
+  },
+
+  [C2S.SESSION_SWAP](socket, payload = {}) {
+    const session = requireSession(socket);
+    requireHost(session, socket);
+    session.swapSeats(payload.a, payload.b);
     broadcastState(session);
   },
 

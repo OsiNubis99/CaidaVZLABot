@@ -574,5 +574,79 @@ describe("Game", () => {
       expect(g.users[1].color).toBe("🔵");
       expect(g.users[2].color).toBe("🟢");
     });
+
+    it("a newcomer after a lobby leave gets a free color, not a duplicate", () => {
+      const g = new Game("test", new Config(game_modes[1]));
+      g.join(makeUser(1, "A")); // 🔴
+      g.join(makeUser(2, "B")); // 🔵
+      g.join(makeUser(3, "C")); // 🟢
+      g.users.splice(1, 1); // B leaves the lobby
+      g.join(makeUser(4, "D"));
+      expect(g.users.map((u) => u.color)).toEqual(["🔴", "🟢", "🔵"]);
+    });
+  });
+
+  describe("kill: winner attribution", () => {
+    function parejas4() {
+      const g = new Game("test", new Config({ ...game_modes[1], type: "parejas" }));
+      for (const [id, n] of [[1, "A"], [2, "B"], [3, "C"], [4, "D"]]) g.join(makeUser(id, n));
+      return g;
+    }
+
+    it("stores the winning scoring slot and the winner is that slot's user, not the player up", () => {
+      const g = new Game("test", new Config(game_modes[1]));
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.player = 0; // A just played…
+      g.kill(1); // …but B crossed the threshold (e.g. canto / tomadas)
+      expect(g._winnerSlot).toBe(1);
+      expect(g.winnerUser().first_name).toBe("B");
+    });
+
+    // kill() receives a USER index from some paths (dealer pegar-en-mesa,
+    // canto) — in parejas users 2/3 map to slots 0/1. Before the fix the stats
+    // compared slots against 2/3 and credited nobody.
+    it("parejas: kill(user index 3) credits slot 1 (users 1 and 3)", () => {
+      const g = parejas4();
+      g.kill(3);
+      expect(g._winnerSlot).toBe(1);
+      expect(g._lastResult.winnerSlot).toBe(1);
+      expect(g._lastResult.entries.map((e) => e.won)).toEqual([false, true, false, true]);
+      expect(["B", "D"]).toContain(g.winnerUser().first_name);
+    });
+
+    it("parejas: kill(user index 2) credits slot 0", () => {
+      const g = parejas4();
+      g.kill(2);
+      expect(g._winnerSlot).toBe(0);
+      expect(g._lastResult.entries.map((e) => e.won)).toEqual([true, false, true, false]);
+    });
+
+    it("appends a not-ranked note when the scoring was customised", () => {
+      const cfg = new Config({ ...game_modes[1], points: 30 });
+      const g = new Game("test", cfg);
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      const { response } = g.kill(0);
+      expect(response).toMatch(/No cuenta para el ranking/);
+    });
+
+    it("no ranking note for a factory mode (The Grupish, todos contra todos)", () => {
+      const cfg = new Config({ ...game_modes[2], type: "individual" });
+      const g = new Game("test", cfg);
+      g.join(makeUser(1, "A"));
+      g.join(makeUser(2, "B"));
+      g.join(makeUser(3, "C"));
+      const { response } = g.kill(2);
+      expect(response).not.toMatch(/ranking/);
+    });
+
+    it("explains a not-ranked game with bots", () => {
+      const g = new Game("test", new Config(game_modes[1]));
+      g.join(makeUser(1, "A"));
+      g.join(new User({ id_user: "cpu_x_1", first_name: "Bot", cpu_difficulty: "easy" }));
+      const { response } = g.kill(0);
+      expect(response).toMatch(/bots/);
+    });
   });
 });

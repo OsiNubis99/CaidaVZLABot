@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, CpuDifficulty } from "../types";
+import type { GameState, CpuDifficulty, RankedStatus } from "../types";
 import { useGame } from "../store";
 import { openTelegramLink } from "../../lib/telegram";
 import { t } from "../../lib/i18n";
@@ -20,17 +20,24 @@ interface Props {
   youId: number | null;
 }
 
-/** Lobby: create or join a session, fill seats with CPUs, start. Once a session
- *  exists (`state` non-null), shows the seat roster + host controls. */
+/** Host flag with a fallback for servers that predate `you.isHost`. */
+export function viewerIsHost(state: GameState): boolean {
+  return state.you.isHost ?? state.you.seat === 0;
+}
+
+/** Lobby: create or join a session, fill seats with CPUs, order the seats,
+ *  start. Once a session exists (`state` non-null), shows the seat roster +
+ *  host controls. */
 export function Lobby({ state, youId }: Props) {
   const game = useGame();
   const [editingConfig, setEditingConfig] = useState(false);
+  // Seat the host tapped first; the next tap swaps them.
+  const [picked, setPicked] = useState<number | null>(null);
 
   if (!state) return <PreLobby />;
 
-  // Host is seat 0 (per spec). We can't see rivals' userIds, but the viewer is
-  // the host iff they occupy seat 0.
-  const isHost = youId != null && state.you.seat === 0;
+  const isHost = youId != null && viewerIsHost(state);
+  const hostSeat = state.hostSeat ?? 0;
 
   // Host editing the rules from the lobby (the usual place to configure).
   if (editingConfig && isHost) {
@@ -52,6 +59,18 @@ export function Lobby({ state, youId }: Props) {
 
   const filled = state.seats.length;
   const canStart = isHost && filled >= 2;
+  const parejas = state.config.type === "parejas";
+  const canReorder = isHost && filled >= 2;
+  // A stale pick (someone left) is ignored.
+  const sel = picked != null && picked < filled ? picked : null;
+
+  const tapSeat = (index: number) => {
+    if (!canReorder) return;
+    if (sel == null) return setPicked(index);
+    if (sel !== index) game.swapSeats(sel, index);
+    setPicked(null);
+  };
+
   // Deep link into this table. Opens the WebApp with start_param=<code> when
   // the bot has a Main Mini App enabled; the code in the text is the fallback
   // (friend opens the bot → 🎮 Jugar → Unirme → pega el código).
@@ -89,28 +108,60 @@ export function Lobby({ state, youId }: Props) {
           </button>
         )}
       </div>
+      {state.ranked && <RankedLine ranked={state.ranked} />}
+
+      {canReorder && (
+        <p className="muted lobby-hint">
+          {sel == null ? t("lobby.reorderHint") : t("lobby.reorderPick", { name: state.seats[sel].name })}
+        </p>
+      )}
 
       <div className="lobby-seats">
-        {state.seats.map((seat) => (
-          <div className="lobby-seat" key={seat.index}>
-            <span className="lobby-seat-idx">{seat.index + 1}</span>
-            <span className="lobby-seat-name">
-              {seat.name}
-              {seat.kind === "cpu" && <span className="badge cpu">{t("opp.cpu")}</span>}
-              {seat.index === 0 && <span className="muted">{t("lobby.host")}</span>}
-            </span>
-            {isHost && seat.kind === "cpu" && (
-              <button
-                type="button"
-                className="btn btn-danger lobby-seat-x"
-                onClick={() => game.removeCpu(seat.index)}
-                title={t("lobby.removeCpu")}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+        {state.seats.map((seat) => {
+          const team = parejas && filled === 4 ? (seat.index % 2 === 0 ? "A" : "B") : null;
+          return (
+            <div
+              className={[
+                "lobby-seat",
+                canReorder ? "is-movable" : "",
+                sel === seat.index ? "is-picked" : "",
+                sel != null && sel !== seat.index ? "is-target" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={seat.index}
+              role={canReorder ? "button" : undefined}
+              tabIndex={canReorder ? 0 : undefined}
+              onClick={() => tapSeat(seat.index)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") tapSeat(seat.index);
+              }}
+            >
+              <span className="lobby-seat-idx">{seat.index + 1}</span>
+              <span className="lobby-seat-name">
+                {seat.name}
+                {seat.kind === "cpu" && <span className="badge cpu">{t("opp.cpu")}</span>}
+                {seat.index === hostSeat && <span className="muted">{t("lobby.host")}</span>}
+              </span>
+              {team && <span className={`team-tag team-${team}`}>{t("lobby.team", { team })}</span>}
+              {canReorder && <span className="lobby-seat-move" aria-hidden>⇅</span>}
+              {isHost && seat.kind === "cpu" && (
+                <button
+                  type="button"
+                  className="btn btn-danger lobby-seat-x"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPicked(null);
+                    game.removeCpu(seat.index);
+                  }}
+                  title={t("lobby.removeCpu")}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          );
+        })}
         {Array.from({ length: Math.max(0, 4 - filled) }).map((_, i) => (
           <div className="lobby-seat lobby-seat-empty" key={`e${i}`}>
             <span className="lobby-seat-idx">{filled + i + 1}</span>
@@ -118,6 +169,12 @@ export function Lobby({ state, youId }: Props) {
           </div>
         ))}
       </div>
+
+      {filled >= 2 && (
+        <p className="muted lobby-legend">
+          {parejas && filled === 4 ? t("lobby.orderLegendTeams") : t("lobby.orderLegend")}
+        </p>
+      )}
 
       {isHost && filled < 4 && (
         <div className="lobby-cpu">
@@ -157,6 +214,22 @@ export function Lobby({ state, youId }: Props) {
         <p className="muted lobby-hint">{t("lobby.needPlayers")}</p>
       )}
     </div>
+  );
+}
+
+/** "Counts for the ranking?" line, with the reason when it doesn't. */
+export function RankedLine({ ranked }: { ranked: RankedStatus }) {
+  if (ranked.ranked) {
+    return (
+      <p className="cfg-ranked is-ranked">
+        {t("ranked.yes", { preset: ranked.preset || "Clásico" })}
+      </p>
+    );
+  }
+  return (
+    <p className="cfg-ranked is-custom">
+      {ranked.reason === "bots" ? t("ranked.noBots") : t("ranked.noCustom")}
+    </p>
   );
 }
 

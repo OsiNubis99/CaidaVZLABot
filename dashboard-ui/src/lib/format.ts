@@ -24,6 +24,16 @@ export function fmtDate(d: string | null | undefined): string {
   return dt.toISOString().slice(0, 10);
 }
 
+const DATE_LOCALES = { es: "es-VE", en: "en-US", pt: "pt-BR" } as const;
+
+/** "7 oct" in the viewer's language. */
+export function fmtDay(d: string | null | undefined, locale: keyof typeof DATE_LOCALES): string {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return "—";
+  return dt.toLocaleDateString(DATE_LOCALES[locale], { day: "numeric", month: "short" });
+}
+
 /**
  * Win rate = win (ganados) / finished, as %. Returns null when the user hasn't
  * finished any game yet — let the renderer decide the no-data state.

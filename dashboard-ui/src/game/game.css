@@ -538,6 +538,8 @@
 .prelobby-join { display: flex; gap: 8px; }
 .prelobby-join .input { flex: 1; text-transform: uppercase; }
 .prelobby-configure { width: 100%; padding: 11px; font-size: 14px; margin-top: 8px; }
+/* full-width stacked buttons: drop styles.css `.btn + .btn` side margin */
+.prelobby-card .btn.prelobby-configure { margin-left: 0; }
 
 /* rules summary on the lobby roster (+ host's edit button) */
 .lobby-config {
@@ -694,3 +696,30 @@
   .opp { min-width: 104px; padding: 6px 8px; }
   .lobby-code { font-size: 22px; }
 }
+
+/* ─── lobby: host reorders seats (tap one, then another) ─── */
+.lobby-seat.is-movable { cursor: pointer; user-select: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.lobby-seat.is-picked { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.35); }
+.lobby-seat.is-target { border-style: dashed; border-color: rgba(47, 129, 247, 0.55); }
+.lobby-seat-move { color: var(--text-muted); font-size: 15px; }
+.lobby-legend { font-size: 12px; margin: -6px 0 0; }
+.team-tag {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.team-tag.team-A { background: rgba(229, 83, 75, 0.16); color: #ff7b72; }
+.team-tag.team-B { background: rgba(47, 129, 247, 0.18); color: #79b8ff; }
+
+/* "counts for the ranking?" (create form, lobby, end screen) */
+.cfg-ranked {
+  font-size: 12.5px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+}
+.cfg-card .cfg-ranked { margin: 2px 0 6px; }
+.cfg-ranked.is-ranked { background: rgba(63, 185, 80, 0.12); color: var(--ok); }
+.cfg-ranked.is-custom { background: rgba(212, 160, 23, 0.12); color: #d4a017; }
