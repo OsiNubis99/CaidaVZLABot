@@ -63,9 +63,6 @@ typings/
 # editor 
 .vscode
 
-# package-lock
-package-lock.json
-
 # Generated at docker build time (slice_deck.js + generate_canto_stickers.js + generate_emoji_pack.js).
 # Only the source deck PNG is tracked.
 public/cards/*.png

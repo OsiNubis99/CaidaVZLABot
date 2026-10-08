@@ -1,3 +1,17 @@
+// Vitest runs with `globals: true` (vitest.config.js): tests use these
+// without importing them.
+const vitestGlobals = {
+  describe: "readonly",
+  it: "readonly",
+  test: "readonly",
+  expect: "readonly",
+  vi: "readonly",
+  beforeAll: "readonly",
+  afterAll: "readonly",
+  beforeEach: "readonly",
+  afterEach: "readonly",
+};
+
 module.exports = [
   {
     languageOptions: {
@@ -11,6 +25,8 @@ module.exports = [
         __filename: "readonly",
         console: "readonly",
         Buffer: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
         setInterval: "readonly",
@@ -25,6 +41,12 @@ module.exports = [
     },
   },
   {
-    ignores: ["node_modules/**", "public/cards/**", "coverage/**", "docs/**"],
+    files: ["tests/**/*.js"],
+    languageOptions: { globals: vitestGlobals },
+  },
+  {
+    // dashboard-ui is TypeScript + React with its own toolchain (tsc in its
+    // build); this config only covers the Node bot.
+    ignores: ["node_modules/**", "public/cards/**", "coverage/**", "docs/**", "dashboard-ui/**"],
   },
 ];
