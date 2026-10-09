@@ -176,6 +176,24 @@ describe("GameSession", () => {
       expect(() => s.play("1", 0)).toThrow(/no está en curso/);
     });
 
+    it("the winner says how a game won on the deal ended (for the end screen)", () => {
+      const cfg = new Config({ ...game_modes[1], mata_mesa: "off" });
+      cfg.points = 10;
+      const s = playingPair(cfg);
+      expect(s.winner.how).toEqual({
+        kind: "pegado_mesa",
+        dealer: "B",
+        start: 4,
+        table: [
+          { value: 4, hit: true },
+          { value: 3, hit: true },
+          { value: 2, hit: true },
+          { value: 1, hit: true },
+        ],
+        points: 10,
+      });
+    });
+
     it("lastEvent reflects a caída when one fires", () => {
       const s = playingPair();
       s.play("1", 0);

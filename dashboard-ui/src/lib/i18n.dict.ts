@@ -425,6 +425,12 @@ const es = {
   "top.pairsUnranked": "Con menos de {n} partidas juntos (fuera del ranking)",
   "top.pairPlayedShort": "PJ",
   "top.pairWonShort": "G",
+  "endgame.how.mesa": "🃏 Mesa de {dealer} (por {start}): {cards}",
+  "endgame.how.malaEchada": "❌ Mala echada: {dealer} no pegó ninguna → +1 para {to}",
+  "endgame.how.pegado": "🎯 {dealer} pegó en mesa: +{n}",
+  "endgame.how.cartas": "🔚 Fin del mazo: {who} se llevó {n} cartas → +{pts}",
+  "endgame.how.cartasTeam": "🔚 Fin del mazo: {who} se llevaron {n} cartas → +{pts}",
+  "endgame.and": " y ",
 } as const;
 
 export type Dict = Record<keyof typeof es, string>;
@@ -826,6 +832,12 @@ const en: Dict = {
   "top.pairsUnranked": "Fewer than {n} games together (not ranked)",
   "top.pairPlayedShort": "GP",
   "top.pairWonShort": "W",
+  "endgame.how.mesa": "🃏 {dealer}'s table ({start} first): {cards}",
+  "endgame.how.malaEchada": "❌ Bad deal: {dealer} stuck none → +1 for {to}",
+  "endgame.how.pegado": "🎯 {dealer} stuck on the table: +{n}",
+  "endgame.how.cartas": "🔚 End of deck: {who} took {n} cards → +{pts}",
+  "endgame.how.cartasTeam": "🔚 End of deck: {who} took {n} cards → +{pts}",
+  "endgame.and": " and ",
 };
 
 const pt: Dict = {
@@ -1228,6 +1240,12 @@ const pt: Dict = {
   "top.pairsUnranked": "Menos de {n} partidas juntos (fora do ranking)",
   "top.pairPlayedShort": "PJ",
   "top.pairWonShort": "V",
+  "endgame.how.mesa": "🃏 Mesa de {dealer} (pelo {start}): {cards}",
+  "endgame.how.malaEchada": "❌ Palpite errado: {dealer} não pegou nenhuma → +1 para {to}",
+  "endgame.how.pegado": "🎯 {dealer} pegou na mesa: +{n}",
+  "endgame.how.cartas": "🔚 Fim do baralho: {who} levou {n} cartas → +{pts}",
+  "endgame.how.cartasTeam": "🔚 Fim do baralho: {who} levaram {n} cartas → +{pts}",
+  "endgame.and": " e ",
 };
 
 export const DICT: Record<"es" | "en" | "pt", Dict> = { es, en, pt };

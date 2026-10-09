@@ -126,7 +126,29 @@ export interface StandingEntry {
 export interface Winner {
   seat: number | null;
   standings: StandingEntry[];
+  /** How a win that no card play explains came about; null/absent otherwise. */
+  how?: FinishHow | null;
 }
+
+/** A card laid on the mesa at the start of a deck; `hit` = it stuck. */
+export interface MesaCard {
+  value: number;
+  hit: boolean;
+}
+
+/** class/Game `_finish`: mala echada, pegar en mesa or the cards at the end of a deck. */
+export type FinishHow =
+  | {
+      kind: "mala_echada";
+      dealer: string;
+      start: 1 | 4;
+      table: MesaCard[];
+      points: number;
+      /** Who got the point: the player after the dealer (their pair in parejas). */
+      to: string[];
+    }
+  | { kind: "pegado_mesa"; dealer: string; start: 1 | 4; table: MesaCard[]; points: number }
+  | { kind: "cartas"; who: string[]; took: number; points: number };
 
 /** The full per-viewer snapshot delivered on `session:state`. */
 export interface GameState {

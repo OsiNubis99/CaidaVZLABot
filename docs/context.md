@@ -104,6 +104,14 @@ push to main/develop.
     / `_renderFinalScore` / `_renderFinalStandings` use localised
     strings. `INDIVIDUAL_COLORS` is a module-level constant for
     4-player free-for-all markers.
+    Wins that no card play explains say how they happened: each deck
+    start shows `🃏 Mesa de X (por 1): 4 → 3✓ → 7 → 12` (✓ = it stuck)
+    plus `🎯 X pegó en mesa: +N` or `❌ Mala echada… → +1 para Y`, and
+    the end-of-deck count shows `🔚 Fin del mazo: Y se llevó N cartas →
+    +M`. When one of those ends the game, `kill(player, pre, finish)`
+    keeps the lines in the final message and stores `_finish`, which the
+    WebApp end screen gets as `winner.how`. `table_order` stays as-is: the
+    WebApp deal animation parses it.
   - `User.js` — `print(started, lang)` returns a single line.
   - `Card.js` — derives `value`, `type`, `position`, `points` from a
     seed number (0..39).

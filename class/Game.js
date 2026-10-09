@@ -9,6 +9,11 @@ const gameStats = require("../services/gameStats");
 const message = require("../templates/message");
 const keyboard = require("../templates/keyboard");
 
+/** "{dealer} pegó: +{n}" + {dealer, n} → the text, for the lang templates. */
+function fill(template, vars) {
+  return template.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+}
+
 // Color markers for individual-mode renders live on the User itself
 // (set by Game.join from User.INDIVIDUAL_COLORS) so they stay glued to
 // the player across the per-deck users[] rotation.
@@ -41,6 +46,16 @@ class Game {
     this.table_order = "";
     this.took = [0, 0, 0, 0];
     this._dealerSyncCandidate = null;
+    // The 4 cards laid on the mesa at the start of the current deck, in order,
+    // and whether each one stuck ("pegó") — for the "how the mesa went" line.
+    this._mesaDeal = [];
+    // How the game ended when no card play explains it (mala echada, pegar en
+    // mesa, cards at the end of a deck); null otherwise. Set by kill(), read
+    // by the WebApp's end screen (GameSession → winner.how).
+    this._finish = null;
+    // The explanation of a deferred pegar-en-mesa win, replayed when it
+    // resolves on the first play (see play_card).
+    this._pendingMesaFinish = null;
     // Scoring slot of a dealer whose pegar-en-mesa points crossed the
     // winning threshold but whose win is deferred because mata_mesa can
     // still reverse it. Resolved on the first play of the deck (see
@@ -93,6 +108,31 @@ class Game {
     if (!user) return null;
     if (user.username) return "@" + user.username;
     return user.first_name || null;
+  }
+
+  /**
+   * "🃏 Mesa de Andrés (por 1): 4 → 3✓ → 7 → 12" — the 4 cards laid at the
+   * start of this deck, ✓ on the ones that stuck.
+   * @param {String} dealer - Dealer's first name.
+   * @param {Number} start - 1 or 4, the dealer's pick.
+   */
+  _mesaLine(dealer, start) {
+    const cards = this._mesaDeal.map((c) => c.value + (c.hit ? "✓" : "")).join(" → ");
+    return fill(this._lang().ig_mesa_line, { dealer, start, cards });
+  }
+
+  /**
+   * First names of the players credited when `idx` scores: the pair in
+   * parejas, just that player otherwise. `idx` may be a user index or a
+   * scoring slot (scoringSlot maps both).
+   * @param {Number} idx
+   * @returns {String[]}
+   */
+  _slotNames(idx) {
+    const slot = this.scoringSlot(idx);
+    return this.users
+      .filter((u, i) => u && this.scoringSlot(i) === slot)
+      .map((u) => u.first_name);
   }
 
   /**
@@ -250,6 +290,7 @@ class Game {
     } else {
       this.table[card.position] = card;
       this.table_order += card.value + (save ? "\n" : " -> ");
+      this._mesaDeal.push({ value: card.value, hit: card.value == next_card });
       if (save) this.last_card_played = card; // TODO disable if config caida_en_mesa is down
       if (card.value == next_card) return next_card;
       return 0;
@@ -369,6 +410,7 @@ class Game {
       if (start_by === 0 && this.config.caida_continua !== "on") {
         this.last_card_played = null;
       }
+      if (start_by !== 0) this._mesaDeal = [];
       let points = this.new_cards(3, start_by, start_by > 2);
       if (start_by !== 0 && points > 0) {
         this._dealerSyncCandidate = {
@@ -380,12 +422,18 @@ class Game {
         // mid-deck deal — mata_mesa does not apply (no sync points event)
         this._dealerSyncCandidate = null;
       }
-      added += this.table_order;
+      // Deck start: say how the mesa went (✓ = it stuck). Mid-deck manos
+      // lay no mesa cards.
+      const L = this._lang();
+      const dealerIdx = this.dealerIdx();
+      const dealer = this.users[dealerIdx].first_name;
+      const mesa = this._mesaDeal.map((c) => ({ ...c }));
+      if (start_by !== 0) added += this._mesaLine(dealer, start_by);
       if (points > 0) {
-        const dealerIdx = this.users.length - 1;
         const crossed = this.increase_points(dealerIdx, points);
-        added += resp.sync_cards + points + "\n";
+        added += fill(L.ig_pegado_mesa, { dealer, n: points });
         if (crossed) {
+          const finish = { kind: "pegado_mesa", dealer, start: start_by, table: mesa, points };
           // A pegar-en-mesa win is reversible only when mata_mesa is on
           // and the first player can still caída the dealt sync card.
           // In that case defer the endgame: the win is resolved on the
@@ -394,19 +442,34 @@ class Game {
             this.config.mata_mesa === "on" && this._dealerSyncCandidate;
           if (reversible) {
             this._pendingMesaWinSlot = this.scoringSlot(dealerIdx);
-            const L = this._lang();
+            this._pendingMesaFinish = {
+              text: this._mesaLine(dealer, start_by) + fill(L.ig_pegado_mesa, { dealer, n: points }),
+              finish,
+            };
             added += L.mesa_win_pending
               .replace("{dealer}", this.mentionName(this.users[dealerIdx]))
               .replace("{pts}", String(this.points[this.scoringSlot(dealerIdx)]))
               .replace("{p0}", this.mentionName(this.users[0]));
           } else {
-            return this.kill(dealerIdx);
+            return this.kill(dealerIdx, added, finish);
           }
         }
       } else {
         if (start_by > 0) {
-          if (this.increase_points(0, 1)) return this.kill(0);
-          added += resp.bad_sync_cards;
+          // Mala echada: nothing stuck → +1 for the player after the dealer
+          // (their team in parejas).
+          const to = this._slotNames(0);
+          added += fill(L.ig_mala_echada, { dealer, to: to.join(L.ig_and) });
+          if (this.increase_points(0, 1)) {
+            return this.kill(0, added, {
+              kind: "mala_echada",
+              dealer,
+              start: start_by,
+              table: mesa,
+              points: 1,
+              to,
+            });
+          }
         }
       }
       if (this.deck.length == 0) {
@@ -428,9 +491,20 @@ class Game {
     // game type. Note the 3-player asymmetry: player 2 (the dealer) gets
     // threshold 14 while players 0 and 1 use 13 — preserve.
     const tookRules = this._selectTookBonusRules();
+    const L = this._lang();
     for (const { player, threshold } of tookRules) {
-      if (this.took[player] > threshold && this.increase_points(player, this.took[player] - threshold))
-        return this.kill(player);
+      if (this.took[player] <= threshold) continue;
+      // Say who kept how many cards — it's the only trace of these points.
+      const pts = this.took[player] - threshold;
+      const who = this._slotNames(player);
+      added += fill(who.length > 1 ? L.ig_fin_mazo_team : L.ig_fin_mazo, {
+        who: who.join(L.ig_and),
+        n: this.took[player],
+        pts,
+      });
+      if (this.increase_points(player, pts)) {
+        return this.kill(player, added, { kind: "cartas", who, took: this.took[player], points: pts });
+      }
     }
     // Reset table
     this.last_player_on_take = 0;
@@ -548,9 +622,16 @@ class Game {
         // with their own caída points).
         if (this._pendingMesaWinSlot != null) {
           const slot = this._pendingMesaWinSlot;
+          const pending = this._pendingMesaFinish;
           this._pendingMesaWinSlot = null;
+          this._pendingMesaFinish = null;
           if (this.points[slot] >= this.config.points) {
-            return this.kill(slot, response + this.renderShortStatus());
+            // Nobody killed the mesa: replay how it went so the win reads.
+            return this.kill(
+              slot,
+              response + this.renderShortStatus() + (pending ? "\n\n" + pending.text : ""),
+              pending ? pending.finish : null,
+            );
           }
         }
         // Single win-check point for the play_card path. We pass the
@@ -602,16 +683,20 @@ class Game {
    *
    * @param {Number} player - Winner's user index or scoring slot (see above).
    * @param {String} pre - Optional state text that led to this kill.
+   * @param {Object|null} finish - How it ended when no card play explains
+   *   it (mala echada, pegar en mesa, cards at the end of the deck), for the
+   *   WebApp's end screen; null for wins that come from a play.
    */
-  kill(player, pre = "") {
+  kill(player, pre = "", finish = null) {
     const winnerSlot = this.scoringSlot(player);
     this._winnerSlot = winnerSlot;
+    this._finish = finish;
     // Record game-result stats (ganados ranked, bot win rate, beat-PRO). Pure
     // decision + fire-and-forget writes live in services/gameStats; it also
     // stashes a summary on `this._lastResult` for the GAME_FINISHED event.
     const result = gameStats.recordResult(this, winnerSlot);
     const L = this._lang();
-    let response = pre ? pre + "\n\n" : "";
+    let response = pre ? pre.trimEnd() + "\n\n" : "";
     response += L.ig_won_prefix;
     response += this.users[player].print(false, L);
     // For parejas the compact "24-22" tail is useful at a glance. For

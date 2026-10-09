@@ -2,7 +2,6 @@ const ERROR =
   "\nIf you are running into an error, please report it at @CaidaVZLANews.";
 module.exports = {
   bad_turn: "Already seen",
-  bad_sync_cards: "Wrong guess!\n",
   clean_table: "Clean table!\n",
   config_bool_invalid: "Invalid value. Options: 'on' or 'off'" + ERROR,
   config_type_invalid:
@@ -61,7 +60,6 @@ module.exports = {
   mesa_win_pending:
     "⏳ {dealer} reached {pts} sticking cards on the table. {p0} can caída the last card to kill them, or the game ends.\n",
   sing_killed: "The caída killed the previous player's sing!\n",
-  sync_cards: "Stuck on table ",
   user_added: "User added.",
   user_banned: "User blocked.",
   user_get_fall: "Caída!\n",
@@ -111,6 +109,12 @@ module.exports = {
   ig_dot_sep: " · ",
   ig_players_header: "Players:",
   ig_won_prefix: "🏆 Won ",
+  ig_mesa_line: "🃏 {dealer}'s table ({start} first): {cards}\n",
+  ig_pegado_mesa: "🎯 {dealer} stuck on the table: +{n}\n",
+  ig_mala_echada: "❌ Bad deal: {dealer} stuck none → +1 for {to}\n",
+  ig_fin_mazo: "🔚 End of deck: {who} took {n} cards → +{pts}\n",
+  ig_fin_mazo_team: "🔚 End of deck: {who} took {n} cards → +{pts}\n",
+  ig_and: " and ",
   ig_not_ranked_bots: "ℹ️ Doesn't count for the ranking: there were bots at the table.",
   ig_not_ranked_custom:
     "ℹ️ Doesn't count for the ranking: points or multipliers were changed (only Clásico or The Grupish values count).",

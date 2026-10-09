@@ -421,7 +421,9 @@ class GameSession {
     const publicStandings = standings
       .map((s) => ({ seat: s.seat, name: s.name, points: s.points }))
       .sort((a, b) => b.points - a.points);
-    return { seat: winnerSeat, standings: publicStandings };
+    // `how`: the engine's account of a win no card play explains (mala
+    // echada, pegar en mesa, cards at the end of a deck) — null otherwise.
+    return { seat: winnerSeat, standings: publicStandings, how: game._finish || null };
   }
 
   // ── seat ordering (lobby) ──────────────────────────────────────────
