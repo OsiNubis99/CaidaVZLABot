@@ -2,6 +2,45 @@ const resp = require("../lang/es");
 const game_modes = require("../lang/game_modes_es");
 const GroupDTO = require("./GroupDTO");
 
+// What makes a factory preset (Clásico, The Grupish): its scoring values and
+// on/off rules. `type` (2v2 / todos contra todos) is a table choice that goes
+// with any preset, so it's never compared and picking a preset keeps it.
+const PRESET_FIELDS = [
+  "points",
+  "mesa",
+  "caida",
+  "ronda",
+  "chiguire",
+  "patrulla",
+  "vigia",
+  "registro",
+  "maguaro",
+  "registrico",
+  "casa_chica",
+  "casa_grande",
+  "trivilin",
+  "caida_continua",
+  "mata_canto",
+  "mata_mesa",
+];
+
+/**
+ * game_mode of the factory preset whose rules equal `config`, else 0
+ * ("Modificado"). Derived from the values instead of kept as a flag, so it
+ * can't drift: a group that only switched individual / parejas is still on
+ * its preset.
+ */
+function presetOf(config) {
+  const hit = game_modes.find(
+    (m) =>
+      m.game_mode > 0 &&
+      PRESET_FIELDS.every((f) =>
+        typeof m[f] === "number" ? Number(config[f]) === m[f] : config[f] === m[f],
+      ),
+  );
+  return hit ? hit.game_mode : 0;
+}
+
 // Stored fields (set in constructor via set_game_mode + the visual/turbo
 // extras below): game_mode, points, type, caida_continua, mata_canto,
 // mata_mesa, mesa, caida, ronda, chiguire, patrulla, vigia, registro,
@@ -136,15 +175,15 @@ class Config {
     if (config == "caida_continua" || config == "mata_mesa") {
       if (value == "on" || value == "off") {
         this[config] = value;
-        this.game_mode = 0;
+        this.game_mode = presetOf(this);
         return false;
       }
       return resp.config_bool_invalid;
     }
     if (config == "type") {
       if (value == "parejas" || value == "individual") {
+        // Not part of any preset: the game_mode stays as it is.
         this[config] = value;
-        this.game_mode = 0;
         return false;
       }
       return resp.config_type_invalid;
@@ -152,7 +191,7 @@ class Config {
     if (config == "mata_canto") {
       if (value == "on" || value == "off") {
         this[config] = value;
-        this.game_mode = 0;
+        this.game_mode = presetOf(this);
         return false;
       }
       return resp.config_bool_invalid;
@@ -195,7 +234,7 @@ class Config {
       if (config == "caida" || config == "ronda") max = 10;
       if (min <= value && value <= max) {
         this[config] = value;
-        this.game_mode = 0;
+        this.game_mode = presetOf(this);
         return false;
       }
       return resp.config_number_invalid;
@@ -204,14 +243,17 @@ class Config {
   }
 
   /**
-   * If new_mode is a number then take all configs from store else it's should be a GroupDTO object with all configs to be set.
+   * A number picks a factory preset: its rules replace these, but `type`
+   * (2v2 / individual) is kept — it goes with any preset. Otherwise
+   * `new_mode` is a stored GroupDTO / config and every field, type included,
+   * is loaded. game_mode is then derived from the values (see presetOf).
    * @param {GroupDTO|Number} new_mode
    */
   set_game_mode(new_mode) {
-    if (typeof new_mode === "number") new_mode = game_modes[new_mode];
-    this.game_mode = new_mode.game_mode;
+    const pickingPreset = typeof new_mode === "number";
+    if (pickingPreset) new_mode = game_modes[new_mode];
     this.points = new_mode.points;
-    this.type = new_mode.type;
+    this.type = pickingPreset && this.type ? this.type : new_mode.type;
     this.caida_continua = new_mode.caida_continua;
     this.mata_canto = new_mode.mata_canto;
     this.mata_mesa = new_mode.mata_mesa;
@@ -227,6 +269,7 @@ class Config {
     this.casa_chica = new_mode.casa_chica;
     this.casa_grande = new_mode.casa_grande;
     this.trivilin = new_mode.trivilin;
+    this.game_mode = presetOf(this);
   }
 
   /**

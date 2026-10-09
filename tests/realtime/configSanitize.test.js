@@ -58,7 +58,24 @@ describe("GameSession config normalization", () => {
     expect(s.config.mata_canto).toBe("on"); // overridden
     expect(s.config.mesa).toBe(4); // Clásico default preserved
     expect(s.config.trivilin).toBe(24); // Clásico default preserved
-    expect(s.config.game_mode).toBe(1);
+    expect(s.config.game_mode).toBe(0); // 30 pts isn't Clásico anymore: "Modificado"
+  });
+
+  it("The Grupish in parejas is still The Grupish", () => {
+    const s = new GameSession({
+      code: "T3",
+      host: { userId: 1, name: "h" },
+      // What the WebApp sends for it: only the fields that differ from Clásico.
+      config: {
+        type: "parejas",
+        chiguire: 5,
+        caida_continua: "on",
+        mata_canto: "on",
+        mata_mesa: "on",
+      },
+    });
+    expect(s.config.type).toBe("parejas");
+    expect(s.config.game_mode).toBe(2);
   });
 
   it("falls back to Clásico when no config is given", () => {

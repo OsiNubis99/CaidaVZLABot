@@ -120,6 +120,11 @@ push to main/develop.
     implemented (`Game.handing_out_cards` resets `last_card_played`
     between manos when `caida_continua !== "on"`). `mata_mesa` is
     still a settable boolean but a no-op in `Game.play_card`.
+    `game_mode` (the preset shown in /configurar and before a game) is
+    derived from the rules — the 13 values + the 3 on/off toggles, never
+    `type` — so switching individual / parejas keeps the preset, and
+    picking a preset keeps the type. Rows stored as "Modificado" only
+    because of their type load as their preset.
   - `UserDTO.js`, `GroupDTO.js`, `RequestDTO.js` — DTOs wrapping
     Telegram chat/user/message. (Were `Factory_*.js` until round 12.)
 - `database/`
