@@ -4,9 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App.tsx";
 import { ToastProvider } from "./components/Toast";
 import { ready as telegramReady } from "./lib/telegram";
+import { initKeepAwake } from "./lib/keepAwake";
 import "./styles.css";
 
 telegramReady();
+initKeepAwake();
 
 const qc = new QueryClient({
   defaultOptions: {

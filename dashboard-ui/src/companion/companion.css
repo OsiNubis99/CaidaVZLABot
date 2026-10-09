@@ -74,6 +74,8 @@
 }
 .real-chips {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
 .real-chip {
@@ -90,9 +92,6 @@
 }
 .real-chip.danger {
   color: var(--danger);
-}
-.real-scorer {
-  font-size: 12px;
 }
 
 .real-table {
@@ -300,6 +299,35 @@
   font-size: 11px;
   opacity: 0.85;
   margin-top: 3px;
+}
+/* what the others see in the middle: who's refereeing (only they score) */
+.real-ref-disc {
+  width: min(118px, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.15;
+  padding: 10px;
+  min-width: 0;
+}
+.real-ref-name {
+  font-weight: 700;
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.real-ref-disc small {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 .real-felt {
   width: 100%;
@@ -651,6 +679,104 @@
 }
 .real-referee > span {
   flex: 1;
+}
+.real-referee small {
+  display: block;
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+.real-referee.is-away {
+  border: 1px solid #d4a017;
+}
+.real-referee .btn {
+  margin-left: 0;
+  flex: 0 0 auto;
+}
+
+/* 👥 who's at the table: referee, players, the line, watchers */
+.real-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.real-fin-top {
+  display: flex;
+  justify-content: flex-end;
+  inline-size: 100%;
+}
+.real-people {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+.real-people li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+}
+.real-people li:first-child {
+  border-top: 0;
+}
+.real-people.is-queue {
+  counter-reset: q;
+}
+.real-people.is-queue li::before {
+  counter-increment: q;
+  content: counter(q) ".";
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-inline-size: 1.4em;
+}
+.real-people-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.real-people .real-dot {
+  margin-inline-end: 0;
+}
+.real-tag {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+.real-tag.is-off {
+  color: var(--danger);
+}
+.real-people .btn + .btn {
+  margin-left: 0;
+}
+.real-mini-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.real-people-empty {
+  font-size: 13px;
+  margin: 2px 0 8px;
+}
+.real-people-add {
+  margin: 4px 0 6px;
+}
+/* names keep their case (game.css uppercases the table-code input) */
+.real-sheet-backdrop .prelobby-join .input {
+  text-transform: none;
+}
+.real-queue-join {
+  margin-top: 6px;
+}
+/* after a game: the line / take-over bars get their own row */
+.endgame-actions > .real-referee,
+.endgame-actions > .real-queue-join {
+  flex: 1 1 100%;
 }
 
 /* what next after a saved game */

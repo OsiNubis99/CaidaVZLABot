@@ -9,9 +9,9 @@
  *     GET  /api/me                       perfil + stats personales + role
  *     POST /api/me/notify                { value: bool }  notify_on_turn
  *     GET  /api/me/games?limit           últimas partidas (grupos + WebApp), si contaron
- *     GET  /api/leaderboard?limit        top global
+ *     GET  /api/leaderboard?limit&sort   top global (default: % de victorias, mín. 10 partidas)
  *     GET  /api/companion/me             stats del Acompañante (mesa real) + últimas mesas
- *     GET  /api/companion/leaderboard    top del Acompañante (separado del de la app)
+ *     GET  /api/companion/leaderboard    top del Acompañante (?limit&sort; separado del de la app)
  *     GET  /api/groups/public            grupos públicos con link
  *
  *   ADMIN-tier (además, id en ADMIN_USER_IDS):
@@ -36,6 +36,7 @@ const logger = require("../config/logger");
 const { GroupController, UserController } = require("../database");
 const CompanionRepo = require("../database/companion");
 const gameHistory = require("./gameHistory");
+const ranking = require("./ranking");
 const { resolveGroupLink } = require("./groupLink");
 const auth = require("./dashboardAuth");
 
@@ -123,8 +124,9 @@ function build(bot) {
   router.get("/api/leaderboard", async (req, res) => {
     try {
       const limit = clampPageSize(req.query.limit, 25, 100);
-      const rows = await UserController.top(limit);
-      res.json({ rows, limit });
+      const { sort } = ranking.appOrderBy(req.query.sort);
+      const rows = await UserController.top(limit, sort);
+      res.json({ rows, limit, sort, minGames: ranking.MIN_RANKED_GAMES });
     } catch (err) {
       logger.error({ err: err.message }, "dashboard /api/leaderboard failed");
       res.status(500).json({ error: "internal" });
@@ -161,8 +163,9 @@ function build(bot) {
   router.get("/api/companion/leaderboard", async (req, res) => {
     try {
       const limit = clampPageSize(req.query.limit, 25, 100);
-      const rows = await CompanionRepo.leaderboard(limit);
-      res.json({ rows, limit });
+      const { sort } = ranking.realOrderBy(req.query.sort);
+      const rows = await CompanionRepo.leaderboard(limit, sort);
+      res.json({ rows, limit, sort, minGames: ranking.MIN_RANKED_GAMES });
     } catch (err) {
       logger.error({ err: err.message }, "dashboard /api/companion/leaderboard failed");
       res.status(500).json({ error: "internal" });

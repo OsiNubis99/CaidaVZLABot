@@ -57,6 +57,40 @@ function waitFor(socket, event, ms = 2000) {
   });
 }
 
+/** Resolve with the first state this socket receives that matches `pred`. */
+function until(socket, pred, ms = 2000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.off(S2C.STATE, on);
+      reject(new Error("timeout waiting for a matching state"));
+    }, ms);
+    function on(p) {
+      if (!pred(p.state)) return;
+      clearTimeout(timer);
+      socket.off(S2C.STATE, on);
+      resolve(p.state);
+    }
+    socket.on(S2C.STATE, on);
+  });
+}
+
+/** Emit and resolve with the error code this socket gets back (states ignored). */
+function errorOf(socket, event, payload = {}) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.off(S2C.ERROR, on);
+      reject(new Error(`no error for ${event}`));
+    }, 2000);
+    function on(e) {
+      clearTimeout(timer);
+      socket.off(S2C.ERROR, on);
+      resolve(e.code);
+    }
+    socket.on(S2C.ERROR, on);
+    socket.emit(event, payload);
+  });
+}
+
 /** Emit and resolve with the next state (or error) this socket receives. */
 function act(socket, event, payload = {}) {
   return new Promise((resolve, reject) => {
@@ -134,7 +168,7 @@ describe("companion ws (/companion namespace)", () => {
     const { host, code } = await hostWithTable();
     expect(code).toMatch(/^MESA-/);
     const st = await act(host, C2S.RESUME);
-    expect(st.you).toEqual({ position: 0, isHost: true });
+    expect(st.you).toMatchObject({ position: 0, isHost: true });
     expect(st.config.type).toBe("parejas");
     expect(st.seats[0]).toMatchObject({ name: "Andrés", online: true });
   });
@@ -145,7 +179,7 @@ describe("companion ws (/companion namespace)", () => {
     await waitFor(friend, "connect");
     const hostSees = waitFor(host, S2C.STATE);
     const st = await act(friend, C2S.JOIN, { code: code.replace("MESA-", "") }); // bare suffix works
-    expect(st.you).toEqual({ position: 1, isHost: false });
+    expect(st.you).toMatchObject({ position: 1, isHost: false });
     expect((await hostSees).state.seats[1]).toMatchObject({ name: "Daniel", online: true });
 
     const denied = await act(friend, C2S.SWAP, { a: 0, b: 1 });
@@ -245,7 +279,7 @@ describe("companion ws (/companion namespace)", () => {
     await waitFor(late, "connect");
     const st = await act(late, C2S.JOIN, { code });
     expect(st.status).toBe("playing");
-    expect(st.you).toEqual({ position: null, isHost: false });
+    expect(st.you).toMatchObject({ position: null, isHost: false });
     expect(store.get(code).positionOf("71")).toBe(-1);
     // ...and keeps getting live updates
     const next = waitFor(late, S2C.STATE);
@@ -272,7 +306,7 @@ describe("companion ws (/companion namespace)", () => {
     const first = waitFor(host, S2C.STATE);
     const { code } = await new Promise((res) => host.emit(C2S.CREATE, { referee: true }, res));
     let st = (await first).state;
-    expect(st.you).toEqual({ position: null, isHost: true });
+    expect(st.you).toMatchObject({ position: null, isHost: true });
     expect(st.seats.every((s) => s === null)).toBe(true);
     const p1 = connect({ id: 101, first_name: "Uno" });
     await waitFor(p1, "connect");
@@ -282,7 +316,7 @@ describe("companion ws (/companion namespace)", () => {
     await hostSees;
     // changes their mind and plays: first free seat
     st = await act(host, C2S.SIT, {});
-    expect(st.you).toEqual({ position: 1, isHost: true });
+    expect(st.you).toMatchObject({ position: 1, isHost: true });
   });
 
   it("a reconnecting watcher re-attaches without a seat; 'Sentarme' seats them", async () => {
@@ -296,18 +330,19 @@ describe("companion ws (/companion namespace)", () => {
     expect(st.you.position).toBe(1);
   });
 
-  it("after a win: winners stay (the rest stand up) or everyone plays again", async () => {
+  it("after a win: winners stay (the line takes the losers' seats) or everyone plays again", async () => {
     const { host } = await hostWithTable(120);
     for (const name of ["B", "C", "D"]) await act(host, C2S.GUEST, { name });
     await act(host, C2S.START);
     await act(host, C2S.CLOSE, { winnerSlot: 1 }); // B(1) + D(3)
+    await act(host, C2S.QUEUE_ADD, { name: "E" });
+    await act(host, C2S.QUEUE_ADD, { name: "F" });
     let st = await act(host, C2S.REMATCH, { mode: "winners" });
     expect(st.status).toBe("lobby");
-    expect(st.seats.map((s) => s && s.name)).toEqual([null, "B", null, "D"]);
-    expect(st.you).toEqual({ position: null, isHost: true }); // the host lost → referees
+    expect(st.seats.map((s) => s && s.name)).toEqual(["E", "B", "F", "D"]);
+    expect(st.queue.map((e) => e.name)).toEqual(["Andrés", "C"]);
+    expect(st.you).toMatchObject({ position: null, isHost: true, queued: 1 }); // lost → in line
 
-    await act(host, C2S.GUEST, { name: "E" }); // → 0
-    await act(host, C2S.GUEST, { name: "F" }); // → 2
     await act(host, C2S.START);
     await act(host, C2S.CLOSE, { winnerSlot: 0 });
     st = await act(host, C2S.REMATCH, { mode: "again" });
@@ -315,5 +350,122 @@ describe("companion ws (/companion namespace)", () => {
     expect(st.gameNo).toBe(3);
     expect(st.ops).toEqual([]);
     expect(repo.games.length).toBe(2);
+  });
+  describe("people, line and referee role", () => {
+    /** Host + guests B/C/D: every seat taken. */
+    async function fullTable(hostId) {
+      const t = await hostWithTable(hostId);
+      for (const name of ["B", "C", "D"]) await act(t.host, C2S.GUEST, { name });
+      return t;
+    }
+    async function watcher(id, name, code) {
+      const w = connect({ id, first_name: name });
+      await waitFor(w, "connect");
+      const st = await act(w, C2S.JOIN, { code });
+      return { w, st };
+    }
+
+    it("someone watching asks for the next game; the referee seats them from the line", async () => {
+      const { host, code } = await fullTable(200);
+      const { w, st: watching } = await watcher(201, "Pedro", code);
+      expect(watching.you).toMatchObject({ position: null, queued: null });
+
+      let st = await act(w, C2S.QUEUE_JOIN);
+      expect(st.you.queued).toBe(1);
+      st = await act(host, C2S.QUEUE_ADD, { name: "Luis" });
+      expect(st.queue.map((e) => [e.name, e.guest])).toEqual([
+        ["Pedro", false],
+        ["Luis", true],
+      ]);
+      expect(st.spectators).toEqual([]); // Pedro is in the line, not just watching
+
+      await act(host, C2S.KICK, { position: 3 }); // D gets up
+      const pedroSeated = until(w, (x) => x.you.position === 3);
+      st = await act(host, C2S.SEAT_QUEUED, { qid: st.queue[0].qid, position: 3 });
+      expect(st.seats[3]).toMatchObject({ name: "Pedro", guest: false });
+      expect(st.queue.map((e) => e.name)).toEqual(["Luis"]);
+      expect((await pedroSeated).you).toMatchObject({ position: 3, queued: null });
+
+      st = await act(host, C2S.QUEUE_REMOVE, { qid: st.queue[0].qid });
+      expect(st.queue).toEqual([]);
+      expect(await errorOf(w, C2S.QUEUE_REMOVE, { qid: 1 })).toBe("not_host");
+    });
+
+    it("the invite link doesn't jump the line; leaving the line works", async () => {
+      const { host, code } = await fullTable(210);
+      await act(host, C2S.QUEUE_ADD, { name: "Luis" });
+      await act(host, C2S.KICK, { position: 2 }); // a free seat, but Luis is waiting
+      const { w, st } = await watcher(211, "Ana", code);
+      expect(st.you.position).toBeNull();
+      expect((await act(w, C2S.QUEUE_JOIN)).you.queued).toBe(2);
+      const after = await act(w, C2S.QUEUE_LEAVE);
+      expect(after.you.queued).toBeNull();
+      expect(after.queue.map((e) => e.name)).toEqual(["Luis"]);
+      expect(after.spectators.map((x) => x.name)).toEqual(["Ana"]);
+    });
+
+    it("lists who's watching by name only (no Telegram ids)", async () => {
+      const { host, code } = await fullTable(220);
+      const hostSees = waitFor(host, S2C.STATE);
+      await watcher(221, "Carla", code);
+      const st = (await hostSees).state;
+      expect(st.spectators).toEqual([{ pid: expect.any(String), name: "Carla", you: false }]);
+      expect(st.hostOnline).toBe(true);
+      expect(JSON.stringify(st)).not.toMatch(/221/);
+    });
+
+    it("the referee passes the role to someone watching; the old one can't score anymore", async () => {
+      const { host, code } = await fullTable(230);
+      const { w } = await watcher(231, "Carlos", code);
+      const hostState = await act(host, C2S.START);
+      const pid = hostState.spectators.find((x) => x.name === "Carlos").pid;
+      const carlosRuns = until(w, (x) => x.you.isHost);
+      const after = await act(host, C2S.TRANSFER, { pid });
+      expect(after.you).toMatchObject({ position: 0, isHost: false });
+      expect(after.hostName).toBe("Carlos");
+      expect((await carlosRuns).you).toMatchObject({ position: null, isHost: true });
+      expect(await errorOf(host, C2S.RECORD, { kind: "mesa", seat: 1 })).toBe("not_host");
+      const scored = await act(w, C2S.RECORD, { kind: "mesa", seat: 1 });
+      expect(scored.ops).toHaveLength(1);
+    });
+
+    it("won't pass the role to someone who isn't connected", async () => {
+      const { host, code } = await hostWithTable(240);
+      const p = connect({ id: 241, first_name: "Ida" });
+      await waitFor(p, "connect");
+      const seated = await act(p, C2S.JOIN, { code });
+      const pid = seated.seats[seated.you.position].pid;
+      const hostSees = waitFor(host, S2C.STATE);
+      p.disconnect();
+      await hostSees;
+      expect(await errorOf(host, C2S.TRANSFER, { pid })).toBe("target_offline");
+      expect(await errorOf(host, C2S.TRANSFER, { pid: "nobody" })).toBe("bad_target");
+    });
+
+    it("a player takes the role over once the referee has been away long enough", async () => {
+      companionWs.configure({ claimAfterMs: 80 });
+      try {
+        const { host, code } = await hostWithTable(250);
+        const p = connect({ id: 251, first_name: "Toma" });
+        await waitFor(p, "connect");
+        await act(p, C2S.JOIN, { code });
+        expect(await errorOf(p, C2S.CLAIM)).toBe("referee_online");
+
+        const awayState = until(p, (x) => x.hostOnline === false);
+        host.disconnect();
+        const away = await awayState;
+        expect(away.hostOnline).toBe(false);
+        expect(away.you.claimInMs).toBeGreaterThan(0);
+        expect(await errorOf(p, C2S.CLAIM)).toBe("too_soon");
+
+        await new Promise((r) => setTimeout(r, 120));
+        const st = await act(p, C2S.CLAIM);
+        expect(st.you).toMatchObject({ isHost: true });
+        expect(st.hostName).toBe("Toma");
+        expect(store.get(code).isHost("251")).toBe(true);
+      } finally {
+        companionWs.configure({ claimAfterMs: 5 * 60 * 1000 });
+      }
+    });
   });
 });

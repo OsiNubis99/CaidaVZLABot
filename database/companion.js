@@ -4,6 +4,7 @@
  * public.user — the companion's stats never mix with the app's.
  */
 const db = require("../config/db");
+const ranking = require("../services/ranking");
 
 const CANTO_KEYS = [
   "ronda",
@@ -101,7 +102,13 @@ module.exports = {
     }
   },
 
-  /** Lifetime companion stats for one Telegram user. */
+  /**
+   * Lifetime companion stats for one Telegram user — the Mesa real side of
+   * "Mi cuenta". `manual` = points added with "Sumar puntos" (mala echada,
+   * lo pegado, the last cards); `refereed` = saved games they scored (as the
+   * referee when the game was saved, playing or not). Caídas received aren't
+   * recorded at real tables (the referee only taps who made the caída).
+   */
   async userStats(userId) {
     const id = String(userId);
     const totals = await db.query(
@@ -109,7 +116,8 @@ module.exports = {
               COUNT(*) FILTER (WHERE won)::int AS won,
               COALESCE(SUM(caidas), 0)::int AS caidas,
               COALESCE(SUM(mesas), 0)::int AS mesas,
-              COALESCE(SUM(points), 0)::int AS points
+              COALESCE(SUM(points), 0)::int AS points,
+              COALESCE(SUM(manual), 0)::int AS manual
        FROM public.companion_player WHERE id_user = $1`,
       [id],
     );
@@ -118,6 +126,10 @@ module.exports = {
        FROM public.companion_player p, jsonb_each_text(p.cantos) c
        WHERE p.id_user = $1
        GROUP BY c.key`,
+      [id],
+    );
+    const refereedR = await db.query(
+      "SELECT COUNT(*)::int AS n FROM public.companion_game WHERE host_id = $1",
       [id],
     );
     const cantos = {};
@@ -130,6 +142,8 @@ module.exports = {
       caidas: Number(t.caidas) || 0,
       mesas: Number(t.mesas) || 0,
       points: Number(t.points) || 0,
+      manual: Number(t.manual) || 0,
+      refereed: Number(refereedR.rows[0]?.n) || 0,
       cantos,
     };
   },
@@ -165,20 +179,29 @@ module.exports = {
     }));
   },
 
-  /** Companion leaderboard (players with an account only). */
-  async leaderboard(limit = 25) {
+  /**
+   * Companion leaderboard (players with an account only). Default = the
+   * official ranking (win rate, minimum games — services/ranking.js).
+   * @param {Number} limit
+   * @param {String} [sort] - ranking.REAL_SORT_KEYS (anything else → win_rate)
+   */
+  async leaderboard(limit = 25, sort) {
+    const order = ranking.realOrderBy(sort);
+    // Aggregate first: ORDER BY expressions can't use output aliases.
     const r = await db.query(
-      `SELECT id_user,
-              (ARRAY_AGG(name ORDER BY game_id DESC))[1] AS name,
-              COUNT(*)::int AS played,
-              COUNT(*) FILTER (WHERE won)::int AS won,
-              COALESCE(SUM(caidas), 0)::int AS caidas,
-              COALESCE(SUM(mesas), 0)::int AS mesas,
-              COALESCE(SUM(points), 0)::int AS points
-       FROM public.companion_player
-       WHERE id_user IS NOT NULL
-       GROUP BY id_user
-       ORDER BY won DESC, played DESC
+      `SELECT * FROM (
+         SELECT id_user,
+                (ARRAY_AGG(name ORDER BY game_id DESC))[1] AS name,
+                COUNT(*)::int AS played,
+                COUNT(*) FILTER (WHERE won)::int AS won,
+                COALESCE(SUM(caidas), 0)::int AS caidas,
+                COALESCE(SUM(mesas), 0)::int AS mesas,
+                COALESCE(SUM(points), 0)::int AS points
+         FROM public.companion_player
+         WHERE id_user IS NOT NULL
+         GROUP BY id_user
+       ) t
+       ORDER BY ${order.sql}
        LIMIT $1`,
       [limit],
     );

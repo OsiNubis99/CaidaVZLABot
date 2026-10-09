@@ -51,6 +51,21 @@ function CompanionFlow() {
     clearError();
   }, [error, toast, clearError]);
 
+  // The referee role changed hands (passed, or taken over): say so.
+  const wasHost = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!state) {
+      wasHost.current = null;
+      return;
+    }
+    const before = wasHost.current;
+    wasHost.current = state.you.isHost;
+    if (before === null || before === state.you.isHost) return;
+    toast(
+      state.you.isHost ? t("real.role.nowYou") : t("real.role.passed", { name: state.hostName }),
+    );
+  }, [state, toast]);
+
   useEffect(() => {
     if (!ended) return;
     const key =

@@ -19,6 +19,13 @@ export const C2S = {
   DISCARD: "companion:discard",
   REMATCH: "companion:rematch",
   LEAVE: "companion:leave",
+  QUEUE_JOIN: "companion:queueJoin",
+  QUEUE_LEAVE: "companion:queueLeave",
+  QUEUE_ADD: "companion:queueAdd",
+  QUEUE_REMOVE: "companion:queueRemove",
+  SEAT_QUEUED: "companion:seatQueued",
+  TRANSFER: "companion:transfer",
+  CLAIM: "companion:claim",
 } as const;
 
 export const S2C = {

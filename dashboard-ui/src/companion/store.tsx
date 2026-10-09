@@ -81,6 +81,17 @@ export interface CompanionStore extends StoreState {
   closeWithWinner: (winnerSlot: number) => void;
   discard: () => void;
   rematch: (mode: RematchMode) => void;
+  /** Ask to play the next game / leave the line. */
+  queueJoin: () => void;
+  queueLeave: () => void;
+  /** Referee: line up someone without the app, remove an entry, seat one (lobby). */
+  queueAdd: (name: string) => void;
+  queueRemove: (qid: number) => void;
+  seatQueued: (qid: number, position: number) => void;
+  /** Referee: pass the role to someone at the table with the app. */
+  transfer: (pid: string) => void;
+  /** Take the role over once the referee has been away long enough. */
+  claim: () => void;
   leave: () => void;
   clearError: () => void;
   clearEnded: () => void;
@@ -141,6 +152,13 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       closeWithWinner: (winnerSlot) => companionSocket.send(C2S.CLOSE, { winnerSlot }),
       discard: () => companionSocket.send(C2S.DISCARD, {}),
       rematch: (mode) => companionSocket.send(C2S.REMATCH, { mode }),
+      queueJoin: () => companionSocket.send(C2S.QUEUE_JOIN, {}),
+      queueLeave: () => companionSocket.send(C2S.QUEUE_LEAVE, {}),
+      queueAdd: (name) => companionSocket.send(C2S.QUEUE_ADD, { name }),
+      queueRemove: (qid) => companionSocket.send(C2S.QUEUE_REMOVE, { qid }),
+      seatQueued: (qid, position) => companionSocket.send(C2S.SEAT_QUEUED, { qid, position }),
+      transfer: (pid) => companionSocket.send(C2S.TRANSFER, { pid }),
+      claim: () => companionSocket.send(C2S.CLAIM, {}),
       leave: () => {
         companionSocket.send(C2S.LEAVE, {});
         dispatchRef.current({ type: "reset" });

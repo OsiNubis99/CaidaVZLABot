@@ -105,6 +105,10 @@ export interface CompanionStats {
   caidas: number;
   mesas: number;
   points: number;
+  /** Points added with "➕ Sumar puntos" (mala echada, lo pegado, last cards). */
+  manual: number;
+  /** Saved games this person scored as the referee (playing or not). */
+  refereed: number;
   cantos: Record<string, number>;
 }
 
@@ -135,6 +139,15 @@ export interface CompanionLeaderRow {
   caidas: number;
   mesas: number;
   points: number;
+}
+
+/** /api/leaderboard and /api/companion/leaderboard. `sort` is the column the
+ *  server actually used; below `minGames` you're out of the official ranking. */
+export interface LeaderboardResponse<T> {
+  rows: T[];
+  limit: number;
+  sort: string;
+  minGames: number;
 }
 
 // ─── Stats (admin) ──────────────────────────────────────────────────────

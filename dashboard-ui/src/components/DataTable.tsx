@@ -23,6 +23,14 @@ interface Props<T> {
   // Pluggable row-level renderers don't fit react-table by default;
   // this lets the parent expose actions etc.
   rowClassName?: (row: Row<T>) => string;
+  /** Server-side sort (Top): only the column ids in `keys` are clickable,
+   *  a click asks the parent to refetch in that order (highest first) and
+   *  the rows render exactly as received. */
+  serverSort?: {
+    active: string;
+    keys: readonly string[];
+    onChange: (columnId: string) => void;
+  };
 }
 
 export function DataTable<T extends object>({
@@ -34,11 +42,12 @@ export function DataTable<T extends object>({
   total,
   onPageChange,
   rowClassName,
+  serverSort,
 }: Props<T>) {
   // Client-side sort over the current page. Combined with server-side
   // pagination, this is the typical pattern: search/filter scopes the
   // dataset; sort tweaks the order in the visible slice. If we ever
-  // need cross-page sort we'll wire it back to the server.
+  // need cross-page sort we'll wire it back to the server (serverSort).
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
@@ -46,6 +55,7 @@ export function DataTable<T extends object>({
     columns,
     state: { sorting },
     onSortingChange: setSorting,
+    manualSorting: serverSort != null,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -58,16 +68,26 @@ export function DataTable<T extends object>({
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => {
-                  const canSort = h.column.getCanSort();
-                  const sort = h.column.getIsSorted();
+                  const id = h.column.id;
+                  const canSort = serverSort
+                    ? serverSort.keys.includes(id)
+                    : h.column.getCanSort();
+                  const sort = serverSort
+                    ? serverSort.active === id && "desc"
+                    : h.column.getIsSorted();
+                  const onClick = !canSort
+                    ? undefined
+                    : serverSort
+                      ? () => serverSort.onChange(id)
+                      : h.column.getToggleSortingHandler();
                   return (
                     <th
                       key={h.id}
-                      onClick={
-                        canSort
-                          ? h.column.getToggleSortingHandler()
-                          : undefined
+                      onClick={onClick}
+                      aria-sort={
+                        sort === "asc" ? "ascending" : sort === "desc" ? "descending" : undefined
                       }
+                      className={sort ? "is-sorted" : undefined}
                       style={{
                         cursor: canSort ? "pointer" : "default",
                         userSelect: "none",
