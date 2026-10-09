@@ -157,8 +157,12 @@ push to main/develop.
   - `leaderboard.js` — `/top` renderer (official order: win rate with a
     minimum of games, see `ranking.js`).
   - `ranking.js` — Top order: `MIN_RANKED_GAMES` (10) and the whitelisted
-    ORDER BY per sort key for `public.user` (app) and the companion
-    aggregate. Client `?sort=` never reaches SQL unless whitelisted.
+    ORDER BY per sort key for `public.user` (app), the companion
+    aggregate and pair aggregates. Client `?sort=` never reaches SQL unless
+    whitelisted.
+  - `partners.js` — 🤝 Parejas, pure: `appGameRecord` (what `app_game*`
+    stores per game), `summarizePartners` (rates, ± vs your 2v2 average,
+    most played, best partner with `MIN_PARTNER_GAMES` = 5).
   - `rateLimit.js` — sliding-window per (userId, command) bucket.
     Index uses `COMMAND_LIMITS` table to drive limits per command.
   - `stats.js` + `statsView.js` — `/stats` dashboard data fetcher
@@ -186,7 +190,7 @@ push to main/develop.
 - `tests/` — 9 vitest files. 58 tests total.
 - `.github/workflows/ci.yml` — CI runner.
 
-## DB schema (8 tables, see migrations)
+## DB schema (see migrations)
 
 ```
 public.user            id_user PK + game stats + is_banned + notify_on_turn
@@ -198,6 +202,11 @@ public.game_state      id_group PK + state (jsonb) + updated_at
 public.game_events     id (bigserial) PK + id_group + event_type + payload (jsonb)
                        + created_at  (+ idx_game_events_group_time index)
                        WebApp games log game_finished too (id_group = CAIDA-XXXX)
+                       Pruned at 30 days.
+public.app_game        id PK + ranked, preset, mode, winner_slot, finished_at —
+                       one row per finished app game (groups + WebApp), kept
+public.app_game_player (game_id, seat) PK + id_user (statsId; cpu_* = bot) + name,
+                       bot, slot, won — the roster (partners = same slot)
 public.companion_session  code PK + state (jsonb)  — live Acompañante tables
 public.companion_game     id PK + code, mode, target, winner_slot, ended_by,
                           totals/config/ops (jsonb), started/finished_at
@@ -205,6 +214,12 @@ public.companion_player   (game_id, position) PK + id_user (NULL = guest) + name
                           + slot, won, points, caidas, cantos (jsonb), mesas,
                           manual (hand-typed points: mala echada, pegado…)
 ```
+
+`app_game*` is written by `services/gameStats.recordResult` (the single stats
+writer for group and WebApp games) so per-game stats outlive game_events'
+30 days. Today it feeds 🤝 Parejas (ranked 2v2 only); rivals can come from
+the same rows. It started empty: the 30 days of game_events at the time had
+no 4-player game to backfill.
 
 The Acompañante tables are its OWN stats: nothing there reads or writes
 `public.user`, and the app's stats never read them. The creator may only
@@ -220,6 +235,13 @@ each caída but not who received it, so Mi cuenta (Mesa real) has no
 
 Top (app and Mesa real): official order is win rate among people with at
 least 10 games; below that they're listed after a divider, unranked.
+
+🤝 Parejas (`services/partners.js`, pure): partners = same game, same scoring
+slot. App: ranked 2v2 only (`app_game*`); Mesa real: 2v2 games
+(`companion_player`), guests in your own list but not in Top. Mi cuenta shows
+who you play with most, your best partner (≥5 games together), your 2v2
+average and, per partner, W-L, % and ± vs that average. Top → Parejas ranks
+pairs like players: win rate with ≥10 games together.
 
 Migrations list is the source of truth in `database/migrations.js`.
 

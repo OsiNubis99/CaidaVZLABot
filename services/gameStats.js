@@ -18,6 +18,8 @@
  * The ranked rules themselves live in services/ranked (no DB).
  */
 const { UserController } = require("../database");
+const AppGameRepo = require("../database/appGames");
+const { appGameRecord } = require("./partners");
 const {
   SCORING_FIELDS,
   matchFactoryPreset,
@@ -110,6 +112,9 @@ function recordResult(game, winnerSlot) {
   if (summary.beatProUserId) {
     UserController.incrementBeatPro(summary.beatProUserId).catch(() => {});
   }
+  // The roster for good (game_events is pruned at 30 days): feeds 🤝 Parejas.
+  const rec = appGameRecord(summary);
+  if (rec) AppGameRepo.insertGame(rec).catch(() => {});
   return summary;
 }
 

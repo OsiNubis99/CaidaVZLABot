@@ -33,6 +33,13 @@ const REAL_SORTS = Object.freeze({
   points: `points DESC, played DESC, id_user`,
 });
 
+/** Pair aggregates — `a`, `b` = the two user ids (sorted), games together. */
+const PAIR_SORTS = Object.freeze({
+  win_rate: `(played >= ${MIN_RANKED_GAMES}) DESC, ${rate("won", "played")} DESC NULLS LAST, won DESC, played DESC, a, b`,
+  won: `won DESC, ${rate("won", "played")} DESC NULLS LAST, a, b`,
+  played: `played DESC, won DESC, a, b`,
+});
+
 function pick(table, sort) {
   const key = typeof sort === "string" && Object.hasOwn(table, sort) ? sort : "win_rate";
   return { sort: key, sql: table[key] };
@@ -46,6 +53,9 @@ module.exports = {
   appOrderBy: (sort) => pick(APP_SORTS, sort),
   /** @returns {{sort:string, sql:string}} ORDER BY body for the companion aggregate */
   realOrderBy: (sort) => pick(REAL_SORTS, sort),
+  PAIR_SORT_KEYS: Object.keys(PAIR_SORTS),
+  /** @returns {{sort:string, sql:string}} ORDER BY body for a pair aggregate (a, b, played, won) */
+  pairOrderBy: (sort) => pick(PAIR_SORTS, sort),
   /** Enough games to be in the official (win-rate) ranking. */
   qualifies: (games) => (Number(games) || 0) >= MIN_RANKED_GAMES,
 };

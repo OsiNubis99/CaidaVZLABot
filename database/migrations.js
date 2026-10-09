@@ -177,6 +177,32 @@ const STATEMENTS = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_companion_player_user
      ON public.companion_player (id_user) WHERE id_user IS NOT NULL`,
+
+  // App games (Telegram groups + WebApp tables), one row per finished game
+  // with its roster, written by services/gameStats.recordResult. Unlike
+  // game_events (pruned at 30 days) these stay: they feed "🤝 Parejas"
+  // (ranked 2v2) and can feed rivals later. Never mixed with companion_*.
+  `CREATE TABLE IF NOT EXISTS public.app_game (
+     id bigserial PRIMARY KEY,
+     ranked boolean NOT NULL,
+     preset text,
+     mode text NOT NULL,
+     winner_slot int,
+     finished_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  // One row per seat. id_user = statsId (Telegram id, or cpu_<level> for bots).
+  `CREATE TABLE IF NOT EXISTS public.app_game_player (
+     game_id bigint NOT NULL REFERENCES public.app_game(id) ON DELETE CASCADE,
+     seat int NOT NULL,
+     id_user varchar(50) NOT NULL,
+     name text,
+     bot boolean NOT NULL DEFAULT false,
+     slot int NOT NULL,
+     won boolean NOT NULL,
+     PRIMARY KEY (game_id, seat)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_app_game_player_user
+     ON public.app_game_player (id_user)`,
 ];
 
 async function run() {

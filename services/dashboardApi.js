@@ -10,8 +10,12 @@
  *     POST /api/me/notify                { value: bool }  notify_on_turn
  *     GET  /api/me/games?limit           últimas partidas (grupos + WebApp), si contaron
  *     GET  /api/leaderboard?limit&sort   top global (default: % de victorias, mín. 10 partidas)
+ *     GET  /api/leaderboard/pairs        top de parejas de la app (2v2 ranked; ?limit&sort)
+ *     GET  /api/me/partners              🤝 mis parejas en la app (2v2 ranked)
  *     GET  /api/companion/me             stats del Acompañante (mesa real) + últimas mesas
+ *     GET  /api/companion/me/partners    🤝 mis parejas en mesa real (2v2)
  *     GET  /api/companion/leaderboard    top del Acompañante (?limit&sort; separado del de la app)
+ *     GET  /api/companion/leaderboard/pairs  top de parejas en mesa real (?limit&sort)
  *     GET  /api/groups/public            grupos públicos con link
  *
  *   ADMIN-tier (además, id en ADMIN_USER_IDS):
@@ -35,7 +39,9 @@ const env = require("../config/env");
 const logger = require("../config/logger");
 const { GroupController, UserController } = require("../database");
 const CompanionRepo = require("../database/companion");
+const AppGameRepo = require("../database/appGames");
 const gameHistory = require("./gameHistory");
+const partners = require("./partners");
 const ranking = require("./ranking");
 const { resolveGroupLink } = require("./groupLink");
 const auth = require("./dashboardAuth");
@@ -144,6 +150,33 @@ function build(bot) {
       res.status(500).json({ error: "internal" });
     }
   });
+
+  // 🤝 Parejas — app (ranked 2v2) and Mesa real (2v2), each from its own
+  // tables. summarizePartners adds the rates, ± vs your 2v2 average and the
+  // highlights (most played, best partner with a minimum of games).
+  const pairs = (repo) => async (req, res) => {
+    try {
+      res.json(partners.summarizePartners(await repo.partnersOf(req.tgUser.id, 50)));
+    } catch (err) {
+      logger.error({ err: err.message, path: req.path }, "dashboard partners failed");
+      res.status(500).json({ error: "internal" });
+    }
+  };
+  const pairTop = (repo) => async (req, res) => {
+    try {
+      const limit = clampPageSize(req.query.limit, 25, 100);
+      const { sort } = ranking.pairOrderBy(req.query.sort);
+      const rows = await repo.pairLeaderboard(limit, sort);
+      res.json({ rows, limit, sort, minGames: ranking.MIN_RANKED_GAMES });
+    } catch (err) {
+      logger.error({ err: err.message, path: req.path }, "dashboard pair leaderboard failed");
+      res.status(500).json({ error: "internal" });
+    }
+  };
+  router.get("/api/me/partners", pairs(AppGameRepo));
+  router.get("/api/companion/me/partners", pairs(CompanionRepo));
+  router.get("/api/leaderboard/pairs", pairTop(AppGameRepo));
+  router.get("/api/companion/leaderboard/pairs", pairTop(CompanionRepo));
 
   // ── Acompañante (real-table scorekeeper) — its OWN stats, never mixed
   //    with the app's (public.user is not read or written here).
