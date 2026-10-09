@@ -150,6 +150,47 @@ export interface LeaderboardResponse<T> {
   minGames: number;
 }
 
+// ─── 🤝 Parejas (app: ranked 2v2 · Mesa real: 2v2) — services/partners ────
+export interface PartnerRow {
+  /** Telegram id, or `guest:<name>` for a Mesa real guest. */
+  key: string;
+  name: string;
+  username?: string | null;
+  guest: boolean;
+  /** Games together / won together. */
+  played: number;
+  won: number;
+  lost: number;
+  rate: number | null;
+  /** Points over/under your 2v2 average; null below `minGames`. */
+  delta: number | null;
+  enough: boolean;
+}
+
+export interface PartnersResponse {
+  minGames: number;
+  /** Your 2v2 totals (every game with a partner). */
+  played: number;
+  won: number;
+  rate: number | null;
+  rows: PartnerRow[];
+  mostPlayed: PartnerRow | null;
+  best: PartnerRow | null;
+}
+
+export interface PairPerson {
+  id: string;
+  name: string;
+  username: string | null;
+}
+
+export interface PairLeaderRow {
+  a: PairPerson;
+  b: PairPerson;
+  played: number;
+  won: number;
+}
+
 // ─── Stats (admin) ──────────────────────────────────────────────────────
 /** Global totals per canto type, summed across human players. */
 export type CantoTotals = Record<string, number>;

@@ -1,10 +1,11 @@
-// "Mi cuenta" extras: your last games (did they count? why not?) and the
-// Acompañante (Mesa real) profile — its own view, never summed with the app's.
+// "Mi cuenta" extras: your last games (did they count? why not?), 🤝 who you
+// win with, and the Acompañante (Mesa real) profile — its own view, never
+// summed with the app's.
 import { useQuery } from "@tanstack/react-query";
 import * as api from "../api";
 import { getLocale, t } from "../lib/i18n";
 import { fmtDay, fmtPct } from "../lib/format";
-import type { CompanionRecentGame, GameHistoryRow } from "../types";
+import type { CompanionRecentGame, GameHistoryRow, PartnerRow } from "../types";
 
 const CANTO_ROWS: [string, string][] = [
   ["ronda", "Ronda"],
@@ -140,6 +141,8 @@ export function CompanionProfile() {
             <Kpi label={t("me.realRefereed")} value={s.refereed} hint={t("me.realRefereedHint")} />
           </div>
 
+          <PartnersCard source="real" />
+
           <div className="card">
             <div className="card-title">{t("me.realCantos")}</div>
             {CANTO_ROWS.map(([k, label]) => (
@@ -215,5 +218,112 @@ export function Kpi({
         </div>
       )}
     </div>
+  );
+}
+
+/** "+7" / "−43" / "±0" — points over/under your 2v2 average. */
+function fmtDelta(d: number | null): string {
+  if (d == null) return "—";
+  return `${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)}`;
+}
+
+const deltaClass = (d: number | null) =>
+  d == null ? "" : d > 0 ? "is-up" : d < 0 ? "is-down" : "is-even";
+
+/** 🤝 Mis parejas: who you win with in 2v2 — app (ranked) or Mesa real,
+ *  each from its own data. Like OpenDota's peers / doubles apps: games and
+ *  % together, plus the ± against your own 2v2 average (so "70 % with B"
+ *  reads as "+10 over my usual"), and a best partner only past a minimum. */
+export function PartnersCard({ source }: { source: "app" | "real" }) {
+  const q = useQuery({
+    queryKey: ["partners", source],
+    queryFn: source === "app" ? api.myPartners : api.companionPartners,
+  });
+  const s = q.data;
+  return (
+    <div className="card partners-card">
+      <div className="card-title">{t("me.partners.title")}</div>
+      {q.isLoading ? (
+        <p className="muted">{t("app.loading")}</p>
+      ) : q.isError || !s ? (
+        <p className="muted">{t("me.recentError")}</p>
+      ) : s.rows.length === 0 ? (
+        <p className="muted">
+          {t("me.partners.empty")}
+          {source === "app" ? ` ${t("me.partners.footApp")}` : ""}
+        </p>
+      ) : (
+        <>
+          <div className="partners-highlights">
+            <Highlight
+              label={t("me.partners.most")}
+              who={s.mostPlayed}
+              detail={s.mostPlayed ? t("me.partners.games", { n: s.mostPlayed.played }) : ""}
+            />
+            <Highlight
+              label={t("me.partners.best")}
+              who={s.best}
+              detail={
+                s.best
+                  ? `${fmtPct(s.best.rate)} · ${s.best.won}-${s.best.lost} · ${fmtDelta(s.best.delta)}`
+                  : t("me.partners.noBest", { n: s.minGames })
+              }
+            />
+          </div>
+          <p className="muted partners-avg">
+            {t("me.partners.avg", { pct: fmtPct(s.rate), w: s.won, l: s.played - s.won })}
+          </p>
+          <ul className="partners-list">
+            <li className="is-head" aria-hidden="true">
+              <span>{t("me.partners.colPartner")}</span>
+              <span>{t("me.partners.colRecord")}</span>
+              <span>%</span>
+              <span>±</span>
+            </li>
+            {s.rows.slice(0, 12).map((r) => (
+              <PartnerLine key={r.key} row={r} />
+            ))}
+          </ul>
+          <p className="muted history-foot">
+            {t("me.partners.foot", { n: s.minGames })}
+            {source === "app" ? ` ${t("me.partners.footApp")}` : ""}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Highlight({
+  label,
+  who,
+  detail,
+}: {
+  label: string;
+  who: PartnerRow | null;
+  detail: string;
+}) {
+  return (
+    <div className="partners-hl">
+      <div className="partners-hl-label">{label}</div>
+      <div className="partners-hl-who">{who ? who.name : "—"}</div>
+      <div className="partners-hl-detail">{detail}</div>
+    </div>
+  );
+}
+
+function PartnerLine({ row }: { row: PartnerRow }) {
+  return (
+    <li className={row.enough ? "" : "is-few"}>
+      <span className="partners-name">
+        {row.name}
+        {row.guest && <small className="partners-guest"> · {t("real.guestTag")}</small>}
+      </span>
+      <span className="cell-mono">
+        {row.won}-{row.lost}
+      </span>
+      <span>{fmtPct(row.rate)}</span>
+      <span className={`partners-delta ${deltaClass(row.delta)}`}>{fmtDelta(row.delta)}</span>
+    </li>
   );
 }

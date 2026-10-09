@@ -180,6 +180,73 @@ module.exports = {
   },
 
   /**
+   * One row per partner of `userId` in 2v2 (parejas) games: games together
+   * and won together (services/partners.summarizePartners input). Guests
+   * (no account) are grouped by name — they belong in your list, not in Top.
+   */
+  async partnersOf(userId, limit = 50) {
+    const r = await db.query(
+      `SELECT COALESCE(q.id_user, 'guest:' || lower(btrim(q.name))) AS key,
+              (q.id_user IS NULL) AS guest,
+              (ARRAY_AGG(q.name ORDER BY g.id DESC))[1] AS name,
+              COUNT(*)::int AS played,
+              COUNT(*) FILTER (WHERE p.won)::int AS won
+       FROM public.companion_player p
+       JOIN public.companion_game g ON g.id = p.game_id AND g.mode = 'parejas'
+       JOIN public.companion_player q
+         ON q.game_id = p.game_id AND q.slot = p.slot AND q.position <> p.position
+       WHERE p.id_user = $1
+       GROUP BY 1, 2
+       ORDER BY played DESC, won DESC, 1
+       LIMIT $2`,
+      [String(userId), limit],
+    );
+    return r.rows.map((row) => ({
+      key: row.key,
+      name: row.name,
+      guest: !!row.guest,
+      played: Number(row.played) || 0,
+      won: Number(row.won) || 0,
+    }));
+  },
+
+  /**
+   * Top pairs at real tables: both with an account, 2v2 games. Default = the
+   * official order (win rate with a minimum of games together).
+   * @param {Number} limit
+   * @param {String} [sort] - ranking.PAIR_SORT_KEYS (anything else → win_rate)
+   */
+  async pairLeaderboard(limit = 25, sort) {
+    const order = ranking.pairOrderBy(sort);
+    const r = await db.query(
+      `SELECT * FROM (
+         SELECT LEAST(p.id_user, q.id_user) AS a, GREATEST(p.id_user, q.id_user) AS b,
+                (ARRAY_AGG(CASE WHEN p.id_user < q.id_user THEN p.name ELSE q.name END
+                           ORDER BY p.game_id DESC))[1] AS a_name,
+                (ARRAY_AGG(CASE WHEN p.id_user < q.id_user THEN q.name ELSE p.name END
+                           ORDER BY p.game_id DESC))[1] AS b_name,
+                COUNT(*)::int AS played,
+                COUNT(*) FILTER (WHERE p.won)::int AS won
+         FROM public.companion_player p
+         JOIN public.companion_player q
+           ON q.game_id = p.game_id AND q.slot = p.slot AND q.position > p.position
+         JOIN public.companion_game g ON g.id = p.game_id AND g.mode = 'parejas'
+         WHERE p.id_user IS NOT NULL AND q.id_user IS NOT NULL
+         GROUP BY 1, 2
+       ) t
+       ORDER BY ${order.sql}
+       LIMIT $1`,
+      [limit],
+    );
+    return r.rows.map((row) => ({
+      a: { id: row.a, name: row.a_name, username: null },
+      b: { id: row.b, name: row.b_name, username: null },
+      played: Number(row.played) || 0,
+      won: Number(row.won) || 0,
+    }));
+  },
+
+  /**
    * Companion leaderboard (players with an account only). Default = the
    * official ranking (win rate, minimum games — services/ranking.js).
    * @param {Number} limit

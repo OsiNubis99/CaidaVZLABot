@@ -400,6 +400,31 @@ const es = {
   "me.awakeVideo": "✓ Activa (modo compatible)",
   "me.awakeFailed": "✕ Este teléfono no lo permite: sube el bloqueo automático en Ajustes",
   "me.awakePending": "Se activa al tocar la pantalla",
+  "me.partners.title": "🤝 Mis parejas",
+  "me.partners.most": "Con quién más juegas",
+  "me.partners.best": "Mejor pareja",
+  "me.partners.games": "{n} partidas juntos",
+  "me.partners.noBest": "Juega {n} partidas con alguien para verla",
+  "me.partners.avg": "Tu promedio en 2v2: {pct} ({w}-{l})",
+  "me.partners.colPartner": "Pareja",
+  "me.partners.colRecord": "G-P",
+  "me.partners.foot":
+    "± = puntos sobre o bajo tu promedio en 2v2; se calcula desde {n} partidas juntos (el mismo mínimo de la mejor pareja).",
+  "me.partners.footApp":
+    "En la app cuentan las 2v2 ranked (sin CPUs, puntos de fábrica), desde esta versión.",
+  "me.partners.empty": "Todavía no tienes partidas 2v2 con pareja.",
+  "top.whoPlayers": "👤 Jugadores",
+  "top.whoPairs": "🤝 Parejas",
+  "top.pair": "Pareja",
+  "top.pairsEmpty": "Aún no hay parejas con partidas 2v2",
+  "top.pairsAppNote": "Solo partidas 2v2 ranked.",
+  "top.pairsRealNote":
+    "Parejas con cuenta en partidas 2v2 de mesa real. Ranking aparte del de la app.",
+  "top.pairsOfficialNote":
+    "Ranking oficial: % de victorias, mínimo {n} partidas juntos. Toca una columna para ordenar por ella.",
+  "top.pairsUnranked": "Con menos de {n} partidas juntos (fuera del ranking)",
+  "top.pairPlayedShort": "PJ",
+  "top.pairWonShort": "G",
 } as const;
 
 export type Dict = Record<keyof typeof es, string>;
@@ -777,6 +802,30 @@ const en: Dict = {
   "me.awakeVideo": "✓ On (compatibility mode)",
   "me.awakeFailed": "✕ This phone doesn't allow it: raise Auto-Lock in Settings",
   "me.awakePending": "Turns on when you tap the screen",
+  "me.partners.title": "🤝 My partners",
+  "me.partners.most": "Who you play with most",
+  "me.partners.best": "Best partner",
+  "me.partners.games": "{n} games together",
+  "me.partners.noBest": "Play {n} games with someone to see it",
+  "me.partners.avg": "Your 2v2 average: {pct} ({w}-{l})",
+  "me.partners.colPartner": "Partner",
+  "me.partners.colRecord": "W-L",
+  "me.partners.foot":
+    "± = points over or under your 2v2 average; shown from {n} games together (the same minimum as the best partner).",
+  "me.partners.footApp":
+    "In the app, ranked 2v2 games count (no CPUs, factory scoring), from this version on.",
+  "me.partners.empty": "No 2v2 games with a partner yet.",
+  "top.whoPlayers": "👤 Players",
+  "top.whoPairs": "🤝 Pairs",
+  "top.pair": "Pair",
+  "top.pairsEmpty": "No pairs with 2v2 games yet",
+  "top.pairsAppNote": "Ranked 2v2 games only.",
+  "top.pairsRealNote": "Pairs with accounts in 2v2 real-table games. Ranked apart from the app.",
+  "top.pairsOfficialNote":
+    "Official ranking: win rate, at least {n} games together. Tap a column to sort by it.",
+  "top.pairsUnranked": "Fewer than {n} games together (not ranked)",
+  "top.pairPlayedShort": "GP",
+  "top.pairWonShort": "W",
 };
 
 const pt: Dict = {
@@ -1155,6 +1204,30 @@ const pt: Dict = {
   "me.awakeVideo": "✓ Ativa (modo compatível)",
   "me.awakeFailed": "✕ Este celular não permite: aumente o bloqueio automático nos Ajustes",
   "me.awakePending": "Ativa ao tocar na tela",
+  "me.partners.title": "🤝 Minhas duplas",
+  "me.partners.most": "Com quem mais joga",
+  "me.partners.best": "Melhor dupla",
+  "me.partners.games": "{n} partidas juntos",
+  "me.partners.noBest": "Jogue {n} partidas com alguém para ver",
+  "me.partners.avg": "Sua média em 2v2: {pct} ({w}-{l})",
+  "me.partners.colPartner": "Dupla",
+  "me.partners.colRecord": "V-D",
+  "me.partners.foot":
+    "± = pontos acima ou abaixo da sua média em 2v2; calculado a partir de {n} partidas juntos (o mesmo mínimo da melhor dupla).",
+  "me.partners.footApp":
+    "No app contam as 2v2 ranqueadas (sem CPUs, pontos de fábrica), a partir desta versão.",
+  "me.partners.empty": "Ainda não há partidas 2v2 com dupla.",
+  "top.whoPlayers": "👤 Jogadores",
+  "top.whoPairs": "🤝 Duplas",
+  "top.pair": "Dupla",
+  "top.pairsEmpty": "Ainda não há duplas com partidas 2v2",
+  "top.pairsAppNote": "Só partidas 2v2 ranqueadas.",
+  "top.pairsRealNote": "Duplas com conta em partidas 2v2 de mesa real. Ranking separado do app.",
+  "top.pairsOfficialNote":
+    "Ranking oficial: % de vitórias, mínimo {n} partidas juntos. Toque numa coluna para ordenar.",
+  "top.pairsUnranked": "Menos de {n} partidas juntos (fora do ranking)",
+  "top.pairPlayedShort": "PJ",
+  "top.pairWonShort": "V",
 };
 
 export const DICT: Record<"es" | "en" | "pt", Dict> = { es, en, pt };

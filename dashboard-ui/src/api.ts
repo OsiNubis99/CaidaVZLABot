@@ -10,6 +10,8 @@ import type {
   CompanionMeResponse,
   CompanionLeaderRow,
   LeaderboardResponse,
+  PairLeaderRow,
+  PartnersResponse,
 } from "./types";
 
 // Relative — works under /dashboard/ in dev and /caidavzlabot/ in
@@ -83,6 +85,22 @@ export const companionLeaderboard = (limit: number, sort = "win_rate") =>
   call<LeaderboardResponse<CompanionLeaderRow>>(
     "GET",
     `companion/leaderboard?limit=${limit}&sort=${encodeURIComponent(sort)}`,
+  );
+
+/** 🤝 Who you win with: app (ranked 2v2) / Mesa real (2v2) — never mixed. */
+export const myPartners = () => call<PartnersResponse>("GET", "me/partners");
+export const companionPartners = () => call<PartnersResponse>("GET", "companion/me/partners");
+
+/** Top pairs. `sort` ∈ win_rate (official) · won · played. */
+export const pairLeaderboard = (limit: number, sort = "win_rate") =>
+  call<LeaderboardResponse<PairLeaderRow>>(
+    "GET",
+    `leaderboard/pairs?limit=${limit}&sort=${encodeURIComponent(sort)}`,
+  );
+export const companionPairLeaderboard = (limit: number, sort = "win_rate") =>
+  call<LeaderboardResponse<PairLeaderRow>>(
+    "GET",
+    `companion/leaderboard/pairs?limit=${limit}&sort=${encodeURIComponent(sort)}`,
   );
 
 export const publicGroups = () =>

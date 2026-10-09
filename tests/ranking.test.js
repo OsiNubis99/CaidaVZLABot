@@ -33,6 +33,19 @@ describe("ranking (Top order)", () => {
     expect(ranking.qualifies(10)).toBe(true);
     expect(ranking.qualifies(9)).toBe(false);
   });
+
+  it("pairs: official = win rate with ≥10 games together; only pair columns", () => {
+    expect(ranking.pairOrderBy().sort).toBe("win_rate");
+    expect(ranking.pairOrderBy().sql).toMatch(/^\(played >= 10\) DESC, /);
+    expect(ranking.pairOrderBy("won").sort).toBe("won");
+    expect(ranking.pairOrderBy("played").sort).toBe("played");
+    for (const bad of ["points", "caida", "won; DROP TABLE x", undefined]) {
+      expect(ranking.pairOrderBy(bad).sort).toBe("win_rate");
+    }
+    for (const key of ranking.PAIR_SORT_KEYS) {
+      expect(ranking.pairOrderBy(key).sql).toMatch(/, a, b$/);
+    }
+  });
 });
 
 describe("/top message", () => {

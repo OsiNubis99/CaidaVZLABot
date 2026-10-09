@@ -7,7 +7,7 @@ import { t } from "../lib/i18n";
 import { winRate, caidaRatio, fmtPct, fmtRate } from "../lib/format";
 import { keepAwakeWanted, setKeepAwake, useKeepAwakeMode, type AwakeMode } from "../lib/keepAwake";
 import type { MeResponse, UserRow } from "../types";
-import { CompanionProfile, Kpi, RecentGamesCard } from "./MeExtras";
+import { CompanionProfile, Kpi, PartnersCard, RecentGamesCard } from "./MeExtras";
 
 const SINGS: Array<[keyof UserRow, string]> = [
   ["ronda", "Ronda"],
@@ -72,6 +72,8 @@ export function MeTab({ me }: { me: MeResponse }) {
               hint={t("me.caidaRatioHint")}
             />
           </div>
+
+          <PartnersCard source="app" />
 
           <div className="card">
             <div className="card-title">{t("me.cantos")}</div>
