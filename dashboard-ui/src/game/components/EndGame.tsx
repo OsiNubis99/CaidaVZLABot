@@ -1,4 +1,4 @@
-import type { RankedStatus, Winner } from "../types";
+import type { FinishHow, MesaCard, RankedStatus, Winner } from "../types";
 import { t } from "../../lib/i18n";
 import { RankedLine } from "../screens/Lobby";
 
@@ -30,6 +30,8 @@ export function EndGame({ winner, youSeat, isHost, ranked, onRematch, onLeave }:
       </div>
 
       {ranked && <RankedLine ranked={ranked} />}
+
+      {winner?.how && <HowItEnded how={winner.how} />}
 
       <ol className="endgame-standings">
         {standings.map((s, i) => (
@@ -65,6 +67,38 @@ export function EndGame({ winner, youSeat, isHost, ranked, onRematch, onLeave }:
           {t("endgame.leave")}
         </button>
       </div>
+    </div>
+  );
+}
+
+/** "4 → 3✓ → 7 → 12" — the mesa as it was laid, ✓ on the cards that stuck. */
+const mesaCards = (table: MesaCard[]) =>
+  table.map((c) => `${c.value}${c.hit ? "✓" : ""}`).join(" → ");
+
+/** The same lines the group chat gets: how the mesa went and why it ended —
+ *  for wins no card play explains (the last play is already on the table). */
+function HowItEnded({ how }: { how: FinishHow }) {
+  const and = t("endgame.and");
+  const lines =
+    how.kind === "cartas"
+      ? [
+          t(how.who.length > 1 ? "endgame.how.cartasTeam" : "endgame.how.cartas", {
+            who: how.who.join(and),
+            n: how.took,
+            pts: how.points,
+          }),
+        ]
+      : [
+          t("endgame.how.mesa", { dealer: how.dealer, start: how.start, cards: mesaCards(how.table) }),
+          how.kind === "mala_echada"
+            ? t("endgame.how.malaEchada", { dealer: how.dealer, to: how.to.join(and) })
+            : t("endgame.how.pegado", { dealer: how.dealer, n: how.points }),
+        ];
+  return (
+    <div className="endgame-how">
+      {lines.map((l) => (
+        <p key={l}>{l}</p>
+      ))}
     </div>
   );
 }

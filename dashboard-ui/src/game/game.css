@@ -637,6 +637,20 @@
 .endgame-banner.won { border-color: var(--ok); box-shadow: 0 0 24px rgba(63, 185, 80, 0.25); }
 .endgame-emoji { font-size: 44px; }
 .endgame-banner h2 { margin: 6px 0 0; }
+/* How a win no card play explains came about (mala echada, pegar en mesa,
+   cards at the end of a deck) — same lines as the group chat. */
+.endgame-how {
+  width: 100%;
+  max-width: 460px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.endgame-how p { margin: 0; }
+.endgame-how p + p { margin-top: 4px; }
 .endgame-standings { list-style: none; padding: 0; margin: 0; width: 100%; max-width: 460px; }
 .endgame-row {
   display: flex;

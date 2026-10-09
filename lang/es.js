@@ -2,7 +2,6 @@ const ERROR =
   "\nSi estás experimentando algún error, por favor repórtalo en @CaidaVZLANews.";
 module.exports = {
   bad_turn: "Carta vista",
-  bad_sync_cards: "Mal echada!\n",
   clean_table: "Mesa Limpia!\n",
   config_bool_invalid: "Valor invalido, las opciones son: 'on' o 'off'" + ERROR,
   config_type_invalid:
@@ -67,7 +66,6 @@ module.exports = {
   mesa_win_pending:
     "⏳ {dealer} llegó a {pts} pegando en mesa. {p0} puede dar caída a la última carta para matarlos, o la partida termina.\n",
   sing_killed: "La caida mato el canto del jugador anterior!\n",
-  sync_cards: "Pegado en mesa ",
   user_added: "Usuario agregado.",
   user_banned: "Usuario Bloqueado.",
   user_get_fall: "Caída\n",
@@ -118,6 +116,12 @@ module.exports = {
   ig_dot_sep: " · ",
   ig_players_header: "Jugadores:",
   ig_won_prefix: "🏆 Ganó ",
+  ig_mesa_line: "🃏 Mesa de {dealer} (por {start}): {cards}\n",
+  ig_pegado_mesa: "🎯 {dealer} pegó en mesa: +{n}\n",
+  ig_mala_echada: "❌ Mala echada: {dealer} no pegó ninguna → +1 para {to}\n",
+  ig_fin_mazo: "🔚 Fin del mazo: {who} se llevó {n} cartas → +{pts}\n",
+  ig_fin_mazo_team: "🔚 Fin del mazo: {who} se llevaron {n} cartas → +{pts}\n",
+  ig_and: " y ",
   ig_not_ranked_bots: "ℹ️ No cuenta para el ranking: había bots en la mesa.",
   ig_not_ranked_custom:
     "ℹ️ No cuenta para el ranking: se cambiaron puntos o multiplicadores (solo cuentan los valores de Clásico o The Grupish).",
