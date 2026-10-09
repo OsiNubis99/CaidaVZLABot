@@ -484,7 +484,7 @@ class Game {
     }
     // Clean las tabble
     for (let position = 0; position < this.table.length; position++) {
-      if (this.table[position] != null) this.took[this.last_player_on_take]++;
+      if (this.table[position] != null) this.took[this.scoringSlot(this.last_player_on_take)]++;
       this.table[position] = null;
     }
     // Add took points. Threshold per player depends on player count and

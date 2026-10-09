@@ -3,6 +3,7 @@
 // The text says how the mesa went and why; `_finish` carries the same facts
 // for the WebApp's end screen.
 const Game = require("../class/Game");
+const Card = require("../class/Card");
 const User = require("../class/User");
 const Config = require("../class/Config");
 const game_modes = require("../lang/game_modes_es");
@@ -208,5 +209,29 @@ describe("cards counted at the end of a deck", () => {
     expect(r.finished).toBe(true);
     expect(r.response).toContain("🔚 Fin del mazo: A y C se llevaron 22 cartas → +2");
     expect(g._finish.who).toEqual(["A", "C"]);
+  });
+
+  it("in parejas it credits cards left on table to team of last player who took (partner index 2)", () => {
+    const g = endOfDeck(["A", "B", "C", "D"], [19, 18, 0, 0], [23, 10], { type: "parejas" });
+    g.table[4] = new Card(16);
+    g.table[5] = new Card(20);
+    g.last_player_on_take = 2; // C (partner of A, Team 0) was the last to take
+    const r = g.handing_out_cards(0, "");
+    expect(r.finished).toBe(true);
+    expect(g.points[0]).toBe(24);
+    expect(r.response).toContain("🔚 Fin del mazo: A y C se llevaron 21 cartas → +1");
+    expect(g._finish.who).toEqual(["A", "C"]);
+  });
+
+  it("in parejas it credits cards left on table to team of last player who took (partner index 3)", () => {
+    const g = endOfDeck(["A", "B", "C", "D"], [18, 19, 0, 0], [10, 23], { type: "parejas" });
+    g.table[4] = new Card(16);
+    g.table[5] = new Card(20);
+    g.last_player_on_take = 3; // D (partner of B, Team 1) was the last to take
+    const r = g.handing_out_cards(0, "");
+    expect(r.finished).toBe(true);
+    expect(g.points[1]).toBe(24);
+    expect(r.response).toContain("🔚 Fin del mazo: B y D se llevaron 21 cartas → +1");
+    expect(g._finish.who).toEqual(["B", "D"]);
   });
 });
