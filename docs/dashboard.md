@@ -8,7 +8,7 @@ Web app que abre dentro de Telegram desde el botón del menú del bot (📎 al l
 |---|---|---|
 | 🎮 Jugar | Todos | Partida online (WebApp). El host reordena asientos en el lobby (toca uno y luego otro: orden de juego + parejas 1-3 vs 2-4); el lobby y el final dicen si la mesa **cuenta para el ranking** y por qué no |
 | 🃏 Mesa real | Todos | **Acompañante** para partidas con cartas reales: el anfitrión crea `MESA-XXXX`, invita, sienta a la gente como está en la mesa (2v2 por defecto) y anota con 5 botones (un jugador por borde + Mesa limpia al centro). **Solo el árbitro** ve el botón verde; los demás ven en el centro quién arbitra y el marcador en vivo. 👥 **Lista de la mesa** (árbitro, jugando, cola, mirando), **cola** para la próxima, **pasar el rol** de árbitro y **tomarlo** si el árbitro lleva 5 min desconectado. Stats **separadas** de la app |
-| 👤 Mi cuenta | Todos | Switch **App / Mesa real** (el mismo del Top; la elección se recuerda). App: KPIs (partidas, ganados, win rate, caídas dadas/recibidas, ratio), cantos (vivas/total), **últimas partidas** (si contaron y por qué no). Mesa real: partidas, ganadas, win rate, caídas, mesas limpias, puntos, puntos extra (➕ Sumar puntos), arbitradas, cantos por tipo y últimas mesas. Toggle `notify_on_turn` |
+| 👤 Mi cuenta | Todos | Switch **App / Mesa real** (el mismo del Top; la elección se recuerda). App: KPIs (partidas, ganados, win rate, caídas dadas/recibidas, ratio), cantos (vivas/total), **últimas partidas** (si contaron y por qué no). Mesa real: partidas, ganadas, win rate, caídas, mesas limpias, puntos, puntos extra (➕ Sumar puntos), arbitradas, cantos por tipo y últimas mesas. Preferencias: toggle `notify_on_turn` y **Mantener la pantalla encendida** (por dispositivo, activado por default, con línea de estado) |
 | 🏆 Top | Todos | Leaderboard 10/25/50/100 con switch **App / Mesa real** (rankings separados). Orden **oficial: % de victorias con mínimo 10 partidas** (los de menos van abajo, sin número). Tocar una columna trae el Top N **por esa columna** (orden en el server); tocarla otra vez o "Volver al ranking oficial" restaura |
 | 🌐 Públicos | Todos | Grupos públicos con link de invite (best-effort) |
 | 📦 Grupos | Solo admin | Search/sort/paginación + toggle público/banned, +N meses, rename, delete |
@@ -17,6 +17,12 @@ Web app que abre dentro de Telegram desde el botón del menú del bot (📎 al l
 **Ranked (“Ganados”)**: sin CPUs y con los 13 valores numéricos (puntos, mesa, multiplicadores, cantos) iguales a un modo de fábrica (Clásico o The Grupish). El tipo (2v2 / todos contra todos) y los toggles (mata canto/mesa, caída continua) no importan. Regla en `services/ranked.js` (pura, la usan el writer de stats y la WebApp).
 
 **Acompañante**: namespace socket.io `/companion` (mismo server y auth `initData`), sesiones en memoria + `public.companion_session` (sobreviven un deploy; flush en SIGTERM, barrido de mesas sin actividad por 12 h). Resultados en `companion_game` + `companion_player` — **nunca** toca `public.user`. Deep link `t.me/<bot>?startapp=MESA-XXXX` abre la pestaña Mesa real.
+
+**Pantalla encendida** (`dashboard-ui/src/lib/keepAwake.ts`): Telegram no tiene un método de Mini App para esto (hasta Bot API 10.1). Mientras la WebApp está abierta y visible se usa, en orden:
+1. La Screen Wake Lock API (`navigator.wakeLock`), donde el cliente la permite (iOS 16.4+/18.4+, Telegram Web/Desktop). Se vuelve a pedir al volver a la app, porque se libera al ocultarla.
+2. Si el cliente la rechaza (Android WebView: "disallowed by permissions policy"), un clip muted de 2,5 KB a pantalla completa, con opacidad 0 y sin capturar toques. Chromium solo mantiene la pantalla con un video ≥75 % visible y ≥20 % del viewport (`video_wake_lock.cc`), por eso no sirve el truco del video de 1 px. Se rebobina a mano en lugar de usar `loop` y es muted, así que no corta la música.
+
+Hay que verificarlo en teléfonos reales: el estado aparece en Mi cuenta → Preferencias, y `<html data-keep-awake>` vale `wakelock|video|failed|off`.
 
 ## Arquitectura
 

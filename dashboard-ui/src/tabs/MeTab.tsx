@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "../api";
 import { useToast } from "../components/Toast";
 import { ViewSwitch, useStatsView } from "../components/ViewSwitch";
 import { t } from "../lib/i18n";
 import { winRate, caidaRatio, fmtPct, fmtRate } from "../lib/format";
+import { keepAwakeWanted, setKeepAwake, useKeepAwakeMode, type AwakeMode } from "../lib/keepAwake";
 import type { MeResponse, UserRow } from "../types";
 import { CompanionProfile, Kpi, RecentGamesCard } from "./MeExtras";
 
@@ -109,7 +111,39 @@ export function MeTab({ me }: { me: MeResponse }) {
             disabled={notify.isPending}
           />
         </label>
+        <KeepAwakeToggle />
       </div>
     </section>
+  );
+}
+
+const AWAKE_STATUS: Record<AwakeMode, Parameters<typeof t>[0]> = {
+  wakelock: "me.awakeOn",
+  video: "me.awakeVideo",
+  failed: "me.awakeFailed",
+  off: "me.awakePending",
+};
+
+/** Keep the screen on while the app is open (the referee's phone on the
+ *  table). Local to this device; the status line says whether it took. */
+function KeepAwakeToggle() {
+  const [on, setOn] = useState(keepAwakeWanted);
+  const mode = useKeepAwakeMode();
+  return (
+    <label className="row-toggle">
+      <span>
+        <strong>{t("me.awakeTitle")}</strong>
+        <small className="muted">{t("me.awakeHint")}</small>
+        {on && <small className={`awake-status is-${mode}`}>{t(AWAKE_STATUS[mode])}</small>}
+      </span>
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) => {
+          setKeepAwake(e.target.checked);
+          setOn(e.target.checked);
+        }}
+      />
+    </label>
   );
 }

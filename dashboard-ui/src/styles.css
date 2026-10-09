@@ -142,6 +142,11 @@ main { max-width: 1200px; margin: 0 auto; }
   gap: 12px;
 }
 .row-toggle small { display: block; margin-top: 2px; }
+.row-toggle + .row-toggle { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.awake-status { font-size: 11.5px; }
+.awake-status.is-wakelock, .awake-status.is-video { color: var(--ok); }
+.awake-status.is-failed { color: var(--danger); }
+.awake-status.is-off { color: var(--text-muted); }
 .row-toggle input[type="checkbox"] {
   width: 44px;
   height: 26px;

@@ -394,6 +394,12 @@ const es = {
   "me.realRecentEmpty": "Todavía no has jugado en una mesa real.",
   "top.sortedBy": "Ordenado por {col}.",
   "top.backToOfficial": "Volver al ranking oficial",
+  "me.awakeTitle": "Mantener la pantalla encendida",
+  "me.awakeHint": "Mientras la app esté abierta (ideal para la Mesa real)",
+  "me.awakeOn": "✓ Activa",
+  "me.awakeVideo": "✓ Activa (modo compatible)",
+  "me.awakeFailed": "✕ Este teléfono no lo permite: sube el bloqueo automático en Ajustes",
+  "me.awakePending": "Se activa al tocar la pantalla",
 } as const;
 
 export type Dict = Record<keyof typeof es, string>;
@@ -765,6 +771,12 @@ const en: Dict = {
   "me.realRecentEmpty": "You haven't played at a real table yet.",
   "top.sortedBy": "Sorted by {col}.",
   "top.backToOfficial": "Back to the official ranking",
+  "me.awakeTitle": "Keep the screen on",
+  "me.awakeHint": "While the app is open (great for Mesa real)",
+  "me.awakeOn": "✓ On",
+  "me.awakeVideo": "✓ On (compatibility mode)",
+  "me.awakeFailed": "✕ This phone doesn't allow it: raise Auto-Lock in Settings",
+  "me.awakePending": "Turns on when you tap the screen",
 };
 
 const pt: Dict = {
@@ -1137,6 +1149,12 @@ const pt: Dict = {
   "me.realRecentEmpty": "Você ainda não jogou numa mesa real.",
   "top.sortedBy": "Ordenado por {col}.",
   "top.backToOfficial": "Voltar ao ranking oficial",
+  "me.awakeTitle": "Manter a tela ligada",
+  "me.awakeHint": "Enquanto o app estiver aberto (ideal para a Mesa real)",
+  "me.awakeOn": "✓ Ativa",
+  "me.awakeVideo": "✓ Ativa (modo compatível)",
+  "me.awakeFailed": "✕ Este celular não permite: aumente o bloqueio automático nos Ajustes",
+  "me.awakePending": "Ativa ao tocar na tela",
 };
 
 export const DICT: Record<"es" | "en" | "pt", Dict> = { es, en, pt };
